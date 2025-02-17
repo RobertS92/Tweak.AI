@@ -1,8 +1,10 @@
 import { 
-  Resume, InsertResume,
-  Job, InsertJob,
-  CoverLetter, InsertCoverLetter
+  resumes, type Resume, type InsertResume,
+  jobs, type Job, type InsertJob,
+  coverLetters, type CoverLetter, type InsertCoverLetter
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // Resume operations
@@ -22,103 +24,78 @@ export interface IStorage {
   createCoverLetter(coverLetter: InsertCoverLetter): Promise<CoverLetter>;
 }
 
-export class MemStorage implements IStorage {
-  private resumes: Map<number, Resume>;
-  private jobs: Map<number, Job>;
-  private coverLetters: Map<number, CoverLetter>;
-  private currentResumeId: number;
-  private currentJobId: number;
-  private currentCoverLetterId: number;
-
-  constructor() {
-    this.resumes = new Map();
-    this.jobs = new Map();
-    this.coverLetters = new Map();
-    this.currentResumeId = 1;
-    this.currentJobId = 1;
-    this.currentCoverLetterId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   async getResume(id: number): Promise<Resume | undefined> {
-    return this.resumes.get(id);
+    const [resume] = await db.select().from(resumes).where(eq(resumes.id, id));
+    return resume;
   }
 
   async getUserResumes(userId: string): Promise<Resume[]> {
-    return Array.from(this.resumes.values()).filter(
-      (resume) => resume.userId === userId
-    );
+    return db.select().from(resumes).where(eq(resumes.userId, userId));
   }
 
   async createResume(resume: InsertResume): Promise<Resume> {
-    const id = this.currentResumeId++;
-    const newResume: Resume = {
-      ...resume,
-      id,
-      atsScore: null,
-      enhancedContent: null,
-      analysis: null,
-      createdAt: new Date(),
-    };
-    this.resumes.set(id, newResume);
+    const [newResume] = await db.insert(resumes).values(resume).returning();
     return newResume;
   }
 
   async updateResume(id: number, resume: Partial<Resume>): Promise<Resume> {
-    const existing = await this.getResume(id);
-    if (!existing) {
+    const [updated] = await db
+      .update(resumes)
+      .set(resume)
+      .where(eq(resumes.id, id))
+      .returning();
+
+    if (!updated) {
       throw new Error("Resume not found");
     }
-    const updated = { ...existing, ...resume };
-    this.resumes.set(id, updated);
+
     return updated;
   }
 
   async deleteResume(id: number): Promise<void> {
-    this.resumes.delete(id);
+    await db.delete(resumes).where(eq(resumes.id, id));
   }
 
   async getJob(id: number): Promise<Job | undefined> {
-    return this.jobs.get(id);
+    const [job] = await db.select().from(jobs).where(eq(jobs.id, id));
+    return job;
   }
 
   async createJob(job: InsertJob): Promise<Job> {
-    const id = this.currentJobId++;
-    const newJob: Job = {
-      ...job,
-      id,
-      matchScore: null,
-      analysis: null,
-      createdAt: new Date(),
-      company: job.company || null, // Ensure company is never undefined
-    };
-    this.jobs.set(id, newJob);
+    const [newJob] = await db.insert(jobs).values(job).returning();
     return newJob;
   }
 
   async updateJob(id: number, job: Partial<Job>): Promise<Job> {
-    const existing = await this.getJob(id);
-    if (!existing) {
+    const [updated] = await db
+      .update(jobs)
+      .set(job)
+      .where(eq(jobs.id, id))
+      .returning();
+
+    if (!updated) {
       throw new Error("Job not found");
     }
-    const updated = { ...existing, ...job };
-    this.jobs.set(id, updated);
+
     return updated;
   }
 
   async getCoverLetter(id: number): Promise<CoverLetter | undefined> {
-    return this.coverLetters.get(id);
+    const [coverLetter] = await db
+      .select()
+      .from(coverLetters)
+      .where(eq(coverLetters.id, id));
+    return coverLetter;
   }
 
   async createCoverLetter(coverLetter: InsertCoverLetter): Promise<CoverLetter> {
-    const id = this.currentCoverLetterId++;
-    const newCoverLetter: CoverLetter = {
-      ...coverLetter,
-      id,
-      createdAt: new Date(),
-    };
-    this.coverLetters.set(id, newCoverLetter);
+    const [newCoverLetter] = await db
+      .insert(coverLetters)
+      .values(coverLetter)
+      .returning();
     return newCoverLetter;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
