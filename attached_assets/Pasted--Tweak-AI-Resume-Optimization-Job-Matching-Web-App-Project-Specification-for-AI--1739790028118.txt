@@ -1,0 +1,162 @@
+### **Tweak – AI Resume Optimization & Job Matching Web App**  
+#### **Project Specification for AI Developer Agent Execution**
+
+---
+
+### **Project Overview**  
+Tweak is an AI-powered web application designed to optimize resumes, match them to job descriptions, and generate career action plans for job seekers. The MVP will utilize OpenAI API for resume parsing, enhancement, and job description matching, with future plans to fine-tune based on user data.
+
+---
+
+### **Core Features**
+
+#### **Resume Optimization (Tweak Page)**
+- Users can upload a resume in PDF, Word, or TXT format.  
+- AI assigns an ATS Score ranging from 1 to 100, evaluating ATS compatibility, keyword density, and role alignment.  
+- AI enhances bullet points, formatting, clarity, and impact.  
+- AI analyzes the resume against job descriptions and provides contextual job matching.  
+- One-click resume fixes allow users to accept AI-generated improvements.  
+- If the score is below 80 percent, AI provides a career action plan, suggesting courses, projects, or skill-building steps.  
+- Users can download the optimized resume in Word or PDF format using a recruiter-friendly template.  
+
+#### **AI-Powered Cover Letter Generator**
+- AI generates a tailored cover letter based on the job description and resume.  
+- Adjusts tone and format based on industry norms.  
+- Users can edit the generated content inline or regenerate different versions.  
+
+#### **Resume Version Control and Dashboard**
+- Users can store up to three resumes for free, with unlimited storage available in Tweak Plus.  
+- Version history allows users to roll back to previous resume versions.  
+- AI selects the best resume version for each job application.  
+
+#### **Job Match Score and Resume Enhancement**
+- Users can paste a job description, and AI assigns a match score between 1 and 100.  
+- AI highlights missing keywords and qualifications.  
+- AI suggests specific resume edits to improve the match score.  
+
+#### **Career Action Plan Generator**
+- If the resume match score is between 60 and 79 percent, AI suggests skill improvements, including certifications, projects, or other professional development steps.  
+- If the resume match score is below 59 percent, AI suggests alternative job roles based on user skills and experience.  
+- If the resume match score is between 80 and 100 percent, AI provides interview preparation, including job-specific questions and suggested answers.  
+
+#### **AI Job Scraping and Resume Generation (Tweak Plus Exclusive)**
+- AI scrapes job boards such as LinkedIn and Indeed to find relevant postings based on user criteria.  
+- Matches jobs based on user-specified preferences such as industry, experience level, job type, and salary expectations.  
+- AI generates tailored resumes for specific job postings using extracted job descriptions.  
+- AI highlights missing skills and suggests improvements to align the resume with job requirements.  
+
+**Job Scraping and Resume Generation Process:**  
+1. The user inputs job search preferences, such as job title, minimum salary, and location preferences.  
+2. AI scrapes job listings and compiles a list of relevant job postings.  
+3. AI generates a tailored resume for each job, ensuring alignment with the job description and industry expectations.  
+4. The user downloads the generated resumes for manual applications.  
+
+---
+
+### **User Interface Design**
+
+#### **Landing Page**
+- Users upload a resume to receive a free AI-generated ATS Score.  
+- A demo section displays an example of before-and-after resume optimization.  
+- The process is explained in a three-step visual guide.  
+- Pricing tiers are outlined, including Free, Pro, and Tweak Plus plans.  
+- User testimonials and success stories provide credibility.  
+- A call-to-action button prompts users to start using the service.  
+
+#### **Tweak Page (Resume Editing and Job Matching)**
+**Left Panel - AI Chat Assistant:**  
+- Users can enter commands such as:  
+  - "Make my resume sound more senior-level."  
+  - "Rewrite this for a data analyst role."  
+- AI edits the resume in real-time based on input.  
+
+**Center Panel - Resume Editor:**  
+- A split-screen view displays the original resume on the left and AI-enhanced version on the right.  
+- AI highlights missing skills and suggested edits.  
+- Users can accept AI-suggested changes with a single click or manually edit content.  
+
+**Right Panel - Job Matching:**  
+- Users paste a job description, and AI provides a match score.  
+- AI suggests specific resume modifications to improve alignment with the job requirements.  
+
+**Bottom Panel - Resume Actions:**  
+- Users can save changes, download the resume in Word or PDF format, or store a new resume version.  
+
+#### **Dashboard and Resume Storage Page**
+- Users can store up to three resumes for free, with unlimited storage for Tweak Plus subscribers.  
+- AI selects the best resume for each job application based on job description analysis.  
+- Users can view past edits and restore previous versions.  
+- The Career Action Plan section suggests improvements if the resume match score is below 80 percent.  
+- Tweak Plus users can access AI-generated job postings and tailored resumes from the Job Scraping and Resume Generation section.  
+
+---
+
+### **Technology Stack**
+**Frontend:** React and Tailwind CSS for a responsive user interface.  
+**Backend:** Node.js and Express for API management and backend services.  
+**Database:** MongoDB for storing resume versions and job match data.  
+**AI Integration:** OpenAI API for resume parsing, enhancement, and job matching.  
+**Scraping:** Selenium or BeautifulSoup for job postings extraction.  
+**Authentication:** Firebase Auth or Auth0 for user login via Google or LinkedIn.  
+
+---
+
+### **Development Tasks**
+
+#### **Backend Setup**
+- Set up the Node.js and Express backend.  
+- Implement MongoDB for resume storage.  
+- Integrate OpenAI API for resume parsing, enhancement, and job matching.  
+
+#### **User Interface Development**
+- Develop the landing page using React and Tailwind CSS.  
+- Implement the resume editor with a split-screen interface.  
+- Build the dashboard for resume storage and version control.  
+- Develop the job matching UI with a match score and suggested improvements.  
+
+#### **AI Feature Development**
+- Implement ATS Scoring and AI Resume Enhancements.  
+- Train AI models for context-aware resume rewrites.  
+- Build and optimize the job description matching feature.  
+- Implement job scraping and AI-generated resumes for Tweak Plus users.  
+
+#### **Deployment and Testing**
+- Deploy the web app for beta testing.  
+- Collect user feedback to refine AI responses and UI/UX interactions.  
+- Optimize performance and scalability.  
+
+---
+
+### **Final Development Execution Plan for AI Developer Agent**
+**Objective:** Build Tweak, an AI-powered resume optimization and job matching web application using OpenAI API.  
+
+**Core Features:**  
+- AI Resume Scoring (1-100).  
+- AI Resume Enhancements and Formatting Fixes.  
+- Job Description Matching (Missing Skills Analysis and Match Score).  
+- AI Cover Letter Generator (Unlimited Use).  
+- Resume Storage (Three Free Resumes, Unlimited for Tweak Plus, Version Control).  
+- Career Action Plan if Resume Score is Below 80 Percent.  
+- AI Job Scraping and Resume Generation (Tweak Plus Exclusive).  
+
+**UI Implementation:**  
+- Landing Page where users upload a resume and receive an ATS Score.  
+- Tweak Page (Resume Editor and Job Matching with AI Chat Assistant).  
+- Dashboard for Resume Storage, Career Plan, and Job Scraping Features.  
+
+**Technology Stack:**  
+- Frontend: React and Tailwind CSS.  
+- Backend: Node.js and Express.  
+- Database: MongoDB.  
+- AI Integration: OpenAI API.  
+- Scraping: Selenium or BeautifulSoup.  
+
+**Development Plan:**  
+1. Implement backend with MongoDB for storing resumes and user data.  
+2. Develop the frontend UI, including the resume editor, dashboard, and job matching features.  
+3. Integrate OpenAI API for AI-based resume scoring, enhancement, and job matching.  
+4. Implement job scraping and AI-generated resume functionality.  
+5. Conduct testing and optimize for user experience.  
+6. Deploy the MVP and collect user feedback for fine-tuning.  
+
+This specification ensures structured development with clear task execution.
