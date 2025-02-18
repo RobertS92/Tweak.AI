@@ -53,9 +53,9 @@ export async function analyzeResume(content: string) {
       messages: [
         {
           role: "system",
-          content: `You are an expert resume analyzer and enhancer. Analyze this resume in detail and provide comprehensive feedback and improvements.
+          content: `You are an expert resume analyzer and enhancer. You must provide both analysis AND create an enhanced version of the resume.
 
-            Analyze these categories:
+            First analyze these categories:
             1. ATS Compliance: Check formatting, standard sections, and machine readability
             2. Keyword Density: Analyze relevant industry/role keywords and their usage
             3. Recruiter-Friendliness: Assess readability, clarity, and professional presentation
@@ -63,36 +63,24 @@ export async function analyzeResume(content: string) {
 
             For each category, provide:
             - A score (0-100)
-            - Detailed feedback points explaining issues and their impact
-            - A clear description of what the category measures
+            - Detailed feedback points
+            - A description of what the category measures
 
-            Additionally:
-            1. For Keyword Density:
-               - Identify all key industry/role-specific keywords found
-               - Suggest additional relevant keywords to include
+            Then create an enhanced version of the resume that:
+            1. Improves all bullet points with stronger action verbs
+            2. Adds missing keywords identified in the analysis
+            3. Fixes any formatting issues
+            4. Makes achievements more quantifiable
+            5. Strengthens the professional summary
+            6. Maintains the same basic structure but enhances every section
+            7. The enhanced version MUST be different from the original
+            8. Format it properly with clear section headers and spacing
 
-            2. Content Improvements:
-               - List specific improvements needed for each section
-               - Explain why each improvement matters
-               - Suggest better phrasing or structure for weak points
-
-            3. Formatting Fixes:
-               - Detail all formatting issues found
-               - Explain how each fix improves readability or ATS compatibility
-               - Suggest specific formatting changes
-
-            4. Enhanced Resume:
-               - Create an improved version of the resume with all improvements applied
-               - Enhance the language and structure while maintaining authenticity
-               - Make it more impactful and ATS-friendly
-               - Keep the same basic structure but improve phrasing and formatting
-               - The enhanced version must be different from the original
-
-            Return JSON matching this structure:
+            Return JSON with this exact structure:
             {
               "categoryScores": {
                 "atsCompliance": { "score": number, "feedback": string[], "description": string },
-                "keywordDensity": { "score": number, "feedback": string[], "description": string, "identifiedKeywords": string[] },
+                "keywordDensity": { "score": number, "feedback": string[], "identifiedKeywords": string[], "description": string },
                 "recruiterFriendliness": { "score": number, "feedback": string[], "description": string },
                 "conciseness": { "score": number, "feedback": string[], "description": string }
               },
