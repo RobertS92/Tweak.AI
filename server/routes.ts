@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer } from "http";
 import multer from "multer";
 import { storage } from "./storage";
-import { analyzeResume } from "./lib/openai";
+import { analyzeResume } from "./services/resume-analyzer";
 import { insertResumeSchema } from "@shared/schema";
 
 // Add multer type definitions
@@ -26,9 +26,15 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
+      // Extract text content from the file
       let content: string;
-      // For binary files (PDF, DOC), store as base64
-      content = file.buffer.toString('base64');
+      if (file.mimetype === 'text/plain') {
+        content = file.buffer.toString('utf-8');
+      } else {
+        // For PDF/DOC files, you would use a parser here
+        // For now, we'll use base64 as placeholder
+        content = file.buffer.toString('base64');
+      }
 
       console.log("File received:", {
         originalname: file.originalname,
@@ -36,24 +42,23 @@ export async function registerRoutes(app: Express) {
         size: file.size
       });
 
-      // First create the resume
+      // First create the resume record
       const resume = await storage.createResume({
         userId: "temp-user", // TODO: Add proper user management
         title: file.originalname,
-        content,
-        fileType: file.mimetype
+        content: content,
+        fileType: file.mimetype,
+        atsScore: null, // Will be updated after analysis
       });
 
-      // Then analyze it
-      const analysis = await analyzeResume(content, file.mimetype);
+      // Analyze the resume using OpenAI
+      const analysis = await analyzeResume(content);
 
-      // Update with analysis results
+      // Update the resume with analysis results
       const updatedResume = await storage.updateResume(resume.id, {
-        atsScore: analysis.atsScore,
-        enhancedContent: analysis.enhancedContent,
+        atsScore: analysis.overallScore,
         analysis: {
-          strengths: analysis.strengths,
-          weaknesses: analysis.weaknesses,
+          categoryScores: analysis.categoryScores,
         }
       });
 
