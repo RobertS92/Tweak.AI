@@ -3,7 +3,7 @@ import { createServer } from "http";
 import multer from "multer";
 import { storage } from "./storage";
 import { analyzeResume } from "./services/resume-analyzer";
-import { matchJob } from "./services/job-matcher";
+import { matchJob, tweakResume } from "./services/job-matcher";
 import { insertResumeSchema } from "@shared/schema";
 import PDFParser from 'pdf-parse-fork';
 
@@ -96,6 +96,36 @@ export async function registerRoutes(app: Express) {
       const resumes = await storage.getUserResumes("temp-user");
       res.json(resumes);
     } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ message });
+    }
+  });
+
+  // Add this route after the other resume routes
+  app.post("/api/resumes/:id/tweak", async (req, res) => {
+    try {
+      const resumeId = parseInt(req.params.id);
+      const { jobDescription } = req.body;
+
+      const resume = await storage.getResume(resumeId);
+      if (!resume) {
+        return res.status(404).json({ message: "Resume not found" });
+      }
+
+      const { enhancedContent, improvements } = await tweakResume(resume.content, jobDescription);
+
+      // Update the resume with the tweaked content
+      const updatedResume = await storage.updateResume(resumeId, {
+        enhancedContent,
+        analysis: {
+          ...resume.analysis,
+          improvements,
+        }
+      });
+
+      res.json(updatedResume);
+    } catch (error: unknown) {
+      console.error("Resume tweaking error:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
       res.status(500).json({ message });
     }

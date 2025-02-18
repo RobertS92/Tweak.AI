@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface JobMatcherProps {
   resumeId: number;
@@ -16,6 +16,7 @@ interface JobMatch {
   matchScore: number;
   missingKeywords: string[];
   suggestedEdits: string[];
+  suggestedRoles?: string[];
 }
 
 export default function JobMatcher({ resumeId }: JobMatcherProps) {
@@ -59,6 +60,36 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
     onError: (error: Error) => {
       toast({
         title: "Analysis failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const tweakResumeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/resumes/${resumeId}/tweak`, {
+        jobDescription,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to tweak resume');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Resume Tweaked",
+        description: "Your resume has been optimized for this job",
+      });
+      // Invalidate the resume query to refresh the data
+      queryClient.invalidateQueries({ queryKey: [`/api/resumes/${resumeId}`] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Tweak failed",
         description: error.message,
         variant: "destructive",
       });
@@ -127,10 +158,21 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
           <div className="space-y-4">
             <div className="flex items-center space-x-4">
               <Progress value={matchMutation.data.matchScore} className="flex-1" />
-              <Badge variant={matchMutation.data.matchScore >= 80 ? "success" : "destructive"}>
+              <Badge variant={matchMutation.data.matchScore >= 70 ? "success" : "destructive"}>
                 {matchMutation.data.matchScore}% Match
               </Badge>
             </div>
+
+            {matchMutation.data.matchScore >= 70 && (
+              <Button
+                variant="default"
+                onClick={() => tweakResumeMutation.mutate()}
+                disabled={tweakResumeMutation.isPending}
+                className="w-full"
+              >
+                Tweak Resume for This Job
+              </Button>
+            )}
 
             {matchMutation.data.missingKeywords?.length > 0 && (
               <div>
@@ -151,6 +193,22 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
                     <li key={i} className="text-sm text-muted-foreground">{edit}</li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {matchMutation.data.matchScore < 70 && matchMutation.data.suggestedRoles && (
+              <div>
+                <h4 className="text-sm font-semibold mb-2">Better Role Matches</h4>
+                <div className="bg-muted p-4 rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Based on your skills and experience, these roles might be a better fit:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1">
+                    {matchMutation.data.suggestedRoles.map((role, i) => (
+                      <li key={i} className="text-sm text-primary">{role}</li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             )}
           </div>
