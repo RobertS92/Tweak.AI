@@ -20,10 +20,6 @@ export interface ResumeAnalysis {
       feedback: string[];
       identifiedKeywords: string[];
     };
-    roleAlignment: {
-      score: number;
-      feedback: string[];
-    };
     recruiterFriendliness: {
       score: number;
       feedback: string[];
@@ -69,9 +65,8 @@ export async function analyzeResume(content: string, fileType: string): Promise<
 Focus on these key criteria:
 1. ATS Compliance: Check formatting, parsing, and keyword optimization
 2. Keyword Density: Assess industry-relevant skills and their frequency
-3. Role Alignment: Evaluate how well experience matches typical job expectations
-4. Recruiter-Friendliness: Rate clarity, bullet structure, and readability
-5. Conciseness & Impact: Evaluate action-oriented language and brevity
+3. Recruiter-Friendliness: Rate clarity, bullet structure, and readability
+4. Conciseness & Impact: Evaluate action-oriented language and brevity
 
 Return a JSON response with the following structure:
 {
@@ -79,7 +74,6 @@ Return a JSON response with the following structure:
   "criteria": {
     "atsCompliance": { "score": number, "feedback": string[] },
     "keywordDensity": { "score": number, "feedback": string[], "identifiedKeywords": string[] },
-    "roleAlignment": { "score": number, "feedback": string[] },
     "recruiterFriendliness": { "score": number, "feedback": string[] },
     "conciseness": { "score": number, "feedback": string[] }
   },

@@ -9,7 +9,6 @@ interface ResumePreviewProps {
   criteria?: {
     atsCompliance?: { score: number; feedback: string[] };
     keywordDensity?: { score: number; feedback: string[]; identifiedKeywords: string[] };
-    roleAlignment?: { score: number; feedback: string[] };
     recruiterFriendliness?: { score: number; feedback: string[] };
     conciseness?: { score: number; feedback: string[] };
   };
@@ -34,10 +33,10 @@ export default function ResumePreview({
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="text-2xl font-bold">
-              Overall ATS Score: {atsScore}
+              Resume Quality Score: {atsScore}
             </div>
             <Badge variant={atsScore >= 80 ? "success" : "destructive"}>
-              {atsScore >= 80 ? "ATS-Friendly" : "Needs Improvement"}
+              {atsScore >= 80 ? "Excellent" : "Needs Improvement"}
             </Badge>
           </div>
           <Progress value={atsScore} className="h-2" />

@@ -30,7 +30,6 @@ interface Resume {
     criteria?: {
       atsCompliance: { score: number; feedback: string[] };
       keywordDensity: { score: number; feedback: string[]; identifiedKeywords: string[] };
-      roleAlignment: { score: number; feedback: string[] };
       recruiterFriendliness: { score: number; feedback: string[] };
       conciseness: { score: number; feedback: string[] };
     };
