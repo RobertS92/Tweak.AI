@@ -16,7 +16,40 @@ export interface ResumeAnalysis {
 }
 
 export async function analyzeResume(content: string): Promise<ResumeAnalysis> {
-  const response = await openai.chat.completions.create({
+  // If content is base64 encoded (PDF/DOC), we need to extract text first
+  let textContent = content;
+  if (content.match(/^[A-Za-z0-9+/=]+$/)) {
+    // This is a base64 string, extract text using OpenAI vision API
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "Extract and return the text content from this document. Return only the text, no analysis yet."
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Extract the text from this document"
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:application/pdf;base64,${content}`
+              }
+            }
+          ],
+        },
+      ],
+    });
+
+    textContent = response.choices[0]?.message?.content || '';
+  }
+
+  // Now analyze the text content
+  const analysisResponse = await openai.chat.completions.create({
     model: "gpt-4o",
     messages: [
       {
@@ -25,13 +58,13 @@ export async function analyzeResume(content: string): Promise<ResumeAnalysis> {
       },
       {
         role: "user",
-        content
+        content: textContent
       }
     ],
     response_format: { type: "json_object" }
   });
 
-  const result = response.choices[0]?.message?.content;
+  const result = analysisResponse.choices[0]?.message?.content;
   if (!result) {
     throw new Error("Failed to get analysis from OpenAI");
   }

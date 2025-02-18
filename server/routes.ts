@@ -26,8 +26,15 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      // Convert buffer to string for text-based files
-      const content = file.buffer.toString('utf-8');
+      let content: string;
+      // Handle different file types
+      if (file.mimetype === 'text/plain') {
+        // For text files, convert buffer to UTF-8 string
+        content = file.buffer.toString('utf-8');
+      } else {
+        // For binary files (PDF, DOC), store as base64
+        content = file.buffer.toString('base64');
+      }
 
       console.log("File received:", {
         originalname: file.originalname,
