@@ -3,6 +3,7 @@ import { createServer } from "http";
 import multer from "multer";
 import { storage } from "./storage";
 import { analyzeResume } from "./services/resume-analyzer";
+import { matchJob } from "./services/job-matcher";
 import { insertResumeSchema } from "@shared/schema";
 import PDFParser from 'pdf-parse-fork';
 
@@ -95,6 +96,55 @@ export async function registerRoutes(app: Express) {
       const resumes = await storage.getUserResumes("temp-user");
       res.json(resumes);
     } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ message });
+    }
+  });
+
+  // Job routes
+  app.post("/api/jobs", async (req, res) => {
+    try {
+      const { title, description } = req.body;
+      const job = await storage.createJob({
+        title,
+        description,
+        company: "",  // Optional field
+      });
+      res.json(job);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ message });
+    }
+  });
+
+  // Job matching route
+  app.post("/api/jobs/:jobId/match/:resumeId", async (req, res) => {
+    try {
+      const jobId = parseInt(req.params.jobId);
+      const resumeId = parseInt(req.params.resumeId);
+
+      const job = await storage.getJob(jobId);
+      const resume = await storage.getResume(resumeId);
+
+      if (!job || !resume) {
+        return res.status(404).json({ message: "Job or resume not found" });
+      }
+
+      const analysis = await matchJob(resume.content, job.description);
+
+      // Update job with match score and analysis
+      await storage.updateJob(jobId, {
+        matchScore: analysis.matchScore,
+        analysis: analysis
+      });
+
+      res.json({
+        matchScore: analysis.matchScore,
+        missingKeywords: analysis.missingKeywords,
+        suggestedEdits: analysis.suggestedEdits
+      });
+    } catch (error: unknown) {
+      console.error("Job matching error:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
       res.status(500).json({ message });
     }
