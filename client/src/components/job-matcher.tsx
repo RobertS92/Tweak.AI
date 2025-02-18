@@ -24,12 +24,31 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
 
   const matchMutation = useMutation({
     mutationFn: async () => {
-      const job = await apiRequest("POST", "/api/jobs", {
+      // First create the job
+      const jobResponse = await apiRequest("POST", "/api/jobs", {
         title: "Job Match",
-        description: jobDescription
-      }).then(r => r.json());
+        description: jobDescription,
+      });
 
-      return apiRequest("POST", `/api/jobs/${job.id}/match/${resumeId}`).then(r => r.json());
+      if (!jobResponse.ok) {
+        const error = await jobResponse.json();
+        throw new Error(error.message || 'Failed to create job');
+      }
+
+      const job = await jobResponse.json();
+
+      // Then get the match analysis
+      const matchResponse = await apiRequest(
+        "POST",
+        `/api/jobs/${job.id}/match/${resumeId}`
+      );
+
+      if (!matchResponse.ok) {
+        const error = await matchResponse.json();
+        throw new Error(error.message || 'Failed to analyze match');
+      }
+
+      return matchResponse.json();
     },
     onSuccess: (data: JobMatch) => {
       toast({
@@ -48,15 +67,29 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
 
   const coverLetterMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("POST", "/api/cover-letters", {
+      const response = await apiRequest("POST", "/api/cover-letters", {
         resumeId,
-        jobDescription
-      }).then(r => r.json());
+        jobDescription,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to generate cover letter');
+      }
+
+      return response.json();
     },
     onSuccess: () => {
       toast({
         title: "Cover Letter Generated",
         description: "Your cover letter is ready to download",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Generation failed",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
@@ -103,7 +136,7 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
               <div>
                 <h4 className="text-sm font-semibold mb-2">Missing Keywords</h4>
                 <div className="flex flex-wrap gap-2">
-                  {matchMutation.data.missingKeywords.map((keyword: string, i: number) => (
+                  {matchMutation.data.missingKeywords.map((keyword, i) => (
                     <Badge key={i} variant="outline">{keyword}</Badge>
                   ))}
                 </div>
@@ -114,7 +147,7 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
               <div>
                 <h4 className="text-sm font-semibold mb-2">Suggested Improvements</h4>
                 <ul className="list-disc list-inside space-y-1">
-                  {matchMutation.data.suggestedEdits.map((edit: string, i: number) => (
+                  {matchMutation.data.suggestedEdits.map((edit, i) => (
                     <li key={i} className="text-sm text-muted-foreground">{edit}</li>
                   ))}
                 </ul>

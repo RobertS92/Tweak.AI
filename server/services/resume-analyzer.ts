@@ -1,109 +1,162 @@
 import OpenAI from "openai";
 import { z } from "zod";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 const categoryResponseSchema = z.object({
   score: z.number(),
   feedback: z.array(z.string()),
-  description: z.string()
+  description: z.string(),
 });
 
 const analysisResponseSchema = z.object({
   categoryScores: z.object({
     atsCompliance: categoryResponseSchema,
     keywordDensity: categoryResponseSchema.extend({
-      identifiedKeywords: z.array(z.string())
+      identifiedKeywords: z.array(z.string()),
     }),
     recruiterFriendliness: categoryResponseSchema,
-    conciseness: categoryResponseSchema
+    conciseness: categoryResponseSchema,
   }),
   improvements: z.array(z.string()),
   formattingFixes: z.array(z.string()),
-  enhancedContent: z.string(),
-  overallScore: z.number()
+  enhancedContent: z.string().min(1), // Ensure non-empty string
+  overallScore: z.number(),
 });
 
 function preprocessResume(content: string): string {
+  // Only normalize line endings and remove excessive whitespace
   return content
-    .replace(/\r\n/g, '\n')
-    .replace(/[^\w\s,.!?:;()-]/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
-}
-
-function extractRelevantSections(content: string): string {
-  const sections = content.split(/\n{2,}/);
-  const relevantContent = sections
-    .slice(0, Math.min(sections.length, 10))
-    .join('\n\n');
-  return relevantContent;
 }
 
 export async function analyzeResume(content: string) {
   try {
     const processedContent = preprocessResume(content);
-    const relevantContent = extractRelevantSections(processedContent);
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: `You are an expert resume analyzer and enhancer. You must provide both analysis AND create an enhanced version of the resume.
+          content: `You are an expert resume analyzer and enhancer. Analyze the resume and create an enhanced version.
 
-            First analyze these categories:
-            1. ATS Compliance: Check formatting, standard sections, and machine readability
-            2. Keyword Density: Analyze relevant industry/role keywords and their usage
-            3. Recruiter-Friendliness: Assess readability, clarity, and professional presentation
-            4. Conciseness & Impact: Review brevity and effectiveness of descriptions
+First, analyze these categories and provide scores and feedback:
+1. ATS Compliance (0-100): Check formatting, standard sections, and machine readability
+2. Keyword Density (0-100): Analyze relevant industry/role keywords and their usage
+3. Recruiter-Friendliness (0-100): Assess readability, clarity, and professional presentation
+4. Conciseness & Impact (0-100): Review brevity and effectiveness of descriptions
 
-            For each category, provide:
-            - A score (0-100)
-            - Detailed feedback points
-            - A description of what the category measures
+Then, create an enhanced version of the resume that:
+1. Uses stronger action verbs in bullet points
+2. Adds relevant keywords naturally
+3. Fixes formatting issues
+4. Makes achievements quantifiable
+5. Improves the professional summary
+6. Maintains the original structure
+7. Uses clear section headers
 
-            Then create an enhanced version of the resume that:
-            1. Improves all bullet points with stronger action verbs
-            2. Adds missing keywords identified in the analysis
-            3. Fixes any formatting issues
-            4. Makes achievements more quantifiable
-            5. Strengthens the professional summary
-            6. Maintains the same basic structure but enhances every section
-            7. The enhanced version MUST be different from the original
-            8. Format it properly with clear section headers and spacing
+IMPORTANT - Format the enhanced resume using this exact HTML structure:
+<div class="resume">
+  <div class="section">
+    <h2>PROFESSIONAL SUMMARY</h2>
+    <p>[Enhanced summary content]</p>
+  </div>
 
-            Return JSON with this exact structure:
-            {
-              "categoryScores": {
-                "atsCompliance": { "score": number, "feedback": string[], "description": string },
-                "keywordDensity": { "score": number, "feedback": string[], "identifiedKeywords": string[], "description": string },
-                "recruiterFriendliness": { "score": number, "feedback": string[], "description": string },
-                "conciseness": { "score": number, "feedback": string[], "description": string }
-              },
-              "improvements": string[],
-              "formattingFixes": string[],
-              "enhancedContent": string,
-              "overallScore": number
-            }`
+  <div class="section">
+    <h2>EXPERIENCE</h2>
+    <div class="job">
+      <h3>[Company Name]</h3>
+      <p class="job-title">[Title] | [Dates]</p>
+      <ul>
+        <li>[Enhanced bullet point]</li>
+        <li>[Enhanced bullet point]</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>EDUCATION</h2>
+    <p>[Enhanced education details]</p>
+  </div>
+
+  <div class="section">
+    <h2>SKILLS</h2>
+    <ul>
+      <li>[Enhanced skill]</li>
+    </ul>
+  </div>
+</div>
+
+Return a JSON object with this exact structure:
+{
+  "categoryScores": {
+    "atsCompliance": { 
+      "score": number, 
+      "feedback": string[], 
+      "description": string 
+    },
+    "keywordDensity": { 
+      "score": number, 
+      "feedback": string[], 
+      "identifiedKeywords": string[], 
+      "description": string 
+    },
+    "recruiterFriendliness": { 
+      "score": number, 
+      "feedback": string[], 
+      "description": string 
+    },
+    "conciseness": { 
+      "score": number, 
+      "feedback": string[], 
+      "description": string 
+    }
+  },
+  "improvements": string[],
+  "formattingFixes": string[],
+  "enhancedContent": string,
+  "overallScore": number
+}`,
         },
         {
           role: "user",
-          content: relevantContent
-        }
+          content: processedContent,
+        },
       ],
-      response_format: { type: "json_object" }
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+      max_tokens: 4000,
     });
 
+    // Parse and validate the response
     const result = JSON.parse(response.choices[0].message.content || "{}");
+
+    // Log the enhanced content for debugging
+    console.log(
+      "Enhanced content received:",
+      result.enhancedContent?.substring(0, 200) + "...",
+    );
+
+    // Validate the entire response
     const validatedResult = analysisResponseSchema.parse(result);
+
+    // Ensure enhanced content exists and has HTML structure
+    if (!validatedResult.enhancedContent.includes('<div class="resume">')) {
+      console.error("Enhanced content missing required HTML structure");
+      throw new Error("Invalid enhanced content format");
+    }
 
     return validatedResult;
   } catch (error) {
-    console.error('Resume analysis failed:', error);
-    throw new Error('Failed to analyze resume');
+    console.error("Resume analysis failed:", error);
+    if (error instanceof z.ZodError) {
+      console.error("Validation error:", error.errors);
+    }
+    throw new Error("Failed to analyze resume");
   }
 }
