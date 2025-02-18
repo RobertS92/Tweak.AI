@@ -1,0 +1,67 @@
+Core Features
+1. Resume Quality Score & AI Enhancement
+Users upload resumes (PDF, Word, TXT) and receive a Resume Quality Score (1-100).
+The score evaluates multiple factors, including:
+ATS Compliance – Checks formatting, parsing, and keyword optimization.
+Keyword Density – Assesses industry-relevant skills.
+Role Alignment – Matches experience to job expectations.
+Recruiter-Friendliness – Rates resume clarity, bullet structure, and readability.
+Conciseness & Impact – Ensures strong action-oriented language.
+AI suggests bullet point improvements, formatting fixes, and content clarity updates.
+Users choose to accept AI improvements to enhance resume quality.
+AI-enhanced resumes can be downloaded in Word/PDF format.
+2. Tweak – Job Matching & Resume Enhancement
+Users can upload or paste a job description via:
+Text input
+Uploading a PDF/Word document
+Image-based OCR (Extract job details from screenshots)
+AI assigns a Job Match Score (1-100) based on:
+Keyword match (skills, job duties, experience).
+Soft skills alignment (leadership, communication, problem-solving).
+Experience & education fit (Does the resume reflect required expertise?).
+AI highlights missing skills and provides specific resume improvement suggestions.
+3. Career Action Plan
+60-79% Match Score → AI suggests certifications, projects, and training to improve job readiness.
+Below 59% Match Score → AI recommends alternative job roles aligned with user experience.
+80-100% Match Score → AI provides interview prep questions, suggested answers, and job-specific insights.
+4. Resume Enhancement for Job Matching (Tweak Process)
+If users proceed with Tweak, AI enhances the resume to better align with the target job description.
+AI rewrites bullet points, optimizes keywords, and improves job-specific formatting.
+Users can review AI edits before downloading the tweaked resume in Word/PDF format.
+5. AI Job Scraping & Resume Generation (Tweak Plus Exclusive)
+AI scrapes job boards (LinkedIn, Indeed, etc.) to find relevant postings.
+Jobs are matched based on industry, salary, and work type preferences.
+AI automatically generates tailored resumes for specific jobs.
+AI highlights missing skills & provides suggestions to improve alignment.
+Process:
+User inputs job search preferences (e.g., job title, salary range, remote/on-site).
+AI scrapes job listings and compiles a personalized job list.
+AI generates custom resumes tailored for each scraped job.
+Users download resumes for manual applications.
+User Journey
+1. Resume Upload & Quality Score
+User uploads a resume → AI assigns Resume Quality Score (1-100).
+User chooses "Improve My Resume" → AI applies enhancements for clarity, formatting, and keyword optimization.
+User downloads AI-enhanced resume.
+2. Tweak – Job Matching & Resume Enhancement
+User uploads or pastes a job description.
+AI assigns Job Match Score (1-100).
+AI highlights missing skills & suggests resume improvements.
+User chooses to enhance the resume for better alignment.
+AI optimizes bullet points, formatting, and key terms.
+User downloads the tweaked resume.
+3. Dashboard & Resume Storage
+Users store up to 3 resumes for free, unlimited with Tweak Plus.
+AI auto-selects the best resume for each job.
+Users restore past versions with resume version control.
+Career Action Plan helps users improve resume effectiveness.
+4. Job Scraping & Resume Generation (Tweak Plus Only)
+Users input job search preferences.
+AI scrapes job boards and generates a tailored job list.
+AI creates custom resumes for each job.
+Users download AI-generated resumes.
+UI/UX Optimization
+Minimalist, professional design for efficiency.
+Fast AI interactions with clear action buttons for resume edits.
+Split-screen resume editor for side-by-side comparisons.
+Smart UI prompts guide resume enhancement & job matching.
