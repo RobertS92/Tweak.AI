@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import ResumeEditor from "@/pages/resume-editor";
 import Dashboard from "@/pages/dashboard";
+import ResumeUpload from "@/components/resume-upload";
 
 function Router() {
   return (
@@ -13,6 +14,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/editor/:id" component={ResumeEditor} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/upload" component={ResumeUpload} />
       <Route component={NotFound} />
     </Switch>
   );
