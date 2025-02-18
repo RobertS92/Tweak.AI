@@ -132,43 +132,41 @@ export default function ResumePreview({
           <p className="text-sm text-gray-600">AI-enhanced version of your resume</p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {analysis && (
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="mb-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-sm font-medium text-gray-700">Content Improvements:</span>
-                </div>
-                <ul className="space-y-2 text-sm text-gray-600 ml-4">
-                  {analysis.improvements?.map((improvement, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="font-medium">•</span>
-                      <span>{improvement}</span>
-                    </li>
-                  ))}
-                </ul>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-sm font-medium text-gray-700">Content Improvements:</span>
               </div>
-
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-sm font-medium text-gray-700">Formatting Fixes:</span>
-                </div>
-                <ul className="space-y-2 text-sm text-gray-600 ml-4">
-                  {analysis.formattingFixes?.map((fix, i) => (
-                    <li key={i} className="flex items-start gap-2">
-                      <span className="font-medium">•</span>
-                      <span>{fix}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <ul className="space-y-2 text-sm text-gray-600 ml-4">
+                {analysis?.improvements?.map((improvement, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="font-medium">•</span>
+                    <span>{improvement}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-          )}
+
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-sm font-medium text-gray-700">Formatting Fixes:</span>
+              </div>
+              <ul className="space-y-2 text-sm text-gray-600 ml-4">
+                {analysis?.formattingFixes?.map((fix, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="font-medium">•</span>
+                    <span>{fix}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
 
           <Button 
             onClick={() => setShowContent(true)} 
-            className="w-full py-3 bg-blue-600 hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 flex items-center justify-center gap-2"
           >
             <FileText className="w-5 h-5" />
             View Enhanced Resume
