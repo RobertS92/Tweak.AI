@@ -16,16 +16,16 @@ export default function ResumeUpload() {
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
-      formData.append("file", file);
-      const res = await apiRequest("POST", "/api/resumes", formData);
-      return res.json();
+      formData.append("resume", file);
+      const response = await apiRequest("POST", "/api/resumes", formData);
+      return response.json();
     },
     onSuccess: (data) => {
       toast({
         title: "Resume uploaded successfully",
-        description: "Redirecting to editor...",
+        description: "Redirecting to dashboard...",
       });
-      navigate(`/editor/${data.id}`);
+      navigate(`/dashboard`);
     },
     onError: (error: Error) => {
       toast({
@@ -39,11 +39,21 @@ export default function ResumeUpload() {
   const handleFile = (file: File | undefined) => {
     if (!file) return;
 
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please upload a file smaller than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const validTypes = [
       "application/pdf",
       "application/msword",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "text/plain"
+      "text/plain",
     ];
 
     if (!validTypes.includes(file.type)) {
@@ -59,7 +69,7 @@ export default function ResumeUpload() {
   };
 
   return (
-    <Card className={`border-2 ${dragActive ? 'border-primary' : 'border-dashed'}`}>
+    <Card className={`border-2 ${dragActive ? "border-primary" : "border-dashed"} relative`}>
       <CardContent className="p-8">
         <div
           className="text-center"
@@ -85,8 +95,7 @@ export default function ResumeUpload() {
           {uploadMutation.isPending ? (
             <div className="space-y-4">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground animate-pulse" />
-              <Progress value={66} className="w-48 mx-auto" />
-              <p className="text-muted-foreground">Analyzing resume...</p>
+              <p className="text-muted-foreground">Uploading resume...</p>
             </div>
           ) : (
             <>
@@ -95,10 +104,11 @@ export default function ResumeUpload() {
               <p className="text-muted-foreground mb-4">
                 Drag and drop your resume here or click to browse
               </p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Supported formats: PDF, Word, or TXT (Max 5MB)
+              </p>
               <label htmlFor="resume-upload">
-                <Button>
-                  Select File
-                </Button>
+                <Button>Select File</Button>
               </label>
             </>
           )}
