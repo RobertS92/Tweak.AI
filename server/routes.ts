@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer } from "http";
 import multer from "multer";
 import { storage } from "./storage";
+import { analyzeResume } from "./lib/openai";
 import { insertResumeSchema } from "@shared/schema";
 
 // Add multer type definitions
@@ -34,6 +35,7 @@ export async function registerRoutes(app: Express) {
         size: file.size
       });
 
+      // First create the resume
       const resume = await storage.createResume({
         userId: "temp-user", // TODO: Add proper user management
         title: file.originalname,
@@ -41,7 +43,20 @@ export async function registerRoutes(app: Express) {
         fileType: file.mimetype
       });
 
-      res.json(resume);
+      // Then analyze it
+      const analysis = await analyzeResume(content);
+
+      // Update with analysis results
+      const updatedResume = await storage.updateResume(resume.id, {
+        atsScore: analysis.atsScore,
+        enhancedContent: analysis.enhancedContent,
+        analysis: {
+          strengths: analysis.strengths,
+          weaknesses: analysis.weaknesses,
+        }
+      });
+
+      res.json(updatedResume);
     } catch (error: unknown) {
       console.error("Resume upload error:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";

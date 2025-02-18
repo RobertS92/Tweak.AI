@@ -17,17 +17,27 @@ export default function ResumeUpload() {
       console.log("Uploading file:", file.name, file.type, file.size);
       const formData = new FormData();
       formData.append("resume", file);
-      return await apiRequest("POST", "/api/resumes", formData);
-    },
-    onSuccess: (response) => {
-      response.json().then(data => {
-        console.log("Upload success:", data);
-        toast({
-          title: "Resume uploaded successfully",
-          description: "Redirecting to dashboard...",
-        });
-        navigate("/dashboard");
+
+      const response = await fetch('/api/resumes', {
+        method: 'POST',
+        body: formData,
       });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Upload failed');
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      console.log("Upload success:", data);
+      toast({
+        title: "Resume uploaded successfully",
+        description: "Analyzing your resume...",
+      });
+      // Redirect to editor page to see analysis
+      navigate(`/editor/${data.id}`);
     },
     onError: (error: Error) => {
       console.error("Upload error:", error);
