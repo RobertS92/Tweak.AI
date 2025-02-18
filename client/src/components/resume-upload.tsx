@@ -3,7 +3,6 @@ import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Upload, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -68,6 +67,10 @@ export default function ResumeUpload() {
     uploadMutation.mutate(file);
   };
 
+  const handleButtonClick = () => {
+    document.getElementById('resume-upload')?.click();
+  };
+
   return (
     <Card className={`border-2 ${dragActive ? "border-primary" : "border-dashed"} relative`}>
       <CardContent className="p-8">
@@ -107,9 +110,7 @@ export default function ResumeUpload() {
               <p className="text-sm text-muted-foreground mb-4">
                 Supported formats: PDF, Word, or TXT (Max 5MB)
               </p>
-              <label htmlFor="resume-upload">
-                <Button>Select File</Button>
-              </label>
+              <Button onClick={handleButtonClick}>Select File</Button>
             </>
           )}
         </div>
