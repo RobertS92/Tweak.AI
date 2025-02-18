@@ -14,19 +14,23 @@ export default function ResumeUpload() {
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
+      console.log("Uploading file:", file.name, file.type, file.size);
       const formData = new FormData();
       formData.append("resume", file);
-      const response = await apiRequest("POST", "/api/resumes", formData);
-      return response.json();
+      return await apiRequest("POST", "/api/resumes", formData);
     },
-    onSuccess: (data) => {
-      toast({
-        title: "Resume uploaded successfully",
-        description: "Redirecting to dashboard...",
+    onSuccess: (response) => {
+      response.json().then(data => {
+        console.log("Upload success:", data);
+        toast({
+          title: "Resume uploaded successfully",
+          description: "Redirecting to dashboard...",
+        });
+        navigate("/dashboard");
       });
-      navigate(`/dashboard`);
     },
     onError: (error: Error) => {
+      console.error("Upload error:", error);
       toast({
         title: "Upload failed",
         description: error.message,
@@ -68,7 +72,10 @@ export default function ResumeUpload() {
   };
 
   const handleButtonClick = () => {
-    document.getElementById('resume-upload')?.click();
+    const input = document.getElementById('resume-upload') as HTMLInputElement;
+    if (input) {
+      input.click();
+    }
   };
 
   return (
@@ -78,11 +85,17 @@ export default function ResumeUpload() {
           className="text-center"
           onDragOver={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             setDragActive(true);
           }}
-          onDragLeave={() => setDragActive(false)}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDragActive(false);
+          }}
           onDrop={(e) => {
             e.preventDefault();
+            e.stopPropagation();
             setDragActive(false);
             handleFile(e.dataTransfer.files[0]);
           }}

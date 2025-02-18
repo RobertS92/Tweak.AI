@@ -25,7 +25,15 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      const content = file.buffer.toString();
+      // Convert buffer to string for text-based files
+      const content = file.buffer.toString('utf-8');
+
+      console.log("File received:", {
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size
+      });
+
       const resume = await storage.createResume({
         userId: "temp-user", // TODO: Add proper user management
         title: file.originalname,
@@ -35,6 +43,7 @@ export async function registerRoutes(app: Express) {
 
       res.json(resume);
     } catch (error: unknown) {
+      console.error("Resume upload error:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
       res.status(500).json({ message });
     }
