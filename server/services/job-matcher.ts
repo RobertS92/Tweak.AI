@@ -76,7 +76,7 @@ export async function tweakResume(resumeContent: string, jobDescription: string)
       messages: [
         {
           role: "system",
-          content: `You are an expert resume optimizer. Enhance the provided resume to better match the job description while maintaining authenticity.
+          content: `You are an expert resume optimizer. Enhance the provided resume to better match the job description while maintaining authenticity. Respond with a JSON object containing the enhanced resume content and improvements made.
 
 Tasks:
 1. Analyze the job description for key requirements and preferred qualifications
@@ -86,7 +86,13 @@ Tasks:
 5. Adjust professional summary to align with the role
 6. Keep all enhancements truthful and based on the original content
 
-Format the enhanced resume using this exact HTML structure:
+Format the enhanced resume using HTML structure and return a JSON response in this format:
+{
+  "resumeContent": string (HTML formatted with the structure below),
+  "improvements": string[]
+}
+
+Use this HTML structure for resumeContent:
 <div class="resume">
   <div class="section">
     <h2>PROFESSIONAL SUMMARY</h2>
