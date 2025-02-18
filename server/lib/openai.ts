@@ -10,23 +10,32 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export interface ResumeAnalysis {
   atsScore: number;
-  criteria: {
+  categoryScores: {
     atsCompliance: {
       score: number;
       feedback: string[];
+      description: string;
     };
     keywordDensity: {
       score: number;
       feedback: string[];
       identifiedKeywords: string[];
+      description: string;
+    };
+    roleAlignment: {
+      score: number;
+      feedback: string[];
+      description: string;
     };
     recruiterFriendliness: {
       score: number;
       feedback: string[];
+      description: string;
     };
     conciseness: {
       score: number;
       feedback: string[];
+      description: string;
     };
   };
   strengths: string[];
@@ -42,40 +51,58 @@ export async function analyzeResume(content: string, fileType: string): Promise<
   try {
     // Handle different file types
     if (fileType === 'application/pdf') {
-      // For PDFs, use pdf-parse-fork to extract text
       const dataBuffer = Buffer.from(content, 'base64');
       const pdfData = await pdfParse(dataBuffer);
       textContent = pdfData.text;
     } else if (fileType === 'text/plain') {
-      // For text files, use content directly
       textContent = content;
     } else {
-      // For other types (like Word docs), use base64 content
-      // In a production environment, you'd want to add specific handlers for docx etc.
       textContent = Buffer.from(content, 'base64').toString('utf-8');
     }
 
-    // Analyze the extracted text
     const analysisResponse = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
           content: `You are an expert ATS and resume analyzer. Analyze the given resume and provide detailed feedback with specific improvements.
-Focus on these key criteria:
-1. ATS Compliance: Check formatting, parsing, and keyword optimization
-2. Keyword Density: Assess industry-relevant skills and their frequency
-3. Recruiter-Friendliness: Rate clarity, bullet structure, and readability
-4. Conciseness & Impact: Evaluate action-oriented language and brevity
+Focus on these key categories:
+1. ATS Compliance: Parsing, formatting, keyword optimization
+2. Keyword Density: Measures industry-relevant keywords
+3. Role Alignment: Matches experience to job expectations
+4. Recruiter Friendliness: Bullet clarity, readability
+5. Conciseness & Impact: Checks action-oriented language
 
 Return a JSON response with the following structure:
 {
   "atsScore": number (1-100),
-  "criteria": {
-    "atsCompliance": { "score": number, "feedback": string[] },
-    "keywordDensity": { "score": number, "feedback": string[], "identifiedKeywords": string[] },
-    "recruiterFriendliness": { "score": number, "feedback": string[] },
-    "conciseness": { "score": number, "feedback": string[] }
+  "categoryScores": {
+    "atsCompliance": { 
+      "score": number,
+      "feedback": string[],
+      "description": "Parsing, formatting, keyword optimization"
+    },
+    "keywordDensity": { 
+      "score": number,
+      "feedback": string[],
+      "identifiedKeywords": string[],
+      "description": "Measures industry-relevant keywords"
+    },
+    "roleAlignment": { 
+      "score": number,
+      "feedback": string[],
+      "description": "Matches experience to job expectations"
+    },
+    "recruiterFriendliness": { 
+      "score": number,
+      "feedback": string[],
+      "description": "Bullet clarity, readability"
+    },
+    "conciseness": { 
+      "score": number,
+      "feedback": string[],
+      "description": "Checks action-oriented language"
+    }
   },
   "strengths": string[],
   "weaknesses": string[],

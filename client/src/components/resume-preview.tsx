@@ -6,11 +6,12 @@ import { Progress } from "@/components/ui/progress";
 interface ResumePreviewProps {
   content: string;
   atsScore?: number | null;
-  criteria?: {
-    atsCompliance?: { score: number; feedback: string[] };
-    keywordDensity?: { score: number; feedback: string[]; identifiedKeywords: string[] };
-    recruiterFriendliness?: { score: number; feedback: string[] };
-    conciseness?: { score: number; feedback: string[] };
+  categoryScores?: {
+    atsCompliance?: { score: number; feedback: string[]; description: string };
+    keywordDensity?: { score: number; feedback: string[]; identifiedKeywords: string[]; description: string };
+    roleAlignment?: { score: number; feedback: string[]; description: string };
+    recruiterFriendliness?: { score: number; feedback: string[]; description: string };
+    conciseness?: { score: number; feedback: string[]; description: string };
   };
   strengths?: string[];
   weaknesses?: string[];
@@ -21,7 +22,7 @@ interface ResumePreviewProps {
 export default function ResumePreview({ 
   content,
   atsScore,
-  criteria,
+  categoryScores,
   strengths = [],
   weaknesses = [],
   improvements = [],
@@ -29,119 +30,141 @@ export default function ResumePreview({
 }: ResumePreviewProps) {
   return (
     <div className="space-y-4">
+      {/* Main Resume Quality Score */}
       {atsScore !== undefined && atsScore !== null && (
         <Card>
           <CardContent className="p-6">
             <div className="space-y-6">
-              {/* Main Resume Quality Score */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="text-2xl font-bold">
-                    Resume Quality Score: {atsScore}
+              {/* Main Score */}
+              <div className="text-center space-y-2">
+                <h2 className="text-3xl font-bold">Resume Quality Score</h2>
+                <div className="flex items-center justify-center gap-4">
+                  <div className="text-5xl font-bold text-primary">
+                    {atsScore}
                   </div>
-                  <Badge variant={atsScore >= 80 ? "success" : "destructive"}>
+                  <Badge variant={atsScore >= 80 ? "success" : "destructive"} className="text-lg">
                     {atsScore >= 80 ? "Excellent" : "Needs Improvement"}
                   </Badge>
                 </div>
-                <Progress value={atsScore} className="h-3" />
+                <Progress value={atsScore} className="h-4" />
               </div>
 
-              {/* Category Scores */}
-              <div className="space-y-4">
-                {criteria?.atsCompliance && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold">ATS Compliance</h3>
-                        <p className="text-sm text-muted-foreground">Formatting, parsing, and keyword optimization</p>
+              {/* Category Breakdown */}
+              <div className="space-y-6 pt-4 border-t">
+                <h3 className="font-semibold text-lg">Category Breakdown</h3>
+                <div className="space-y-4">
+                  {categoryScores?.atsCompliance && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-semibold">ATS Compliance</h4>
+                          <p className="text-sm text-muted-foreground">{categoryScores.atsCompliance.description}</p>
+                        </div>
+                        <Badge variant={categoryScores.atsCompliance.score >= 80 ? "success" : "destructive"}>
+                          {categoryScores.atsCompliance.score}%
+                        </Badge>
                       </div>
-                      <Badge variant={criteria.atsCompliance.score >= 80 ? "success" : "destructive"}>
-                        {criteria.atsCompliance.score}%
-                      </Badge>
+                      <Progress value={categoryScores.atsCompliance.score} className="h-2" />
                     </div>
-                    <Progress value={criteria.atsCompliance.score} className="h-2" />
-                  </div>
-                )}
+                  )}
 
-                {criteria?.keywordDensity && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold">Keyword Density</h3>
-                        <p className="text-sm text-muted-foreground">Industry-relevant skills assessment</p>
+                  {categoryScores?.keywordDensity && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-semibold">Keyword Density</h4>
+                          <p className="text-sm text-muted-foreground">{categoryScores.keywordDensity.description}</p>
+                        </div>
+                        <Badge variant={categoryScores.keywordDensity.score >= 80 ? "success" : "destructive"}>
+                          {categoryScores.keywordDensity.score}%
+                        </Badge>
                       </div>
-                      <Badge variant={criteria.keywordDensity.score >= 80 ? "success" : "destructive"}>
-                        {criteria.keywordDensity.score}%
-                      </Badge>
+                      <Progress value={categoryScores.keywordDensity.score} className="h-2" />
                     </div>
-                    <Progress value={criteria.keywordDensity.score} className="h-2" />
-                  </div>
-                )}
+                  )}
 
-                {criteria?.recruiterFriendliness && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold">Recruiter-Friendliness</h3>
-                        <p className="text-sm text-muted-foreground">Clarity, structure, and readability</p>
+                  {categoryScores?.roleAlignment && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-semibold">Role Alignment</h4>
+                          <p className="text-sm text-muted-foreground">{categoryScores.roleAlignment.description}</p>
+                        </div>
+                        <Badge variant={categoryScores.roleAlignment.score >= 80 ? "success" : "destructive"}>
+                          {categoryScores.roleAlignment.score}%
+                        </Badge>
                       </div>
-                      <Badge variant={criteria.recruiterFriendliness.score >= 80 ? "success" : "destructive"}>
-                        {criteria.recruiterFriendliness.score}%
-                      </Badge>
+                      <Progress value={categoryScores.roleAlignment.score} className="h-2" />
                     </div>
-                    <Progress value={criteria.recruiterFriendliness.score} className="h-2" />
-                  </div>
-                )}
+                  )}
 
-                {criteria?.conciseness && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold">Conciseness & Impact</h3>
-                        <p className="text-sm text-muted-foreground">Action-oriented language and brevity</p>
+                  {categoryScores?.recruiterFriendliness && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-semibold">Recruiter Friendliness</h4>
+                          <p className="text-sm text-muted-foreground">{categoryScores.recruiterFriendliness.description}</p>
+                        </div>
+                        <Badge variant={categoryScores.recruiterFriendliness.score >= 80 ? "success" : "destructive"}>
+                          {categoryScores.recruiterFriendliness.score}%
+                        </Badge>
                       </div>
-                      <Badge variant={criteria.conciseness.score >= 80 ? "success" : "destructive"}>
-                        {criteria.conciseness.score}%
-                      </Badge>
+                      <Progress value={categoryScores.recruiterFriendliness.score} className="h-2" />
                     </div>
-                    <Progress value={criteria.conciseness.score} className="h-2" />
-                  </div>
-                )}
+                  )}
+
+                  {categoryScores?.conciseness && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-semibold">Conciseness & Impact</h4>
+                          <p className="text-sm text-muted-foreground">{categoryScores.conciseness.description}</p>
+                        </div>
+                        <Badge variant={categoryScores.conciseness.score >= 80 ? "success" : "destructive"}>
+                          {categoryScores.conciseness.score}%
+                        </Badge>
+                      </div>
+                      <Progress value={categoryScores.conciseness.score} className="h-2" />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Detailed Analysis Cards */}
-      <div className="grid md:grid-cols-2 gap-4">
-        {criteria && Object.entries(criteria).map(([key, data]) => (
-          <Card key={key}>
-            <CardContent className="p-4">
-              <h3 className="font-semibold capitalize mb-2">
-                {key.replace(/([A-Z])/g, ' $1').trim()} Details
-              </h3>
-              <ul className="list-disc list-inside space-y-1">
-                {data.feedback.map((item, i) => (
-                  <li key={i} className="text-sm text-muted-foreground">
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              {key === 'keywordDensity' && data.identifiedKeywords && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium mb-1">Identified Keywords:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {data.identifiedKeywords.map((keyword, i) => (
-                      <Badge key={i} variant="secondary">{keyword}</Badge>
-                    ))}
+      {/* Detailed Category Feedback */}
+      {categoryScores && (
+        <div className="grid md:grid-cols-2 gap-4">
+          {Object.entries(categoryScores).map(([key, data]) => (
+            <Card key={key}>
+              <CardContent className="p-4">
+                <h3 className="font-semibold capitalize mb-2">
+                  {key.replace(/([A-Z])/g, ' $1').trim()} Details
+                </h3>
+                <ul className="list-disc list-inside space-y-1">
+                  {data.feedback.map((item, i) => (
+                    <li key={i} className="text-sm text-muted-foreground">
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                {'identifiedKeywords' in data && data.identifiedKeywords && (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium mb-1">Identified Keywords:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {data.identifiedKeywords.map((keyword, i) => (
+                        <Badge key={i} variant="secondary">{keyword}</Badge>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Strengths and Weaknesses */}
       <div className="grid md:grid-cols-2 gap-4">

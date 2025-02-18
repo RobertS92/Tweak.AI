@@ -27,11 +27,12 @@ interface Resume {
   atsScore: number | null;
   enhancedContent: string | null;
   analysis?: {
-    criteria?: {
-      atsCompliance: { score: number; feedback: string[] };
-      keywordDensity: { score: number; feedback: string[]; identifiedKeywords: string[] };
-      recruiterFriendliness: { score: number; feedback: string[] };
-      conciseness: { score: number; feedback: string[] };
+    categoryScores?: {
+      atsCompliance: { score: number; feedback: string[]; description: string };
+      keywordDensity: { score: number; feedback: string[]; identifiedKeywords: string[]; description: string };
+      roleAlignment: { score: number; feedback: string[]; description: string };
+      recruiterFriendliness: { score: number; feedback: string[]; description: string };
+      conciseness: { score: number; feedback: string[]; description: string };
     };
     strengths?: string[];
     weaknesses?: string[];
@@ -127,7 +128,7 @@ export default function ResumeEditor() {
                   <ResumePreview
                     content={resume.content}
                     atsScore={resume.atsScore}
-                    criteria={resume.analysis?.criteria}
+                    categoryScores={resume.analysis?.categoryScores}
                     strengths={resume.analysis?.strengths}
                     weaknesses={resume.analysis?.weaknesses}
                     improvements={resume.analysis?.improvements}
