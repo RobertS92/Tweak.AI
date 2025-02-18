@@ -10,9 +10,33 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export interface ResumeAnalysis {
   atsScore: number;
+  criteria: {
+    atsCompliance: {
+      score: number;
+      feedback: string[];
+    };
+    keywordDensity: {
+      score: number;
+      feedback: string[];
+      identifiedKeywords: string[];
+    };
+    roleAlignment: {
+      score: number;
+      feedback: string[];
+    };
+    recruiterFriendliness: {
+      score: number;
+      feedback: string[];
+    };
+    conciseness: {
+      score: number;
+      feedback: string[];
+    };
+  };
   strengths: string[];
   weaknesses: string[];
   improvements: string[];
+  formattingFixes: string[];
   enhancedContent: string;
 }
 
@@ -41,7 +65,32 @@ export async function analyzeResume(content: string, fileType: string): Promise<
       messages: [
         {
           role: "system",
-          content: "You are an expert ATS and resume analyzer. Analyze the given resume and provide detailed feedback with specific improvements. Return the response in JSON format with the following structure: { atsScore: number, strengths: string[], weaknesses: string[], improvements: string[], enhancedContent: string }"
+          content: `You are an expert ATS and resume analyzer. Analyze the given resume and provide detailed feedback with specific improvements.
+Focus on these key criteria:
+1. ATS Compliance: Check formatting, parsing, and keyword optimization
+2. Keyword Density: Assess industry-relevant skills and their frequency
+3. Role Alignment: Evaluate how well experience matches typical job expectations
+4. Recruiter-Friendliness: Rate clarity, bullet structure, and readability
+5. Conciseness & Impact: Evaluate action-oriented language and brevity
+
+Return a JSON response with the following structure:
+{
+  "atsScore": number (1-100),
+  "criteria": {
+    "atsCompliance": { "score": number, "feedback": string[] },
+    "keywordDensity": { "score": number, "feedback": string[], "identifiedKeywords": string[] },
+    "roleAlignment": { "score": number, "feedback": string[] },
+    "recruiterFriendliness": { "score": number, "feedback": string[] },
+    "conciseness": { "score": number, "feedback": string[] }
+  },
+  "strengths": string[],
+  "weaknesses": string[],
+  "improvements": string[],
+  "formattingFixes": string[],
+  "enhancedContent": string
+}
+
+The enhancedContent should be an improved version of the resume with better formatting and clearer content.`
         },
         {
           role: "user",

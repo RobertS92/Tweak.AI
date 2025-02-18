@@ -27,8 +27,17 @@ interface Resume {
   atsScore: number | null;
   enhancedContent: string | null;
   analysis?: {
+    criteria?: {
+      atsCompliance: { score: number; feedback: string[] };
+      keywordDensity: { score: number; feedback: string[]; identifiedKeywords: string[] };
+      roleAlignment: { score: number; feedback: string[] };
+      recruiterFriendliness: { score: number; feedback: string[] };
+      conciseness: { score: number; feedback: string[] };
+    };
     strengths?: string[];
     weaknesses?: string[];
+    improvements?: string[];
+    formattingFixes?: string[];
   };
 }
 
@@ -119,8 +128,11 @@ export default function ResumeEditor() {
                   <ResumePreview
                     content={resume.content}
                     atsScore={resume.atsScore}
+                    criteria={resume.analysis?.criteria}
                     strengths={resume.analysis?.strengths}
                     weaknesses={resume.analysis?.weaknesses}
+                    improvements={resume.analysis?.improvements}
+                    formattingFixes={resume.analysis?.formattingFixes}
                   />
                 </CardContent>
               </Card>
