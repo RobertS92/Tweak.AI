@@ -18,19 +18,19 @@ const analysisResponseSchema = z.object({
     keywordDensity: categoryResponseSchema.extend({
       identifiedKeywords: z.array(z.string())
     }),
-    roleAlignment: categoryResponseSchema,
     recruiterFriendliness: categoryResponseSchema,
     conciseness: categoryResponseSchema
   }),
   improvements: z.array(z.string()),
   formattingFixes: z.array(z.string()),
+  enhancedContent: z.string(),
   overallScore: z.number()
 });
 
 function preprocessResume(content: string): string {
   return content
     .replace(/\r\n/g, '\n')
-    .replace(/[^\w\s,.!?:;()-]/g, ' ') // Keep only basic punctuation
+    .replace(/[^\w\s,.!?:;()-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -56,9 +56,8 @@ export async function analyzeResume(content: string) {
           content: `You are an expert resume analyzer. Analyze this resume and provide detailed feedback in these categories:
             1. ATS Compliance: Check formatting, standard sections, and machine readability
             2. Keyword Density: Analyze relevant industry/role keywords and their usage
-            3. Role Alignment: Evaluate how well experience matches common job requirements
-            4. Recruiter-Friendliness: Assess readability, clarity, and professional presentation
-            5. Conciseness & Impact: Review brevity and effectiveness of descriptions
+            3. Recruiter-Friendliness: Assess readability, clarity, and professional presentation
+            4. Conciseness & Impact: Review brevity and effectiveness of descriptions
 
             For each category, provide:
             - A score (0-100)
@@ -69,18 +68,19 @@ export async function analyzeResume(content: string) {
             - For Keyword Density, identify the key industry/role-specific keywords found
             - List specific improvements that could enhance the resume
             - List any formatting fixes needed
+            - Provide an enhanced version of the resume with all improvements applied
 
             Return JSON matching this structure:
             {
               "categoryScores": {
                 "atsCompliance": { "score": number, "feedback": string[], "description": string },
                 "keywordDensity": { "score": number, "feedback": string[], "description": string, "identifiedKeywords": string[] },
-                "roleAlignment": { "score": number, "feedback": string[], "description": string },
                 "recruiterFriendliness": { "score": number, "feedback": string[], "description": string },
                 "conciseness": { "score": number, "feedback": string[], "description": string }
               },
               "improvements": string[],
               "formattingFixes": string[],
+              "enhancedContent": string,
               "overallScore": number
             }`
         },

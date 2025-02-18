@@ -23,13 +23,13 @@ interface ResumePreviewProps {
   categoryScores?: {
     atsCompliance?: { score: number; feedback: string[]; description: string };
     keywordDensity?: { score: number; feedback: string[]; identifiedKeywords: string[]; description: string };
-    roleAlignment?: { score: number; feedback: string[]; description: string };
     recruiterFriendliness?: { score: number; feedback: string[]; description: string };
     conciseness?: { score: number; feedback: string[]; description: string };
   };
   analysis?: {
     improvements?: string[];
     formattingFixes?: string[];
+    enhancedContent?: string;
   };
 }
 
@@ -41,7 +41,6 @@ export default function ResumePreview({
 }: ResumePreviewProps) {
   const [showContent, setShowContent] = React.useState(false);
 
-  // Calculate the overall score as the average of all category scores
   const calculateOverallScore = () => {
     if (!categoryScores) return atsScore || 0;
 
@@ -121,34 +120,31 @@ export default function ResumePreview({
           <p className="text-sm text-gray-600">AI-enhanced version of your resume</p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {analysis && (analysis.improvements?.length > 0 || analysis.formattingFixes?.length > 0) && (
+          {analysis && (
             <div className="bg-gray-50 p-4 rounded-lg">
-              {analysis.improvements?.length > 0 && (
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-gray-700">Content Improvements:</span>
-                  </div>
-                  <ul className="space-y-2 text-sm text-gray-600 ml-4">
-                    {analysis.improvements.map((improvement, i) => (
-                      <li key={i}>• {improvement}</li>
-                    ))}
-                  </ul>
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-gray-700">Content Improvements:</span>
                 </div>
-              )}
-              {analysis.formattingFixes?.length > 0 && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <span className="text-sm font-medium text-gray-700">Formatting Fixes:</span>
-                  </div>
-                  <ul className="space-y-2 text-sm text-gray-600 ml-4">
-                    {analysis.formattingFixes.map((fix, i) => (
-                      <li key={i}>• {fix}</li>
-                    ))}
-                  </ul>
+                <ul className="space-y-2 text-sm text-gray-600 ml-4">
+                  {analysis.improvements?.map((improvement, i) => (
+                    <li key={i}>• {improvement}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-gray-700">Formatting Fixes:</span>
                 </div>
-              )}
+                <ul className="space-y-2 text-sm text-gray-600 ml-4">
+                  {analysis.formattingFixes?.map((fix, i) => (
+                    <li key={i}>• {fix}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
           )}
 
@@ -170,7 +166,7 @@ export default function ResumePreview({
           </DialogHeader>
           <ScrollArea className="flex-1">
             <div className="whitespace-pre-wrap font-mono text-sm p-4">
-              {content}
+              {analysis?.enhancedContent || content}
             </div>
           </ScrollArea>
         </DialogContent>
