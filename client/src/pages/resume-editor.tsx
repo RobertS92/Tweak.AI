@@ -61,6 +61,7 @@ export default function ResumeEditor() {
   const { toast } = useToast();
   const resumeId = id ? parseInt(id) : undefined;
   const [showEnhanced, setShowEnhanced] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const { data: resume, isLoading } = useQuery<Resume>({
     queryKey: [`/api/resumes/${resumeId}`],
@@ -82,6 +83,68 @@ export default function ResumeEditor() {
       });
     },
   });
+
+  const handleDownload = () => {
+    setIsPrinting(true);
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>${resume?.title || 'Enhanced Resume'}</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                line-height: 1.6;
+                margin: 2rem;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 2rem;
+              }
+              .resume h2 {
+                color: #1a1a1a;
+                margin-bottom: 1rem;
+                border-bottom: 2px solid #e2e2e2;
+                padding-bottom: 0.5rem;
+              }
+              .job {
+                margin-bottom: 1.5rem;
+              }
+              .job-title {
+                color: #4a4a4a;
+                font-style: italic;
+              }
+              ul {
+                margin: 0.5rem 0;
+                padding-left: 1.5rem;
+              }
+              li {
+                margin-bottom: 0.5rem;
+              }
+              @media print {
+                body {
+                  margin: 1cm;
+                }
+                .no-print {
+                  display: none;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            ${resume?.enhancedContent || resume?.content || ''}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+        setIsPrinting(false);
+      }, 500);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -114,7 +177,6 @@ export default function ResumeEditor() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4 max-w-4xl">
-        {/* Add title at the top */}
         <h1 className="text-3xl font-bold text-center mb-6">
           {resume?.title || "Resume"}
         </h1>
@@ -133,14 +195,16 @@ export default function ResumeEditor() {
                 Upload Another Resume
               </Button>
             </Link>
-            <Button onClick={() => window.print()}>
+            <Button
+              onClick={handleDownload}
+              disabled={isPrinting}
+            >
               <Download className="mr-2 h-4 w-4" />
-              Download
+              {isPrinting ? 'Preparing...' : 'Download Enhanced Resume'}
             </Button>
           </div>
         </div>
 
-        {/* Resume Quality Score Card */}
         <Card className="mb-6">
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-2xl font-bold text-gray-800">
@@ -158,7 +222,6 @@ export default function ResumeEditor() {
               />
             </div>
 
-            {/* Category Breakdown */}
             <div className="space-y-6">
               <h3 className="text-xl font-semibold text-gray-700 mb-4">
                 Category Breakdown
@@ -189,7 +252,6 @@ export default function ResumeEditor() {
           </CardContent>
         </Card>
 
-        {/* Enhanced Version Card */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-xl font-semibold text-gray-800">
@@ -224,7 +286,6 @@ export default function ResumeEditor() {
           </CardContent>
         </Card>
 
-        {/* Job Matcher Section */}
         <Card>
           <CardHeader>
             <CardTitle className="text-xl font-semibold text-gray-800">
@@ -236,7 +297,6 @@ export default function ResumeEditor() {
           </CardContent>
         </Card>
 
-        {/* Enhanced Resume Dialog */}
         <Dialog open={showEnhanced} onOpenChange={setShowEnhanced}>
           <DialogContent className="max-w-4xl max-h-[90vh] p-6">
             <DialogHeader className="pb-4">
@@ -248,7 +308,6 @@ export default function ResumeEditor() {
             </DialogHeader>
 
             <div className="h-[calc(90vh-8rem)]">
-              {/* Adjust height to account for header and padding */}
               <Tabs defaultValue="enhanced" className="h-full flex flex-col">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="original">Original Resume</TabsTrigger>
@@ -256,7 +315,6 @@ export default function ResumeEditor() {
                 </TabsList>
 
                 <div className="flex-1 mt-4 relative">
-                  {/* Add relative positioning and flex-1 */}
                   <TabsContent
                     value="original"
                     className="absolute inset-0 h-full"
