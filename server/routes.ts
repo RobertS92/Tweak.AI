@@ -27,14 +27,8 @@ export async function registerRoutes(app: Express) {
       }
 
       let content: string;
-      // Handle different file types
-      if (file.mimetype === 'text/plain') {
-        // For text files, convert buffer to UTF-8 string
-        content = file.buffer.toString('utf-8');
-      } else {
-        // For binary files (PDF, DOC), store as base64
-        content = file.buffer.toString('base64');
-      }
+      // For binary files (PDF, DOC), store as base64
+      content = file.buffer.toString('base64');
 
       console.log("File received:", {
         originalname: file.originalname,
@@ -51,7 +45,7 @@ export async function registerRoutes(app: Express) {
       });
 
       // Then analyze it
-      const analysis = await analyzeResume(content);
+      const analysis = await analyzeResume(content, file.mimetype);
 
       // Update with analysis results
       const updatedResume = await storage.updateResume(resume.id, {

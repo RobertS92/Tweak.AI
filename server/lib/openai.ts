@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import * as pdfParse from 'pdf-parse-fork';
 
 if (!process.env.OPENAI_API_KEY) {
   throw new Error("OPENAI_API_KEY environment variable is required");
@@ -15,61 +16,51 @@ export interface ResumeAnalysis {
   enhancedContent: string;
 }
 
-export async function analyzeResume(content: string): Promise<ResumeAnalysis> {
-  // If content is base64 encoded (PDF/DOC), we need to extract text first
-  let textContent = content;
-  if (content.match(/^[A-Za-z0-9+/=]+$/)) {
-    // This is a base64 string, extract text using OpenAI vision API
-    const response = await openai.chat.completions.create({
+export async function analyzeResume(content: string, fileType: string): Promise<ResumeAnalysis> {
+  let textContent: string;
+
+  try {
+    // Handle different file types
+    if (fileType === 'application/pdf') {
+      // For PDFs, use pdf-parse-fork to extract text
+      const dataBuffer = Buffer.from(content, 'base64');
+      const pdfData = await pdfParse(dataBuffer);
+      textContent = pdfData.text;
+    } else if (fileType === 'text/plain') {
+      // For text files, use content directly
+      textContent = content;
+    } else {
+      // For other types (like Word docs), use base64 content
+      // In a production environment, you'd want to add specific handlers for docx etc.
+      textContent = Buffer.from(content, 'base64').toString('utf-8');
+    }
+
+    // Analyze the extracted text
+    const analysisResponse = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: "Extract and return the text content from this document. Return only the text, no analysis yet."
+          content: "You are an expert ATS and resume analyzer. Analyze the given resume and provide detailed feedback with specific improvements. Return the response in JSON format with the following structure: { atsScore: number, strengths: string[], weaknesses: string[], improvements: string[], enhancedContent: string }"
         },
         {
           role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Extract the text from this document"
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:application/pdf;base64,${content}`
-              }
-            }
-          ],
-        },
+          content: textContent
+        }
       ],
+      response_format: { type: "json_object" }
     });
 
-    textContent = response.choices[0]?.message?.content || '';
+    const result = analysisResponse.choices[0]?.message?.content;
+    if (!result) {
+      throw new Error("Failed to get analysis from OpenAI");
+    }
+
+    return JSON.parse(result) as ResumeAnalysis;
+  } catch (error) {
+    console.error("Resume analysis error:", error);
+    throw error;
   }
-
-  // Now analyze the text content
-  const analysisResponse = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      {
-        role: "system",
-        content: "You are an expert ATS and resume analyzer. Analyze the given resume and provide detailed feedback with specific improvements. Return the response in JSON format."
-      },
-      {
-        role: "user",
-        content: textContent
-      }
-    ],
-    response_format: { type: "json_object" }
-  });
-
-  const result = analysisResponse.choices[0]?.message?.content;
-  if (!result) {
-    throw new Error("Failed to get analysis from OpenAI");
-  }
-
-  return JSON.parse(result) as ResumeAnalysis;
 }
 
 export interface JobMatch {
