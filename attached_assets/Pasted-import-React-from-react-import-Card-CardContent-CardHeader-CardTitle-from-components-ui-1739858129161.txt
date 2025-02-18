@@ -1,0 +1,109 @@
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+
+const categories = [
+  { name: 'ATS Compliance', score: 80 },
+  { name: 'Keyword Density', score: 60 },
+  { name: 'Recruiter-Friendliness', score: 75 },
+  { name: 'Conciseness & Impact', score: 90 }
+];
+
+const ResumeScoreDashboard = () => {
+  const overallScore = 78;
+
+  return (
+    <div className="w-full max-w-4xl mx-auto p-6 space-y-6">
+      <Card className="bg-white shadow-lg">
+        <CardHeader className="text-center pb-2">
+          <CardTitle className="text-2xl font-bold text-gray-800">Resume Quality Score</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Main Score Display */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="text-6xl font-bold text-blue-600 mb-4">
+              {overallScore}
+            </div>
+            <Progress value={overallScore} className="w-full h-3 bg-gray-200" />
+          </div>
+
+          {/* Category Breakdown */}
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold text-gray-700 mb-4">Category Breakdown</h3>
+            <div className="space-y-4">
+              {categories.map((category) => (
+                <div key={category.name} className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-gray-700">{category.name}</span>
+                  </div>
+                  <div className="flex items-center gap-4 flex-1">
+                    <Progress 
+                      value={category.score} 
+                      className="h-2 flex-1"
+                    />
+                    <span className="text-sm font-medium text-gray-600 w-12">
+                      {category.score}%
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Enhanced Resume Section */}
+      <Card className="bg-white shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-gray-800">Enhanced Version</CardTitle>
+          <p className="text-sm text-gray-600">AI-enhanced version of your resume</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm font-medium text-gray-700">Improvements Made:</span>
+            </div>
+            <ul className="space-y-2 text-sm text-gray-600 ml-4">
+              <li>• Optimized bullet points for better readability</li>
+              <li>• Enhanced keyword optimization</li>
+              <li>• Improved action verbs and metrics</li>
+              <li>• Strengthened skill descriptions</li>
+            </ul>
+          </div>
+          
+          <button className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            View Enhanced Resume
+          </button>
+        </CardContent>
+      </Card>
+
+      {/* Job Description Matcher Section */}
+      <Card className="bg-white shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold text-gray-800">Job Description Matcher</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <textarea 
+            className="w-full h-32 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Paste job description here..."
+          />
+          <div className="flex gap-4 mt-4">
+            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              Analyze Match
+            </button>
+            <button className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+              Generate Cover Letter
+            </button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default ResumeScoreDashboard;
