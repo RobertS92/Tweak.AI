@@ -40,87 +40,78 @@ export default function ResumePreview({
   const [showContent, setShowContent] = useState(false);
 
   return (
-    <div className="space-y-6">
-      {/* Main Score Card */}
+    <div className="space-y-4">
+      {/* Resume Quality Score */}
       {atsScore !== undefined && atsScore !== null && (
-        <Card className="bg-gradient-to-br from-background to-muted">
-          <CardContent className="py-8">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold mb-4">Resume Quality Score</h2>
-              <div className="text-7xl font-bold text-primary mb-6">{atsScore}</div>
-              <Progress value={atsScore} className="h-4 mb-2" />
-              <Badge variant={atsScore >= 80 ? "success" : "destructive"} className="text-lg">
-                {atsScore >= 80 ? "Excellent" : "Needs Improvement"}
-              </Badge>
-            </div>
+        <Card>
+          <CardContent className="p-6 text-center">
+            <div className="text-7xl font-bold text-primary mb-4">{atsScore}</div>
+            <Progress value={atsScore} className="h-3 mb-2" />
+            <Badge variant={atsScore >= 80 ? "success" : "destructive"} className="text-lg">
+              {atsScore >= 80 ? "Excellent" : "Needs Improvement"}
+            </Badge>
           </CardContent>
         </Card>
       )}
 
       {/* Category Breakdown */}
       <Card>
-        <CardContent className="py-6">
-          <h3 className="text-xl font-semibold mb-6">Category Breakdown</h3>
-          <div className="space-y-6">
+        <CardContent className="p-6">
+          <div className="space-y-4">
             {categoryScores?.atsCompliance && (
               <div className="flex items-center gap-4">
-                <div className="w-48 font-medium">ATS Compliance</div>
+                <div className="w-40 font-medium">ATS Compliance</div>
                 <div className="flex-1">
                   <Progress value={categoryScores.atsCompliance.score} className="h-3" />
                 </div>
-                <div className="w-16 text-right font-bold">{categoryScores.atsCompliance.score}%</div>
+                <div className="w-12 text-right font-bold">{categoryScores.atsCompliance.score}%</div>
               </div>
             )}
 
             {categoryScores?.keywordDensity && (
               <div className="flex items-center gap-4">
-                <div className="w-48 font-medium">Keyword Density</div>
+                <div className="w-40 font-medium">Keyword Density</div>
                 <div className="flex-1">
                   <Progress value={categoryScores.keywordDensity.score} className="h-3" />
                 </div>
-                <div className="w-16 text-right font-bold">{categoryScores.keywordDensity.score}%</div>
+                <div className="w-12 text-right font-bold">{categoryScores.keywordDensity.score}%</div>
               </div>
             )}
 
             {categoryScores?.recruiterFriendliness && (
               <div className="flex items-center gap-4">
-                <div className="w-48 font-medium">Recruiter Friendliness</div>
+                <div className="w-40 font-medium">Recruiter Friendly</div>
                 <div className="flex-1">
                   <Progress value={categoryScores.recruiterFriendliness.score} className="h-3" />
                 </div>
-                <div className="w-16 text-right font-bold">{categoryScores.recruiterFriendliness.score}%</div>
+                <div className="w-12 text-right font-bold">{categoryScores.recruiterFriendliness.score}%</div>
               </div>
             )}
 
             {categoryScores?.conciseness && (
               <div className="flex items-center gap-4">
-                <div className="w-48 font-medium">Conciseness & Impact</div>
+                <div className="w-40 font-medium">Conciseness</div>
                 <div className="flex-1">
                   <Progress value={categoryScores.conciseness.score} className="h-3" />
                 </div>
-                <div className="w-16 text-right font-bold">{categoryScores.conciseness.score}%</div>
+                <div className="w-12 text-right font-bold">{categoryScores.conciseness.score}%</div>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Enhanced Resume Preview Button & Dialog */}
-      <Card>
-        <CardContent className="py-6">
-          <div className="text-center">
-            <Button 
-              onClick={() => setShowContent(true)}
-              className="w-full"
-              size="lg"
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              View Enhanced Resume
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Enhanced Resume Button */}
+      <Button 
+        onClick={() => setShowContent(true)}
+        className="w-full"
+        size="lg"
+      >
+        <FileText className="mr-2 h-4 w-4" />
+        View Enhanced Resume
+      </Button>
 
+      {/* Enhanced Resume Dialog */}
       <Dialog open={showContent} onOpenChange={setShowContent}>
         <DialogContent className="max-w-3xl h-[80vh]">
           <DialogHeader>
@@ -133,37 +124,6 @@ export default function ResumePreview({
           </ScrollArea>
         </DialogContent>
       </Dialog>
-
-      {/* Detailed Feedback Sections */}
-      <div className="space-y-4">
-        <div className="grid md:grid-cols-2 gap-4">
-          {strengths.length > 0 && (
-            <Card>
-              <CardContent className="p-4">
-                <h3 className="font-semibold mb-2">Strengths</h3>
-                <ul className="list-disc list-inside space-y-1">
-                  {strengths.map((strength, i) => (
-                    <li key={i} className="text-sm text-muted-foreground">{strength}</li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-
-          {weaknesses.length > 0 && (
-            <Card>
-              <CardContent className="p-4">
-                <h3 className="font-semibold mb-2">Areas to Improve</h3>
-                <ul className="list-disc list-inside space-y-1">
-                  {weaknesses.map((weakness, i) => (
-                    <li key={i} className="text-sm text-muted-foreground">{weakness}</li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
