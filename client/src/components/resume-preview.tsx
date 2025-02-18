@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -43,69 +43,99 @@ export default function ResumePreview({
       {/* Resume Quality Score */}
       {atsScore !== undefined && atsScore !== null && (
         <Card>
-          <CardContent className="p-6 text-center">
-            <div className="text-7xl font-bold text-primary mb-4">{atsScore}</div>
-            <Progress value={atsScore} className="h-3 mb-2" />
+          <CardHeader className="text-center pb-2">
+            <CardTitle className="text-2xl font-bold">Resume Quality Score</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center mb-8">
+              <div className="text-6xl font-bold text-primary mb-4">
+                {atsScore}
+              </div>
+              <Progress value={atsScore} className="w-full h-3" />
+            </div>
+
+            {/* Category Breakdown */}
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold text-gray-700 mb-4">Category Breakdown</h3>
+              <div className="space-y-4">
+                {categoryScores?.atsCompliance && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <span className="text-sm font-medium">ATS Compliance</span>
+                    </div>
+                    <div className="flex items-center gap-4 flex-1">
+                      <Progress value={categoryScores.atsCompliance.score} className="h-2 flex-1" />
+                      <span className="text-sm font-medium w-12 text-right">
+                        {categoryScores.atsCompliance.score}%
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {categoryScores?.keywordDensity && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <span className="text-sm font-medium">Keyword Density</span>
+                    </div>
+                    <div className="flex items-center gap-4 flex-1">
+                      <Progress value={categoryScores.keywordDensity.score} className="h-2 flex-1" />
+                      <span className="text-sm font-medium w-12 text-right">
+                        {categoryScores.keywordDensity.score}%
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {categoryScores?.recruiterFriendliness && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <span className="text-sm font-medium">Recruiter-Friendliness</span>
+                    </div>
+                    <div className="flex items-center gap-4 flex-1">
+                      <Progress value={categoryScores.recruiterFriendliness.score} className="h-2 flex-1" />
+                      <span className="text-sm font-medium w-12 text-right">
+                        {categoryScores.recruiterFriendliness.score}%
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {categoryScores?.conciseness && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <span className="text-sm font-medium">Conciseness & Impact</span>
+                    </div>
+                    <div className="flex items-center gap-4 flex-1">
+                      <Progress value={categoryScores.conciseness.score} className="h-2 flex-1" />
+                      <span className="text-sm font-medium w-12 text-right">
+                        {categoryScores.conciseness.score}%
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Category Breakdown */}
+      {/* Enhanced Version Section */}
       <Card>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            {categoryScores?.atsCompliance && (
-              <div className="flex items-center gap-4">
-                <div className="font-medium">ATS Compliance</div>
-                <div className="flex-1">
-                  <Progress value={categoryScores.atsCompliance.score} className="h-3" />
-                </div>
-                <div className="text-right font-bold">{categoryScores.atsCompliance.score}%</div>
-              </div>
-            )}
-
-            {categoryScores?.keywordDensity && (
-              <div className="flex items-center gap-4">
-                <div className="font-medium">Keyword Density</div>
-                <div className="flex-1">
-                  <Progress value={categoryScores.keywordDensity.score} className="h-3" />
-                </div>
-                <div className="text-right font-bold">{categoryScores.keywordDensity.score}%</div>
-              </div>
-            )}
-
-            {categoryScores?.recruiterFriendliness && (
-              <div className="flex items-center gap-4">
-                <div className="font-medium">Recruiter Friendly</div>
-                <div className="flex-1">
-                  <Progress value={categoryScores.recruiterFriendliness.score} className="h-3" />
-                </div>
-                <div className="text-right font-bold">{categoryScores.recruiterFriendliness.score}%</div>
-              </div>
-            )}
-
-            {categoryScores?.conciseness && (
-              <div className="flex items-center gap-4">
-                <div className="font-medium">Conciseness</div>
-                <div className="flex-1">
-                  <Progress value={categoryScores.conciseness.score} className="h-3" />
-                </div>
-                <div className="text-right font-bold">{categoryScores.conciseness.score}%</div>
-              </div>
-            )}
-          </div>
+        <CardHeader>
+          <CardTitle className="text-xl font-semibold">Enhanced Version</CardTitle>
+          <p className="text-sm text-muted-foreground">AI-enhanced version of your resume</p>
+        </CardHeader>
+        <CardContent>
+          <Button 
+            onClick={() => setShowContent(true)}
+            className="w-full"
+            size="lg"
+          >
+            <FileText className="mr-2 h-4 w-4" />
+            View Enhanced Resume
+          </Button>
         </CardContent>
       </Card>
-
-      {/* View Enhanced Resume Button */}
-      <Button 
-        onClick={() => setShowContent(true)}
-        className="w-full"
-        size="lg"
-      >
-        <FileText className="mr-2 h-4 w-4" />
-        View Enhanced Resume
-      </Button>
 
       {/* Enhanced Resume Dialog */}
       <Dialog open={showContent} onOpenChange={setShowContent}>
