@@ -1,7 +1,6 @@
 import { useParams } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
 import ResumePreview from "@/components/resume-preview";
 import JobMatcher from "@/components/job-matcher";
 import { Button } from "@/components/ui/button";
@@ -13,9 +12,6 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Download, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
@@ -51,22 +47,6 @@ export default function ResumeEditor() {
     enabled: !!resumeId,
   });
 
-  const updateMutation = useMutation({
-    mutationFn: async (content: string) => {
-      if (!resumeId) throw new Error("No resume ID provided");
-      return apiRequest("PATCH", `/api/resumes/${resumeId}`, {
-        content,
-      }).then((r) => r.json());
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/resumes/${resumeId}`] });
-      toast({
-        title: "Resume updated",
-        description: "Your changes have been saved",
-      });
-    },
-  });
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -98,6 +78,7 @@ export default function ResumeEditor() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4">
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <Link href="/dashboard">
@@ -110,47 +91,33 @@ export default function ResumeEditor() {
           </div>
           <Button onClick={() => window.print()}>
             <Download className="mr-2 h-4 w-4" />
-            Download
+            Download PDF
           </Button>
         </div>
 
-        <ResizablePanelGroup className="min-h-[600px] rounded-lg border">
+        {/* Main Content */}
+        <ResizablePanelGroup direction="horizontal" className="min-h-[800px] rounded-lg border">
           <ResizablePanel defaultSize={50}>
-            <div className="h-full p-4">
-              <Card className="h-full">
-                <CardHeader>
-                  <CardTitle>Original Resume</CardTitle>
-                  <CardDescription>
-                    Your uploaded resume with analysis
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ResumePreview
-                    content={resume.content}
-                    atsScore={resume.atsScore}
-                    categoryScores={resume.analysis?.categoryScores}
-                    strengths={resume.analysis?.strengths}
-                    weaknesses={resume.analysis?.weaknesses}
-                    improvements={resume.analysis?.improvements}
-                    formattingFixes={resume.analysis?.formattingFixes}
-                  />
-                </CardContent>
-              </Card>
+            <div className="h-full p-4 overflow-auto">
+              <ResumePreview
+                content={resume.content}
+                atsScore={resume.atsScore}
+                categoryScores={resume.analysis?.categoryScores}
+                strengths={resume.analysis?.strengths}
+                weaknesses={resume.analysis?.weaknesses}
+                improvements={resume.analysis?.improvements}
+                formattingFixes={resume.analysis?.formattingFixes}
+              />
             </div>
           </ResizablePanel>
 
-          <ResizableHandle />
+          <ResizableHandle withHandle />
 
           <ResizablePanel defaultSize={50}>
-            <div className="h-full p-4">
-              <Card className="h-full">
-                <CardHeader>
-                  <CardTitle>Enhanced Version</CardTitle>
-                  <CardDescription>
-                    AI-optimized version of your resume
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+            <div className="h-full p-4 overflow-auto">
+              <Card>
+                <CardContent className="p-6">
+                  <h2 className="text-2xl font-semibold mb-4">Enhanced Version</h2>
                   <ResumePreview
                     content={resume.enhancedContent || resume.content}
                   />
@@ -160,6 +127,7 @@ export default function ResumeEditor() {
           </ResizablePanel>
         </ResizablePanelGroup>
 
+        {/* Job Matcher Section */}
         <div className="mt-6">
           {resumeId && <JobMatcher resumeId={resumeId} />}
         </div>
