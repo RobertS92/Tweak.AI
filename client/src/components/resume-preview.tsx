@@ -2,13 +2,19 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from "@/components/ui/button";
-import { FileText } from "lucide-react";
+import { FileText, Info } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ResumePreviewProps {
@@ -52,13 +58,27 @@ export default function ResumePreview({
               {categoryScores?.atsCompliance && (
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <span className="text-sm font-medium text-gray-700">ATS Compliance</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-2 cursor-help">
+                            <span className="text-sm font-medium text-gray-700">ATS Compliance</span>
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs p-4">
+                          <p className="font-medium mb-2">{categoryScores.atsCompliance.description}</p>
+                          <ul className="list-disc list-inside space-y-1">
+                            {categoryScores.atsCompliance.feedback.map((item, i) => (
+                              <li key={i} className="text-sm">{item}</li>
+                            ))}
+                          </ul>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                   <div className="flex items-center gap-4 flex-1">
-                    <Progress 
-                      value={categoryScores.atsCompliance.score} 
-                      className="h-2 flex-1"
-                    />
+                    <Progress value={categoryScores.atsCompliance.score} className="h-2 flex-1" />
                     <span className="text-sm font-medium text-gray-600 w-12">
                       {categoryScores.atsCompliance.score}%
                     </span>
@@ -69,13 +89,27 @@ export default function ResumePreview({
               {categoryScores?.keywordDensity && (
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <span className="text-sm font-medium text-gray-700">Keyword Density</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-2 cursor-help">
+                            <span className="text-sm font-medium text-gray-700">Keyword Density</span>
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs p-4">
+                          <p className="font-medium mb-2">{categoryScores.keywordDensity.description}</p>
+                          <ul className="list-disc list-inside space-y-1">
+                            {categoryScores.keywordDensity.feedback.map((item, i) => (
+                              <li key={i} className="text-sm">{item}</li>
+                            ))}
+                          </ul>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                   <div className="flex items-center gap-4 flex-1">
-                    <Progress 
-                      value={categoryScores.keywordDensity.score} 
-                      className="h-2 flex-1"
-                    />
+                    <Progress value={categoryScores.keywordDensity.score} className="h-2 flex-1" />
                     <span className="text-sm font-medium text-gray-600 w-12">
                       {categoryScores.keywordDensity.score}%
                     </span>
@@ -86,13 +120,27 @@ export default function ResumePreview({
               {categoryScores?.recruiterFriendliness && (
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <span className="text-sm font-medium text-gray-700">Recruiter-Friendliness</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-2 cursor-help">
+                            <span className="text-sm font-medium text-gray-700">Recruiter-Friendliness</span>
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs p-4">
+                          <p className="font-medium mb-2">{categoryScores.recruiterFriendliness.description}</p>
+                          <ul className="list-disc list-inside space-y-1">
+                            {categoryScores.recruiterFriendliness.feedback.map((item, i) => (
+                              <li key={i} className="text-sm">{item}</li>
+                            ))}
+                          </ul>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                   <div className="flex items-center gap-4 flex-1">
-                    <Progress 
-                      value={categoryScores.recruiterFriendliness.score} 
-                      className="h-2 flex-1"
-                    />
+                    <Progress value={categoryScores.recruiterFriendliness.score} className="h-2 flex-1" />
                     <span className="text-sm font-medium text-gray-600 w-12">
                       {categoryScores.recruiterFriendliness.score}%
                     </span>
@@ -103,13 +151,27 @@ export default function ResumePreview({
               {categoryScores?.conciseness && (
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <span className="text-sm font-medium text-gray-700">Conciseness & Impact</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-2 cursor-help">
+                            <span className="text-sm font-medium text-gray-700">Conciseness & Impact</span>
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs p-4">
+                          <p className="font-medium mb-2">{categoryScores.conciseness.description}</p>
+                          <ul className="list-disc list-inside space-y-1">
+                            {categoryScores.conciseness.feedback.map((item, i) => (
+                              <li key={i} className="text-sm">{item}</li>
+                            ))}
+                          </ul>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                   <div className="flex items-center gap-4 flex-1">
-                    <Progress 
-                      value={categoryScores.conciseness.score} 
-                      className="h-2 flex-1"
-                    />
+                    <Progress value={categoryScores.conciseness.score} className="h-2 flex-1" />
                     <span className="text-sm font-medium text-gray-600 w-12">
                       {categoryScores.conciseness.score}%
                     </span>
