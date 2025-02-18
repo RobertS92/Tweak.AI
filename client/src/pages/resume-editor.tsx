@@ -114,6 +114,11 @@ export default function ResumeEditor() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4 max-w-4xl">
+        {/* Add title at the top */}
+        <h1 className="text-3xl font-bold text-center mb-6">
+          {resume?.title || "Resume"}
+        </h1>
+
         <div className="flex items-center justify-between mb-6">
           <Link href="/dashboard">
             <Button variant="ghost">
@@ -243,7 +248,6 @@ export default function ResumeEditor() {
             </DialogHeader>
 
             <div className="h-[calc(90vh-8rem)]">
-              {" "}
               {/* Adjust height to account for header and padding */}
               <Tabs defaultValue="enhanced" className="h-full flex flex-col">
                 <TabsList className="grid w-full grid-cols-2">
@@ -252,7 +256,6 @@ export default function ResumeEditor() {
                 </TabsList>
 
                 <div className="flex-1 mt-4 relative">
-                  {" "}
                   {/* Add relative positioning and flex-1 */}
                   <TabsContent
                     value="original"
