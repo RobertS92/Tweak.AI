@@ -10,7 +10,7 @@ export const resumes = pgTable("resumes", {
   fileType: text("file_type").notNull(),
   atsScore: integer("ats_score"),
   enhancedContent: text("enhanced_content"),
-  analysis: jsonb("analysis"),
+  analysis: jsonb("analysis").notNull().default({}),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

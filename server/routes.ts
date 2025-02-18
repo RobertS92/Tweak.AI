@@ -44,16 +44,8 @@ export async function registerRoutes(app: Express) {
       } else if (file.mimetype === 'text/plain') {
         content = file.buffer.toString('utf-8');
       } else {
-        // For other file types (e.g., DOC), return error for now
         return res.status(400).json({ message: "Only PDF and TXT files are supported at this time" });
       }
-
-      console.log("File received:", {
-        originalname: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size,
-        contentLength: content.length
-      });
 
       // First create the resume record
       const resume = await storage.createResume({
@@ -61,17 +53,19 @@ export async function registerRoutes(app: Express) {
         title: file.originalname,
         content: content,
         fileType: file.mimetype,
-        atsScore: null, // Will be updated after analysis
       });
 
       // Analyze the resume using OpenAI
       const analysis = await analyzeResume(content);
 
-      // Update the resume with analysis results
+      // Update the resume with analysis results and enhanced content
       const updatedResume = await storage.updateResume(resume.id, {
         atsScore: analysis.overallScore,
+        enhancedContent: analysis.enhancedContent,
         analysis: {
           categoryScores: analysis.categoryScores,
+          improvements: analysis.improvements,
+          formattingFixes: analysis.formattingFixes
         }
       });
 

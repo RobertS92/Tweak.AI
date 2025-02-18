@@ -82,10 +82,11 @@ export async function analyzeResume(content: string) {
                - Suggest specific formatting changes
 
             4. Enhanced Resume:
-               - Create an improved version of the resume
-               - Apply all suggested improvements and fixes
+               - Create an improved version of the resume with all improvements applied
                - Enhance the language and structure while maintaining authenticity
                - Make it more impactful and ATS-friendly
+               - Keep the same basic structure but improve phrasing and formatting
+               - The enhanced version must be different from the original
 
             Return JSON matching this structure:
             {
