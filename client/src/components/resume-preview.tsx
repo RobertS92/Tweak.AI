@@ -30,58 +30,120 @@ export default function ResumePreview({
   return (
     <div className="space-y-4">
       {atsScore !== undefined && atsScore !== null && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="text-2xl font-bold">
-              Resume Quality Score: {atsScore}
-            </div>
-            <Badge variant={atsScore >= 80 ? "success" : "destructive"}>
-              {atsScore >= 80 ? "Excellent" : "Needs Improvement"}
-            </Badge>
-          </div>
-          <Progress value={atsScore} className="h-2" />
-        </div>
-      )}
-
-      {criteria && (
-        <div className="grid md:grid-cols-2 gap-4">
-          {Object.entries(criteria).map(([key, data]) => (
-            <Card key={key}>
-              <CardContent className="p-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold capitalize">
-                      {key.replace(/([A-Z])/g, ' $1').trim()}
-                    </h3>
-                    <Badge variant={data.score >= 80 ? "success" : "destructive"}>
-                      {data.score}%
-                    </Badge>
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-6">
+              {/* Main Resume Quality Score */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-2xl font-bold">
+                    Resume Quality Score: {atsScore}
                   </div>
-                  <Progress value={data.score} className="h-2" />
-                  <ul className="list-disc list-inside space-y-1 mt-2">
-                    {data.feedback.map((item, i) => (
-                      <li key={i} className="text-sm text-muted-foreground">
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                  {key === 'keywordDensity' && data.identifiedKeywords && (
-                    <div className="mt-2">
-                      <p className="text-sm font-medium mb-1">Identified Keywords:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {data.identifiedKeywords.map((keyword, i) => (
-                          <Badge key={i} variant="secondary">{keyword}</Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <Badge variant={atsScore >= 80 ? "success" : "destructive"}>
+                    {atsScore >= 80 ? "Excellent" : "Needs Improvement"}
+                  </Badge>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                <Progress value={atsScore} className="h-3" />
+              </div>
+
+              {/* Category Scores */}
+              <div className="space-y-4">
+                {criteria?.atsCompliance && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold">ATS Compliance</h3>
+                        <p className="text-sm text-muted-foreground">Formatting, parsing, and keyword optimization</p>
+                      </div>
+                      <Badge variant={criteria.atsCompliance.score >= 80 ? "success" : "destructive"}>
+                        {criteria.atsCompliance.score}%
+                      </Badge>
+                    </div>
+                    <Progress value={criteria.atsCompliance.score} className="h-2" />
+                  </div>
+                )}
+
+                {criteria?.keywordDensity && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold">Keyword Density</h3>
+                        <p className="text-sm text-muted-foreground">Industry-relevant skills assessment</p>
+                      </div>
+                      <Badge variant={criteria.keywordDensity.score >= 80 ? "success" : "destructive"}>
+                        {criteria.keywordDensity.score}%
+                      </Badge>
+                    </div>
+                    <Progress value={criteria.keywordDensity.score} className="h-2" />
+                  </div>
+                )}
+
+                {criteria?.recruiterFriendliness && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold">Recruiter-Friendliness</h3>
+                        <p className="text-sm text-muted-foreground">Clarity, structure, and readability</p>
+                      </div>
+                      <Badge variant={criteria.recruiterFriendliness.score >= 80 ? "success" : "destructive"}>
+                        {criteria.recruiterFriendliness.score}%
+                      </Badge>
+                    </div>
+                    <Progress value={criteria.recruiterFriendliness.score} className="h-2" />
+                  </div>
+                )}
+
+                {criteria?.conciseness && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold">Conciseness & Impact</h3>
+                        <p className="text-sm text-muted-foreground">Action-oriented language and brevity</p>
+                      </div>
+                      <Badge variant={criteria.conciseness.score >= 80 ? "success" : "destructive"}>
+                        {criteria.conciseness.score}%
+                      </Badge>
+                    </div>
+                    <Progress value={criteria.conciseness.score} className="h-2" />
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
+      {/* Detailed Analysis Cards */}
+      <div className="grid md:grid-cols-2 gap-4">
+        {criteria && Object.entries(criteria).map(([key, data]) => (
+          <Card key={key}>
+            <CardContent className="p-4">
+              <h3 className="font-semibold capitalize mb-2">
+                {key.replace(/([A-Z])/g, ' $1').trim()} Details
+              </h3>
+              <ul className="list-disc list-inside space-y-1">
+                {data.feedback.map((item, i) => (
+                  <li key={i} className="text-sm text-muted-foreground">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              {key === 'keywordDensity' && data.identifiedKeywords && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium mb-1">Identified Keywords:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {data.identifiedKeywords.map((keyword, i) => (
+                      <Badge key={i} variant="secondary">{keyword}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Strengths and Weaknesses */}
       <div className="grid md:grid-cols-2 gap-4">
         {strengths.length > 0 && (
           <Card>
@@ -114,6 +176,7 @@ export default function ResumePreview({
         )}
       </div>
 
+      {/* Improvements and Formatting Fixes */}
       {improvements.length > 0 && (
         <Card>
           <CardContent className="p-4">
@@ -144,6 +207,7 @@ export default function ResumePreview({
         </Card>
       )}
 
+      {/* Resume Content */}
       <Card>
         <CardContent className="p-4">
           <ScrollArea className="h-[400px]">
