@@ -30,16 +30,14 @@ export default function ResumePreview({
 }: ResumePreviewProps) {
   return (
     <div className="space-y-6">
-      {/* Main Score Card */}
+      {/* Main Resume Quality Score */}
       {atsScore !== undefined && atsScore !== null && (
         <Card>
-          <CardContent className="py-6">
+          <CardContent className="p-6">
             <div className="text-center">
               <h2 className="text-2xl font-bold mb-2">Resume Quality Score</h2>
               <div className="text-6xl font-bold text-primary mb-4">{atsScore}</div>
-              <Badge variant={atsScore >= 80 ? "success" : "destructive"} className="text-lg">
-                {atsScore >= 80 ? "Excellent" : "Needs Improvement"}
-              </Badge>
+              <Progress value={atsScore} className="h-4" />
             </div>
           </CardContent>
         </Card>
@@ -47,50 +45,52 @@ export default function ResumePreview({
 
       {/* Category Scores */}
       <Card>
-        <CardContent className="py-6 space-y-6">
-          {categoryScores?.atsCompliance && (
-            <div className="flex items-center gap-4">
-              <div className="w-48 font-medium">ATS Compliance</div>
-              <div className="flex-1">
-                <Progress value={categoryScores.atsCompliance.score} className="h-4" />
+        <CardContent className="py-6">
+          <div className="space-y-4">
+            {categoryScores?.atsCompliance && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">ATS Compliance</span>
+                  <span className="font-bold">{categoryScores.atsCompliance.score}%</span>
+                </div>
+                <Progress value={categoryScores.atsCompliance.score} className="h-3" />
               </div>
-              <div className="w-12 text-right font-bold">{categoryScores.atsCompliance.score}%</div>
-            </div>
-          )}
+            )}
 
-          {categoryScores?.keywordDensity && (
-            <div className="flex items-center gap-4">
-              <div className="w-48 font-medium">Keyword Density</div>
-              <div className="flex-1">
-                <Progress value={categoryScores.keywordDensity.score} className="h-4" />
+            {categoryScores?.keywordDensity && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">Keyword Density</span>
+                  <span className="font-bold">{categoryScores.keywordDensity.score}%</span>
+                </div>
+                <Progress value={categoryScores.keywordDensity.score} className="h-3" />
               </div>
-              <div className="w-12 text-right font-bold">{categoryScores.keywordDensity.score}%</div>
-            </div>
-          )}
+            )}
 
-          {categoryScores?.recruiterFriendliness && (
-            <div className="flex items-center gap-4">
-              <div className="w-48 font-medium">Recruiter Friendliness</div>
-              <div className="flex-1">
-                <Progress value={categoryScores.recruiterFriendliness.score} className="h-4" />
+            {categoryScores?.recruiterFriendliness && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">Recruiter Friendliness</span>
+                  <span className="font-bold">{categoryScores.recruiterFriendliness.score}%</span>
+                </div>
+                <Progress value={categoryScores.recruiterFriendliness.score} className="h-3" />
               </div>
-              <div className="w-12 text-right font-bold">{categoryScores.recruiterFriendliness.score}%</div>
-            </div>
-          )}
+            )}
 
-          {categoryScores?.conciseness && (
-            <div className="flex items-center gap-4">
-              <div className="w-48 font-medium">Conciseness & Impact</div>
-              <div className="flex-1">
-                <Progress value={categoryScores.conciseness.score} className="h-4" />
+            {categoryScores?.conciseness && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium">Conciseness & Impact</span>
+                  <span className="font-bold">{categoryScores.conciseness.score}%</span>
+                </div>
+                <Progress value={categoryScores.conciseness.score} className="h-3" />
               </div>
-              <div className="w-12 text-right font-bold">{categoryScores.conciseness.score}%</div>
-            </div>
-          )}
+            )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Detailed Feedback Sections */}
+      {/* Detailed Analysis */}
       <div className="space-y-4">
         {/* Strengths and Weaknesses */}
         <div className="grid md:grid-cols-2 gap-4">
@@ -120,31 +120,6 @@ export default function ResumePreview({
             </Card>
           )}
         </div>
-
-        {/* Category Details */}
-        {categoryScores && Object.entries(categoryScores).map(([key, data]) => (
-          <Card key={key}>
-            <CardContent className="p-4">
-              <h3 className="font-semibold mb-2">{key.replace(/([A-Z])/g, ' $1').trim()} Details</h3>
-              <p className="text-sm text-muted-foreground mb-2">{data.description}</p>
-              <ul className="list-disc list-inside space-y-1">
-                {data.feedback.map((item, i) => (
-                  <li key={i} className="text-sm text-muted-foreground">{item}</li>
-                ))}
-              </ul>
-              {'identifiedKeywords' in data && data.identifiedKeywords && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium mb-2">Identified Keywords:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {data.identifiedKeywords.map((keyword, i) => (
-                      <Badge key={i} variant="secondary">{keyword}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
 
         {/* Resume Content */}
         <Card>
