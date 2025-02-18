@@ -7,6 +7,9 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Upload } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 interface JobMatcherProps {
   resumeId: number;
@@ -22,6 +25,41 @@ interface JobMatch {
 export default function JobMatcher({ resumeId }: JobMatcherProps) {
   const { toast } = useToast();
   const [jobDescription, setJobDescription] = useState("");
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
+  const uploadJobDescriptionMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("jobDescription", file);
+
+      const response = await fetch("/api/jobs/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to upload job description");
+      }
+
+      const data = await response.json();
+      setJobDescription(data.content);
+      return data;
+    },
+    onSuccess: () => {
+      toast({
+        title: "File uploaded",
+        description: "Job description has been extracted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Upload failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const matchMutation = useMutation({
     mutationFn: async () => {
@@ -96,46 +134,65 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
     },
   });
 
-  const coverLetterMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/cover-letters", {
-        resumeId,
-        jobDescription,
-      });
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file type
+      const validTypes = [
+        'application/pdf',
+        'text/plain',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'image/png',
+        'image/jpeg'
+      ];
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to generate cover letter');
+      if (!validTypes.includes(file.type)) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload a PDF, Word, text file, or image (PNG/JPEG)",
+          variant: "destructive",
+        });
+        return;
       }
 
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Cover Letter Generated",
-        description: "Your cover letter is ready to download",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Generation failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+      setUploadedFile(file);
+      uploadJobDescriptionMutation.mutate(file);
+    }
+  };
 
   return (
     <Card>
       <CardContent className="p-6 space-y-4">
-        <h3 className="text-lg font-semibold mb-4">Job Description Matcher</h3>
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Job Description Matcher</h3>
+          <div className="space-y-4">
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+              <Label htmlFor="jobDescription">Upload Job Description</Label>
+              <Input
+                id="jobDescription"
+                type="file"
+                accept=".pdf,.txt,.doc,.docx,.png,.jpg,.jpeg"
+                onChange={handleFileChange}
+                className="cursor-pointer"
+              />
+              <p className="text-sm text-muted-foreground">
+                Supported formats: PDF, Word, Text, PNG, JPEG
+              </p>
+            </div>
 
-        <Textarea
-          placeholder="Paste job description here..."
-          value={jobDescription}
-          onChange={(e) => setJobDescription(e.target.value)}
-          className="h-32"
-        />
+            <div className="relative">
+              <Label htmlFor="description">Or paste job description</Label>
+              <Textarea
+                id="description"
+                placeholder="Paste job description here..."
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+                className="h-32 mt-1"
+              />
+            </div>
+          </div>
+        </div>
 
         <div className="flex space-x-4">
           <Button 
@@ -144,7 +201,6 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
           >
             Analyze Match
           </Button>
-
           <Button
             variant="outline"
             onClick={() => coverLetterMutation.mutate()}

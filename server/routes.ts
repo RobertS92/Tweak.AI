@@ -6,6 +6,9 @@ import { analyzeResume } from "./services/resume-analyzer";
 import { matchJob, tweakResume } from "./services/job-matcher";
 import { insertResumeSchema } from "@shared/schema";
 import PDFParser from 'pdf-parse-fork';
+import * as fs from 'fs';
+import * as path from 'path';
+import OpenAI from "openai";
 
 // Add multer type definitions
 declare module 'express-serve-static-core' {
@@ -13,6 +16,10 @@ declare module 'express-serve-static-core' {
     file?: Express.Multer.File
   }
 }
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -26,6 +33,37 @@ async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   } catch (error) {
     console.error('PDF parsing error:', error);
     throw new Error('Failed to parse PDF file');
+  }
+}
+
+async function extractTextFromImage(buffer: Buffer): Promise<string> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-vision-preview",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Extract and return only the text content from this job description image. Include all details but remove any irrelevant text or formatting."
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpeg;base64,${buffer.toString('base64')}`
+              }
+            }
+          ],
+        },
+      ],
+      max_tokens: 1000,
+    });
+
+    return response.choices[0].message.content || '';
+  } catch (error) {
+    console.error('Image text extraction error:', error);
+    throw new Error('Failed to extract text from image');
   }
 }
 
@@ -175,6 +213,44 @@ export async function registerRoutes(app: Express) {
       });
     } catch (error: unknown) {
       console.error("Job matching error:", error);
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ message });
+    }
+  });
+
+  // Add new route for job description file upload
+  app.post("/api/jobs/upload", upload.single("jobDescription"), async (req, res) => {
+    try {
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      let content: string;
+
+      // Extract text based on file type
+      if (file.mimetype === 'application/pdf') {
+        content = await extractTextFromPDF(file.buffer);
+      } else if (file.mimetype === 'text/plain') {
+        content = file.buffer.toString('utf-8');
+      } else if (file.mimetype.startsWith('image/')) {
+        content = await extractTextFromImage(file.buffer);
+      } else if (file.mimetype === 'application/msword' || 
+                 file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        // For Word documents, we'll need a conversion library
+        // For now, return an error
+        return res.status(400).json({ 
+          message: "Word document support coming soon. Please copy and paste the content for now." 
+        });
+      } else {
+        return res.status(400).json({ 
+          message: "Unsupported file type. Please upload a PDF, text file, or image." 
+        });
+      }
+
+      res.json({ content });
+    } catch (error: unknown) {
+      console.error("Job description upload error:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
       res.status(500).json({ message });
     }
