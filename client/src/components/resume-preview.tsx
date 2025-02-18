@@ -22,19 +22,39 @@ interface ResumePreviewProps {
   atsScore?: number | null;
   categoryScores?: {
     atsCompliance?: { score: number; feedback: string[]; description: string };
-    keywordDensity?: { score: number; feedback: string[]; description: string };
+    keywordDensity?: { score: number; feedback: string[]; identifiedKeywords: string[]; description: string };
     roleAlignment?: { score: number; feedback: string[]; description: string };
     recruiterFriendliness?: { score: number; feedback: string[]; description: string };
     conciseness?: { score: number; feedback: string[]; description: string };
+  };
+  analysis?: {
+    improvements?: string[];
+    formattingFixes?: string[];
   };
 }
 
 export default function ResumePreview({
   content,
   atsScore,
-  categoryScores
+  categoryScores,
+  analysis
 }: ResumePreviewProps) {
   const [showContent, setShowContent] = React.useState(false);
+
+  // Calculate the overall score as the average of all category scores
+  const calculateOverallScore = () => {
+    if (!categoryScores) return atsScore || 0;
+
+    const scores = Object.values(categoryScores)
+      .map(category => category?.score || 0)
+      .filter(score => score > 0);
+
+    return scores.length > 0
+      ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+      : 0;
+  };
+
+  const overallScore = calculateOverallScore();
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
@@ -46,138 +66,49 @@ export default function ResumePreview({
           {/* Main Score Display */}
           <div className="flex flex-col items-center mb-8">
             <div className="text-6xl font-bold text-primary mb-4">
-              {atsScore}
+              {overallScore}
             </div>
-            <Progress value={atsScore || 0} className="w-full h-3 bg-gray-200" />
+            <Progress value={overallScore} className="w-full h-3 bg-gray-200" />
           </div>
 
           {/* Category Breakdown */}
           <div className="space-y-6">
             <h3 className="text-xl font-semibold text-gray-700 mb-4">Category Breakdown</h3>
             <div className="space-y-4">
-              {categoryScores?.atsCompliance && (
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center gap-2 cursor-help">
-                            <span className="text-sm font-medium text-gray-700">ATS Compliance</span>
-                            <Info className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs p-4">
-                          <p className="font-medium mb-2">{categoryScores.atsCompliance.description}</p>
-                          <ul className="list-disc list-inside space-y-1">
-                            {categoryScores.atsCompliance.feedback.map((item, i) => (
-                              <li key={i} className="text-sm">{item}</li>
-                            ))}
-                          </ul>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+              {categoryScores && Object.entries(categoryScores).map(([key, category]) => (
+                category && (
+                  <div key={key} className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-2 cursor-help">
+                              <span className="text-sm font-medium text-gray-700">
+                                {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                              </span>
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs p-4">
+                            <p className="font-medium mb-2">{category.description}</p>
+                            <ul className="list-disc list-inside space-y-1">
+                              {category.feedback.map((item, i) => (
+                                <li key={i} className="text-sm">{item}</li>
+                              ))}
+                            </ul>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <div className="flex items-center gap-4 flex-1">
+                      <Progress value={category.score} className="h-2 flex-1" />
+                      <span className="text-sm font-medium text-gray-600 w-12">
+                        {category.score}%
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4 flex-1">
-                    <Progress value={categoryScores.atsCompliance.score} className="h-2 flex-1" />
-                    <span className="text-sm font-medium text-gray-600 w-12">
-                      {categoryScores.atsCompliance.score}%
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {categoryScores?.keywordDensity && (
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center gap-2 cursor-help">
-                            <span className="text-sm font-medium text-gray-700">Keyword Density</span>
-                            <Info className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs p-4">
-                          <p className="font-medium mb-2">{categoryScores.keywordDensity.description}</p>
-                          <ul className="list-disc list-inside space-y-1">
-                            {categoryScores.keywordDensity.feedback.map((item, i) => (
-                              <li key={i} className="text-sm">{item}</li>
-                            ))}
-                          </ul>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <div className="flex items-center gap-4 flex-1">
-                    <Progress value={categoryScores.keywordDensity.score} className="h-2 flex-1" />
-                    <span className="text-sm font-medium text-gray-600 w-12">
-                      {categoryScores.keywordDensity.score}%
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {categoryScores?.recruiterFriendliness && (
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center gap-2 cursor-help">
-                            <span className="text-sm font-medium text-gray-700">Recruiter-Friendliness</span>
-                            <Info className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs p-4">
-                          <p className="font-medium mb-2">{categoryScores.recruiterFriendliness.description}</p>
-                          <ul className="list-disc list-inside space-y-1">
-                            {categoryScores.recruiterFriendliness.feedback.map((item, i) => (
-                              <li key={i} className="text-sm">{item}</li>
-                            ))}
-                          </ul>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <div className="flex items-center gap-4 flex-1">
-                    <Progress value={categoryScores.recruiterFriendliness.score} className="h-2 flex-1" />
-                    <span className="text-sm font-medium text-gray-600 w-12">
-                      {categoryScores.recruiterFriendliness.score}%
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {categoryScores?.conciseness && (
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center gap-2 cursor-help">
-                            <span className="text-sm font-medium text-gray-700">Conciseness & Impact</span>
-                            <Info className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs p-4">
-                          <p className="font-medium mb-2">{categoryScores.conciseness.description}</p>
-                          <ul className="list-disc list-inside space-y-1">
-                            {categoryScores.conciseness.feedback.map((item, i) => (
-                              <li key={i} className="text-sm">{item}</li>
-                            ))}
-                          </ul>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <div className="flex items-center gap-4 flex-1">
-                    <Progress value={categoryScores.conciseness.score} className="h-2 flex-1" />
-                    <span className="text-sm font-medium text-gray-600 w-12">
-                      {categoryScores.conciseness.score}%
-                    </span>
-                  </div>
-                </div>
-              )}
+                )
+              ))}
             </div>
           </div>
         </CardContent>
@@ -189,7 +120,38 @@ export default function ResumePreview({
           <CardTitle className="text-xl font-semibold text-gray-800">Enhanced Version</CardTitle>
           <p className="text-sm text-gray-600">AI-enhanced version of your resume</p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {analysis && (analysis.improvements?.length > 0 || analysis.formattingFixes?.length > 0) && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              {analysis.improvements?.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-gray-700">Content Improvements:</span>
+                  </div>
+                  <ul className="space-y-2 text-sm text-gray-600 ml-4">
+                    {analysis.improvements.map((improvement, i) => (
+                      <li key={i}>• {improvement}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {analysis.formattingFixes?.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-gray-700">Formatting Fixes:</span>
+                  </div>
+                  <ul className="space-y-2 text-sm text-gray-600 ml-4">
+                    {analysis.formattingFixes.map((fix, i) => (
+                      <li key={i}>• {fix}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
           <Button 
             onClick={() => setShowContent(true)} 
             className="w-full py-3 bg-blue-600 hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"

@@ -15,16 +15,19 @@ const categoryResponseSchema = z.object({
 const analysisResponseSchema = z.object({
   categoryScores: z.object({
     atsCompliance: categoryResponseSchema,
-    keywordDensity: categoryResponseSchema,
+    keywordDensity: categoryResponseSchema.extend({
+      identifiedKeywords: z.array(z.string())
+    }),
     roleAlignment: categoryResponseSchema,
     recruiterFriendliness: categoryResponseSchema,
     conciseness: categoryResponseSchema
   }),
+  improvements: z.array(z.string()),
+  formattingFixes: z.array(z.string()),
   overallScore: z.number()
 });
 
 function preprocessResume(content: string): string {
-  // Remove extra whitespace, normalize line endings, and remove special characters
   return content
     .replace(/\r\n/g, '\n')
     .replace(/[^\w\s,.!?:;()-]/g, ' ') // Keep only basic punctuation
@@ -33,21 +36,18 @@ function preprocessResume(content: string): string {
 }
 
 function extractRelevantSections(content: string): string {
-  // Get the most important sections of the resume
   const sections = content.split(/\n{2,}/);
   const relevantContent = sections
-    .slice(0, Math.min(sections.length, 10)) // Take first 10 sections
+    .slice(0, Math.min(sections.length, 10))
     .join('\n\n');
   return relevantContent;
 }
 
 export async function analyzeResume(content: string) {
   try {
-    // Preprocess and extract relevant content
     const processedContent = preprocessResume(content);
     const relevantContent = extractRelevantSections(processedContent);
 
-    // Analyze the resume content
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -60,16 +60,27 @@ export async function analyzeResume(content: string) {
             4. Recruiter-Friendliness: Assess readability, clarity, and professional presentation
             5. Conciseness & Impact: Review brevity and effectiveness of descriptions
 
-            Provide scores (0-100) and 2-3 specific feedback points for each category.
+            For each category, provide:
+            - A score (0-100)
+            - 2-3 specific feedback points
+            - A brief description of what the category measures
+
+            Additionally:
+            - For Keyword Density, identify the key industry/role-specific keywords found
+            - List specific improvements that could enhance the resume
+            - List any formatting fixes needed
+
             Return JSON matching this structure:
             {
               "categoryScores": {
                 "atsCompliance": { "score": number, "feedback": string[], "description": string },
-                "keywordDensity": { "score": number, "feedback": string[], "description": string },
+                "keywordDensity": { "score": number, "feedback": string[], "description": string, "identifiedKeywords": string[] },
                 "roleAlignment": { "score": number, "feedback": string[], "description": string },
                 "recruiterFriendliness": { "score": number, "feedback": string[], "description": string },
                 "conciseness": { "score": number, "feedback": string[], "description": string }
               },
+              "improvements": string[],
+              "formattingFixes": string[],
               "overallScore": number
             }`
         },
