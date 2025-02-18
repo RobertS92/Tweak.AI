@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Download, ArrowLeft, Eye } from "lucide-react";
+import { Download, ArrowLeft, Eye, Upload } from "lucide-react";
 import { Link } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -121,10 +121,18 @@ export default function ResumeEditor() {
               Back to Dashboard
             </Button>
           </Link>
-          <Button onClick={() => window.print()}>
-            <Download className="mr-2 h-4 w-4" />
-            Download
-          </Button>
+          <div className="flex gap-2">
+            <Link href="/upload">
+              <Button variant="outline">
+                <Upload className="mr-2 h-4 w-4" />
+                Upload Another Resume
+              </Button>
+            </Link>
+            <Button onClick={() => window.print()}>
+              <Download className="mr-2 h-4 w-4" />
+              Download
+            </Button>
+          </div>
         </div>
 
         {/* Resume Quality Score Card */}

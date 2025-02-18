@@ -133,7 +133,12 @@ export default function ResumeUpload() {
               <p className="text-sm text-muted-foreground mb-4">
                 Supported formats: PDF, Word, or TXT (Max 5MB)
               </p>
-              <Button onClick={handleButtonClick}>Select File</Button>
+              <div className="space-y-2">
+                <Button onClick={handleButtonClick}>Select File</Button>
+                <p className="text-xs text-muted-foreground">
+                  You can upload multiple resumes by returning to this page
+                </p>
+              </div>
             </>
           )}
         </div>
