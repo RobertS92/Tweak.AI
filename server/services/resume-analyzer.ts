@@ -53,7 +53,9 @@ export async function analyzeResume(content: string) {
       messages: [
         {
           role: "system",
-          content: `You are an expert resume analyzer. Analyze this resume and provide detailed feedback in these categories:
+          content: `You are an expert resume analyzer and enhancer. Analyze this resume in detail and provide comprehensive feedback and improvements.
+
+            Analyze these categories:
             1. ATS Compliance: Check formatting, standard sections, and machine readability
             2. Keyword Density: Analyze relevant industry/role keywords and their usage
             3. Recruiter-Friendliness: Assess readability, clarity, and professional presentation
@@ -61,14 +63,29 @@ export async function analyzeResume(content: string) {
 
             For each category, provide:
             - A score (0-100)
-            - 2-3 specific feedback points
-            - A brief description of what the category measures
+            - Detailed feedback points explaining issues and their impact
+            - A clear description of what the category measures
 
             Additionally:
-            - For Keyword Density, identify the key industry/role-specific keywords found
-            - List specific improvements that could enhance the resume
-            - List any formatting fixes needed
-            - Provide an enhanced version of the resume with all improvements applied
+            1. For Keyword Density:
+               - Identify all key industry/role-specific keywords found
+               - Suggest additional relevant keywords to include
+
+            2. Content Improvements:
+               - List specific improvements needed for each section
+               - Explain why each improvement matters
+               - Suggest better phrasing or structure for weak points
+
+            3. Formatting Fixes:
+               - Detail all formatting issues found
+               - Explain how each fix improves readability or ATS compatibility
+               - Suggest specific formatting changes
+
+            4. Enhanced Resume:
+               - Create an improved version of the resume
+               - Apply all suggested improvements and fixes
+               - Enhance the language and structure while maintaining authenticity
+               - Make it more impactful and ATS-friendly
 
             Return JSON matching this structure:
             {

@@ -2,12 +2,13 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from "@/components/ui/button";
-import { FileText, Info } from "lucide-react";
+import { FileText, Info, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Tooltip,
@@ -16,6 +17,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ResumePreviewProps {
   content: string;
@@ -62,7 +64,6 @@ export default function ResumePreview({
           <CardTitle className="text-2xl font-bold text-gray-800">Resume Quality Score</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Main Score Display */}
           <div className="flex flex-col items-center mb-8">
             <div className="text-6xl font-bold text-primary mb-4">
               {overallScore}
@@ -70,7 +71,6 @@ export default function ResumePreview({
             <Progress value={overallScore} className="w-full h-3 bg-gray-200" />
           </div>
 
-          {/* Category Breakdown */}
           <div className="space-y-6">
             <h3 className="text-xl font-semibold text-gray-700 mb-4">Category Breakdown</h3>
             <div className="space-y-4">
@@ -94,6 +94,18 @@ export default function ResumePreview({
                               {category.feedback.map((item, i) => (
                                 <li key={i} className="text-sm">{item}</li>
                               ))}
+                              {key === 'keywordDensity' && category.identifiedKeywords && (
+                                <div className="mt-2">
+                                  <p className="text-sm font-medium">Identified Keywords:</p>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {category.identifiedKeywords.map((keyword, i) => (
+                                      <span key={i} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                                        {keyword}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </ul>
                           </TooltipContent>
                         </Tooltip>
@@ -129,7 +141,10 @@ export default function ResumePreview({
                 </div>
                 <ul className="space-y-2 text-sm text-gray-600 ml-4">
                   {analysis.improvements?.map((improvement, i) => (
-                    <li key={i}>• {improvement}</li>
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="font-medium">•</span>
+                      <span>{improvement}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -141,7 +156,10 @@ export default function ResumePreview({
                 </div>
                 <ul className="space-y-2 text-sm text-gray-600 ml-4">
                   {analysis.formattingFixes?.map((fix, i) => (
-                    <li key={i}>• {fix}</li>
+                    <li key={i} className="flex items-start gap-2">
+                      <span className="font-medium">•</span>
+                      <span>{fix}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -160,15 +178,39 @@ export default function ResumePreview({
 
       {/* Enhanced Resume Dialog */}
       <Dialog open={showContent} onOpenChange={setShowContent}>
-        <DialogContent className="max-w-3xl h-[80vh]">
+        <DialogContent className="max-w-4xl h-[80vh]">
           <DialogHeader>
-            <DialogTitle>Enhanced Resume Preview</DialogTitle>
+            <DialogTitle>Enhanced Resume</DialogTitle>
+            <DialogDescription>
+              AI-optimized version with all improvements and formatting fixes applied
+            </DialogDescription>
           </DialogHeader>
-          <ScrollArea className="flex-1">
-            <div className="whitespace-pre-wrap font-mono text-sm p-4">
-              {analysis?.enhancedContent || content}
-            </div>
-          </ScrollArea>
+          <Tabs defaultValue="enhanced" className="w-full h-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="original">Original Resume</TabsTrigger>
+              <TabsTrigger value="enhanced">Enhanced Version</TabsTrigger>
+            </TabsList>
+            <TabsContent value="original" className="mt-4 h-[calc(100%-4rem)]">
+              <ScrollArea className="h-full">
+                <div className="whitespace-pre-wrap font-mono text-sm p-4">
+                  {content}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+            <TabsContent value="enhanced" className="mt-4 h-[calc(100%-4rem)]">
+              <ScrollArea className="h-full">
+                <div className="whitespace-pre-wrap font-mono text-sm p-4">
+                  {analysis?.enhancedContent}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+          </Tabs>
+          <div className="absolute bottom-4 right-4">
+            <Button onClick={() => window.print()} size="sm">
+              <Download className="w-4 h-4 mr-2" />
+              Download Enhanced Resume
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
