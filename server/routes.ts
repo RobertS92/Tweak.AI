@@ -4,6 +4,7 @@ import multer from "multer";
 import { storage } from "./storage";
 import { analyzeResume } from "./services/resume-analyzer";
 import { insertResumeSchema } from "@shared/schema";
+import PDFParser from 'pdf-parse-fork';
 
 // Add multer type definitions
 declare module 'express-serve-static-core' {
@@ -17,6 +18,16 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
+async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  try {
+    const data = await PDFParser(buffer);
+    return data.text;
+  } catch (error) {
+    console.error('PDF parsing error:', error);
+    throw new Error('Failed to parse PDF file');
+  }
+}
+
 export async function registerRoutes(app: Express) {
   // Resume routes
   app.post("/api/resumes", upload.single("resume"), async (req, res) => {
@@ -28,18 +39,20 @@ export async function registerRoutes(app: Express) {
 
       // Extract text content from the file
       let content: string;
-      if (file.mimetype === 'text/plain') {
+      if (file.mimetype === 'application/pdf') {
+        content = await extractTextFromPDF(file.buffer);
+      } else if (file.mimetype === 'text/plain') {
         content = file.buffer.toString('utf-8');
       } else {
-        // For PDF/DOC files, you would use a parser here
-        // For now, we'll use base64 as placeholder
-        content = file.buffer.toString('base64');
+        // For other file types (e.g., DOC), return error for now
+        return res.status(400).json({ message: "Only PDF and TXT files are supported at this time" });
       }
 
       console.log("File received:", {
         originalname: file.originalname,
         mimetype: file.mimetype,
-        size: file.size
+        size: file.size,
+        contentLength: content.length
       });
 
       // First create the resume record
