@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { FileText } from "lucide-react";
@@ -47,9 +46,6 @@ export default function ResumePreview({
           <CardContent className="p-6 text-center">
             <div className="text-7xl font-bold text-primary mb-4">{atsScore}</div>
             <Progress value={atsScore} className="h-3 mb-2" />
-            <Badge variant={atsScore >= 80 ? "success" : "destructive"} className="text-lg">
-              {atsScore >= 80 ? "Excellent" : "Needs Improvement"}
-            </Badge>
           </CardContent>
         </Card>
       )}
@@ -60,48 +56,48 @@ export default function ResumePreview({
           <div className="space-y-4">
             {categoryScores?.atsCompliance && (
               <div className="flex items-center gap-4">
-                <div className="w-40 font-medium">ATS Compliance</div>
+                <div className="font-medium">ATS Compliance</div>
                 <div className="flex-1">
                   <Progress value={categoryScores.atsCompliance.score} className="h-3" />
                 </div>
-                <div className="w-12 text-right font-bold">{categoryScores.atsCompliance.score}%</div>
+                <div className="text-right font-bold">{categoryScores.atsCompliance.score}%</div>
               </div>
             )}
 
             {categoryScores?.keywordDensity && (
               <div className="flex items-center gap-4">
-                <div className="w-40 font-medium">Keyword Density</div>
+                <div className="font-medium">Keyword Density</div>
                 <div className="flex-1">
                   <Progress value={categoryScores.keywordDensity.score} className="h-3" />
                 </div>
-                <div className="w-12 text-right font-bold">{categoryScores.keywordDensity.score}%</div>
+                <div className="text-right font-bold">{categoryScores.keywordDensity.score}%</div>
               </div>
             )}
 
             {categoryScores?.recruiterFriendliness && (
               <div className="flex items-center gap-4">
-                <div className="w-40 font-medium">Recruiter Friendly</div>
+                <div className="font-medium">Recruiter Friendly</div>
                 <div className="flex-1">
                   <Progress value={categoryScores.recruiterFriendliness.score} className="h-3" />
                 </div>
-                <div className="w-12 text-right font-bold">{categoryScores.recruiterFriendliness.score}%</div>
+                <div className="text-right font-bold">{categoryScores.recruiterFriendliness.score}%</div>
               </div>
             )}
 
             {categoryScores?.conciseness && (
               <div className="flex items-center gap-4">
-                <div className="w-40 font-medium">Conciseness</div>
+                <div className="font-medium">Conciseness</div>
                 <div className="flex-1">
                   <Progress value={categoryScores.conciseness.score} className="h-3" />
                 </div>
-                <div className="w-12 text-right font-bold">{categoryScores.conciseness.score}%</div>
+                <div className="text-right font-bold">{categoryScores.conciseness.score}%</div>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Enhanced Resume Button */}
+      {/* View Enhanced Resume Button */}
       <Button 
         onClick={() => setShowContent(true)}
         className="w-full"
