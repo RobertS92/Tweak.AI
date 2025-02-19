@@ -314,7 +314,7 @@ export async function registerRoutes(app: Express) {
   });
 
   // Resume analysis route with proper content handling
-  app.post("/api/resumes/analyze", async (req, res) => {
+  app.post("/api/resumes/analyze", upload.none(), async (req, res) => {
     try {
       const { content, sectionType } = req.body;
 
@@ -326,9 +326,6 @@ export async function registerRoutes(app: Express) {
       if (Buffer.byteLength(content) > 50 * 1024 * 1024) { // 50MB limit
         return res.status(413).json({ message: "Resume content too large" });
       }
-
-      // Truncate content for OpenAI analysis
-      const truncatedContent = truncateText(content);
 
       if (sectionType === "skills") {
         console.log("Analyzing resume for skills extraction...");
@@ -354,7 +351,7 @@ Important: Always return a valid JSON object with a 'skills' array, even if empt
             },
             {
               role: "user",
-              content: `Extract all technical and professional skills from this resume content: ${truncatedContent}`
+              content: `Extract all technical and professional skills from this resume content: ${content}`
             }
           ],
           response_format: { type: "json_object" }
@@ -376,29 +373,8 @@ Important: Always return a valid JSON object with a 'skills' array, even if empt
         return;
       }
 
-      // Prepare the prompt based on section type
-      let prompt = `Analyze and improve the following ${sectionType} section of a resume:\n\n${truncatedContent}\n\n`;
-      prompt += "Provide specific suggestions for improvements in JSON format with the following structure:\n";
-      prompt += "{\n  'enhancedContent': 'improved version',\n  'suggestions': ['specific suggestion 1', 'specific suggestion 2'],\n  'explanation': 'detailed explanation of improvements'\n}";
-
-      const response = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert resume writer and career coach. Analyze the resume content and provide specific, actionable improvements."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        response_format: { type: "json_object" }
-      });
-
-      const analysis = JSON.parse(response.choices[0].message.content);
-      res.json(analysis);
-    } catch (error: unknown) {
+      res.status(400).json({ message: "Invalid section type" });
+    } catch (error) {
       console.error("Resume analysis error:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
       res.status(500).json({ message });

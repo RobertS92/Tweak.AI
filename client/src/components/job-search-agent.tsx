@@ -103,24 +103,16 @@ export default function JobSearchAgent() {
         throw new Error("Resume content is empty");
       }
 
-      // Add size validation
-      const contentSize = new Blob([content]).size;
-      if (contentSize > 50 * 1024 * 1024) { // 50MB limit
-        throw new Error("Resume content is too large (max 50MB)");
-      }
+      console.log("Preparing resume content for analysis...");
 
-      console.log("Sending resume content for analysis...");
+      // Create FormData object
+      const formData = new FormData();
+      formData.append('content', content);
+      formData.append('sectionType', 'skills');
 
-      // Send content in chunks if needed
-      let processedContent = content;
-      if (contentSize > 1024 * 1024) { // If larger than 1MB, truncate
-        processedContent = content.slice(0, 1024 * 1024) + "...";
-        console.log("Content truncated for processing");
-      }
-
-      const response = await apiRequest("POST", "/api/resumes/analyze", {
-        content: processedContent,
-        sectionType: "skills"
+      const response = await fetch('/api/resumes/analyze', {
+        method: 'POST',
+        body: formData
       });
 
       if (!response.ok) {
@@ -218,7 +210,7 @@ export default function JobSearchAgent() {
     }
 
     setIsSearching(true);
-    searchMutation.mutate({ 
+    searchMutation.mutate({
       keywords: [...selectedSkills, jobKeywords].filter(Boolean).join(", "),
       resumeId: selectedResumeId
     });
@@ -447,7 +439,7 @@ export default function JobSearchAgent() {
                     </p>
                     <p className="text-xs text-gray-400">Source: {job.source}</p>
                   </div>
-                  <Badge 
+                  <Badge
                     variant={job.matchScore >= 80 ? "default" : "secondary"}
                     className="flex items-center gap-1"
                   >
@@ -468,9 +460,9 @@ export default function JobSearchAgent() {
                       size="sm"
                       variant="outline"
                       className="flex items-center gap-1"
-                      onClick={() => optimizeMutation.mutate({ 
-                        jobId: job.id, 
-                        resumeId: selectedResumeId || 0 
+                      onClick={() => optimizeMutation.mutate({
+                        jobId: job.id,
+                        resumeId: selectedResumeId || 0
                       })}
                       disabled={!selectedResumeId}
                     >
