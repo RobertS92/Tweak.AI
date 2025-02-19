@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, FileEdit, FileText } from "lucide-react";
+import { LayoutDashboard, FileEdit, FileText, Briefcase } from "lucide-react";
 
 export default function NavigationBar() {
   return (
@@ -30,6 +30,12 @@ export default function NavigationBar() {
               <Button variant="ghost" className="flex items-center">
                 <FileText className="mr-2 h-4 w-4" />
                 Resume Builder
+              </Button>
+            </Link>
+            <Link href="/job-search">
+              <Button variant="ghost" className="flex items-center">
+                <Briefcase className="mr-2 h-4 w-4" />
+                Job Search
               </Button>
             </Link>
           </nav>

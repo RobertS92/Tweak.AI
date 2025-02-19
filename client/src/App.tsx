@@ -8,6 +8,7 @@ import ResumeEditor from "@/pages/resume-editor";
 import Dashboard from "@/pages/dashboard";
 import ResumeUpload from "@/components/resume-upload";
 import ResumeBuilder from "@/pages/resume-builder";
+import JobSearch from "@/pages/job-search";
 import NavigationBar from "@/components/navigation-bar";
 
 function Router() {
@@ -21,6 +22,7 @@ function Router() {
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/upload" component={ResumeUpload} />
           <Route path="/builder" component={ResumeBuilder} />
+          <Route path="/job-search" component={JobSearch} />
           <Route component={NotFound} />
         </Switch>
       </main>
