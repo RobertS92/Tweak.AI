@@ -10,6 +10,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { queryClient } from "@/lib/queryClient";
 
 interface Section {
   id: string;
@@ -22,6 +23,12 @@ interface Section {
     description?: string;
     bullets?: string[];
   }>;
+}
+
+interface AIEnhancement {
+  enhancedContent: string;
+  suggestions: string[];
+  explanation: string;
 }
 
 export default function ResumeBuilder() {
@@ -38,7 +45,7 @@ export default function ResumeBuilder() {
   });
 
   const [sections, setSections] = useState<Section[]>([
-    { 
+    {
       id: "summary",
       title: "Professional Summary",
       content: "",
@@ -110,8 +117,8 @@ export default function ResumeBuilder() {
           });
         } catch (e) {
           // If not JSON, use the content as is for the summary
-          setSections(prev => prev.map(section => 
-            section.id === "summary" 
+          setSections(prev => prev.map(section =>
+            section.id === "summary"
               ? { ...section, content: resumeData.content }
               : section
           ));
@@ -138,6 +145,30 @@ export default function ResumeBuilder() {
       });
     }
   });
+
+  const analyzeMutation = useMutation({
+    mutationFn: async (data: { content: string; sectionType: string }) => {
+      return apiRequest("POST", "/api/resumes/analyze", data).then(r => r.json());
+    },
+    onSuccess: (data: AIEnhancement) => {
+      setMessages(prev => [
+        ...prev,
+        {
+          type: 'assistant',
+          content: data.explanation
+        }
+      ]);
+      setCurrentSuggestions(data.suggestions);
+      toast({
+        title: "Analysis Complete",
+        description: "Review the suggestions and click to apply them"
+      });
+    }
+  });
+
+  const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
 
   const handleGeneratePDF = async () => {
     try {
@@ -222,10 +253,29 @@ export default function ResumeBuilder() {
 
   const handleSectionClick = (sectionId: string) => {
     setActiveSection(sectionId);
-    setMessages(prev => [...prev, {
-      type: 'assistant',
-      content: `Let's work on your ${sectionId} section. Would you like some suggestions based on best practices?`
-    }]);
+    const section = sections.find(s => s.id === sectionId);
+
+    if (section) {
+      setIsAnalyzing(true);
+      analyzeMutation.mutate({
+        content: section.content || JSON.stringify(section.items),
+        sectionType: sectionId
+      });
+
+      setMessages(prev => [...prev, {
+        type: 'assistant',
+        content: `Analyzing your ${section.title.toLowerCase()}. I'll provide specific suggestions to enhance this section...`
+      }]);
+    }
+  };
+
+  const applySuggestion = (suggestion: string) => {
+    if (activeSection) {
+      enhanceMutation.mutate({
+        sectionId: activeSection,
+        content: suggestion
+      });
+    }
   };
 
   const handleSendMessage = async () => {
@@ -233,9 +283,9 @@ export default function ResumeBuilder() {
       setMessages(prev => [...prev, { type: 'user', content: chatMessage }]);
 
       if (activeSection) {
-        enhanceMutation.mutate({
-          sectionId: activeSection,
-          content: chatMessage
+        analyzeMutation.mutate({
+          content: chatMessage,
+          sectionType: activeSection
         });
       }
 
@@ -250,7 +300,7 @@ export default function ResumeBuilder() {
           <h1 className="text-2xl font-bold">Resume Builder</h1>
           <div className="flex gap-3">
             {existingResumes && existingResumes.length > 0 && (
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => populateFromResume(existingResumes[0].id)}
               >
@@ -355,7 +405,7 @@ export default function ResumeBuilder() {
                       {section.id === "summary" ? (
                         <Textarea
                           value={section.content}
-                          onChange={(e) => setSections(prev => 
+                          onChange={(e) => setSections(prev =>
                             prev.map(s => s.id === section.id ? { ...s, content: e.target.value } : s)
                           )}
                           placeholder="Write a compelling professional summary highlighting your key strengths and career objectives..."
@@ -441,7 +491,7 @@ export default function ResumeBuilder() {
               >
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
-              AI Assistant
+              AI Assistant {isAnalyzing && "(Analyzing...)"}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 flex flex-col h-[calc(100%-57px)]">
@@ -460,13 +510,33 @@ export default function ResumeBuilder() {
                     {message.content}
                   </div>
                 ))}
+                {currentSuggestions.length > 0 && (
+                  <div className="bg-gray-100 rounded-xl p-4 space-y-2">
+                    <p className="font-medium text-sm text-gray-700">Suggested Improvements:</p>
+                    {currentSuggestions.map((suggestion, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-left justify-start h-auto py-2 px-3"
+                        onClick={() => applySuggestion(suggestion)}
+                      >
+                        {suggestion}
+                      </Button>
+                    ))}
+                  </div>
+                )}
               </div>
             </ScrollArea>
             <div className="p-4 border-t flex gap-3">
               <Textarea
                 value={chatMessage}
                 onChange={(e) => setChatMessage(e.target.value)}
-                placeholder="Ask me to help improve the selected section..."
+                placeholder={
+                  activeSection
+                    ? "Ask for specific improvements or suggestions..."
+                    : "Select a section to get started..."
+                }
                 className="flex-1 resize-none h-14"
                 onKeyPress={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
@@ -478,6 +548,7 @@ export default function ResumeBuilder() {
               <Button
                 onClick={handleSendMessage}
                 className="h-14 w-14 p-0"
+                disabled={!activeSection}
               >
                 <Send className="h-5 w-5" />
               </Button>

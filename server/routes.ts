@@ -340,6 +340,41 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Add this to the existing route handlers in registerRoutes
+  app.post("/api/resumes/analyze", async (req, res) => {
+    try {
+      const { content, sectionType } = req.body;
+
+      // Prepare the prompt based on section type
+      let prompt = `Analyze and improve the following ${sectionType} section of a resume:\n\n${content}\n\n`;
+      prompt += "Provide specific suggestions for improvements in JSON format with the following structure:\n";
+      prompt += "{\n  'enhancedContent': 'improved version',\n  'suggestions': ['specific suggestion 1', 'specific suggestion 2'],\n  'explanation': 'detailed explanation of improvements'\n}";
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert resume writer and career coach. Analyze the resume content and provide specific, actionable improvements."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        response_format: { type: "json_object" }
+      });
+
+      const analysis = JSON.parse(response.choices[0].message.content);
+      res.json(analysis);
+    } catch (error: unknown) {
+      console.error("Resume analysis error:", error);
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ message });
+    }
+  });
+
+
   const httpServer = createServer(app);
   return httpServer;
 }
