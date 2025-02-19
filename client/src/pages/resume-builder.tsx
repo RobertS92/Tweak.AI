@@ -277,151 +277,155 @@ export default function ResumeBuilder() {
           </div>
         </div>
 
-        <div className="flex gap-6 h-[75vh]">
-          <Card className="w-60 self-start sticky top-6">
-            <CardContent className="p-4">
-              {sections.map((section) => (
-                <div
-                  key={section.id}
-                  onClick={() => handleSectionClick(section.id)}
-                  className={cn(
-                    "py-3 px-4 my-1 cursor-pointer rounded-lg border-l-2 font-medium transition-all",
-                    activeSection === section.id
-                      ? "bg-blue-50 border-blue-500 text-blue-700"
-                      : "border-transparent hover:bg-gray-50"
-                  )}
-                >
-                  {section.title}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="flex-1">
-            <CardContent className="p-12">
-              <div className="text-center mb-8">
-                <Input
-                  value={personalInfo.name}
-                  onChange={(e) => setPersonalInfo(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Full Name"
-                  className="text-3xl font-bold mb-2 text-center"
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <Input
-                    value={personalInfo.email}
-                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="Email"
-                    className="text-center"
-                  />
-                  <Input
-                    value={personalInfo.phone}
-                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="Phone"
-                    className="text-center"
-                  />
-                  <Input
-                    value={personalInfo.location}
-                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, location: e.target.value }))}
-                    placeholder="Location"
-                    className="text-center"
-                  />
-                  <Input
-                    value={personalInfo.linkedin}
-                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, linkedin: e.target.value }))}
-                    placeholder="LinkedIn URL"
-                    className="text-center"
-                  />
-                </div>
-              </div>
-
-              <ScrollArea className="h-[calc(100%-180px)] pr-4">
+        <div className="grid grid-cols-[240px_1fr] gap-6 h-[75vh]">
+          <Card className="sticky top-6 h-fit max-h-[calc(75vh-48px)] overflow-hidden">
+            <ScrollArea className="h-full max-h-[calc(75vh-48px)]">
+              <CardContent className="p-4">
                 {sections.map((section) => (
                   <div
                     key={section.id}
+                    onClick={() => handleSectionClick(section.id)}
                     className={cn(
-                      "mb-8 p-6 rounded-lg transition-all",
+                      "py-3 px-4 my-1 cursor-pointer rounded-lg border-l-2 font-medium transition-all",
                       activeSection === section.id
-                        ? "border-2 border-blue-500 bg-blue-50/30"
-                        : "border border-transparent hover:border-gray-200"
+                        ? "bg-blue-50 border-blue-500 text-blue-700"
+                        : "border-transparent hover:bg-gray-50"
                     )}
                   >
-                    <h2 className="text-xl font-semibold border-b pb-2 mb-4">
-                      {section.title}
-                    </h2>
-
-                    {section.id === "summary" ? (
-                      <Textarea
-                        value={section.content}
-                        onChange={(e) => setSections(prev => 
-                          prev.map(s => s.id === section.id ? { ...s, content: e.target.value } : s)
-                        )}
-                        placeholder="Write a compelling professional summary highlighting your key strengths and career objectives..."
-                        className="min-h-[120px]"
-                      />
-                    ) : (
-                      <div className="space-y-6">
-                        {section.items?.map((item, itemIndex) => (
-                          <div key={itemIndex} className="p-4 border rounded-lg bg-white/50">
-                            <div className="space-y-3">
-                              <Input
-                                value={item.title}
-                                onChange={(e) => updateSectionItem(section.id, itemIndex, 'title', e.target.value)}
-                                placeholder={`${section.title} Title`}
-                                className="font-semibold text-lg"
-                              />
-                              <div className="flex gap-4">
-                                <Input
-                                  value={item.subtitle}
-                                  onChange={(e) => updateSectionItem(section.id, itemIndex, 'subtitle', e.target.value)}
-                                  placeholder="Organization/Company"
-                                  className="italic flex-1"
-                                />
-                                <Input
-                                  value={item.date}
-                                  onChange={(e) => updateSectionItem(section.id, itemIndex, 'date', e.target.value)}
-                                  placeholder="Date Range"
-                                  className="w-48"
-                                />
-                              </div>
-                              <div className="pl-5 space-y-2">
-                                {item.bullets?.map((bullet, bulletIndex) => (
-                                  <div key={bulletIndex} className="flex gap-2 items-start">
-                                    <span className="mt-2.5">•</span>
-                                    <Input
-                                      value={bullet}
-                                      onChange={(e) => updateBulletPoint(section.id, itemIndex, bulletIndex, e.target.value)}
-                                      placeholder="Add accomplishment or responsibility..."
-                                      className="flex-1"
-                                    />
-                                  </div>
-                                ))}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => addBulletPoint(section.id, itemIndex)}
-                                  className="ml-4"
-                                >
-                                  <Plus className="w-4 h-4 mr-2" />
-                                  Add Bullet Point
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                        <Button
-                          variant="outline"
-                          onClick={() => addSectionItem(section.id)}
-                          className="w-full"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add {section.title} Entry
-                        </Button>
-                      </div>
-                    )}
+                    {section.title}
                   </div>
                 ))}
-              </ScrollArea>
-            </CardContent>
+              </CardContent>
+            </ScrollArea>
+          </Card>
+
+          <Card className="h-[75vh] overflow-hidden">
+            <ScrollArea className="h-full">
+              <CardContent className="p-12">
+                <div className="text-center mb-8">
+                  <Input
+                    value={personalInfo.name}
+                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Full Name"
+                    className="text-3xl font-bold mb-2 text-center"
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      value={personalInfo.email}
+                      onChange={(e) => setPersonalInfo(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="Email"
+                      className="text-center"
+                    />
+                    <Input
+                      value={personalInfo.phone}
+                      onChange={(e) => setPersonalInfo(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="Phone"
+                      className="text-center"
+                    />
+                    <Input
+                      value={personalInfo.location}
+                      onChange={(e) => setPersonalInfo(prev => ({ ...prev, location: e.target.value }))}
+                      placeholder="Location"
+                      className="text-center"
+                    />
+                    <Input
+                      value={personalInfo.linkedin}
+                      onChange={(e) => setPersonalInfo(prev => ({ ...prev, linkedin: e.target.value }))}
+                      placeholder="LinkedIn URL"
+                      className="text-center"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-8">
+                  {sections.map((section) => (
+                    <div
+                      key={section.id}
+                      className={cn(
+                        "p-6 rounded-lg transition-all border",
+                        activeSection === section.id
+                          ? "border-2 border-blue-500 bg-blue-50/30"
+                          : "border-gray-200 hover:border-gray-300"
+                      )}
+                    >
+                      <h2 className="text-xl font-semibold border-b pb-2 mb-4">
+                        {section.title}
+                      </h2>
+
+                      {section.id === "summary" ? (
+                        <Textarea
+                          value={section.content}
+                          onChange={(e) => setSections(prev => 
+                            prev.map(s => s.id === section.id ? { ...s, content: e.target.value } : s)
+                          )}
+                          placeholder="Write a compelling professional summary highlighting your key strengths and career objectives..."
+                          className="min-h-[120px]"
+                        />
+                      ) : (
+                        <div className="space-y-6">
+                          {section.items?.map((item, itemIndex) => (
+                            <div key={itemIndex} className="p-4 border rounded-lg bg-white/50">
+                              <div className="space-y-3">
+                                <Input
+                                  value={item.title}
+                                  onChange={(e) => updateSectionItem(section.id, itemIndex, 'title', e.target.value)}
+                                  placeholder={`${section.title} Title`}
+                                  className="font-semibold text-lg"
+                                />
+                                <div className="flex gap-4">
+                                  <Input
+                                    value={item.subtitle}
+                                    onChange={(e) => updateSectionItem(section.id, itemIndex, 'subtitle', e.target.value)}
+                                    placeholder="Organization/Company"
+                                    className="italic flex-1"
+                                  />
+                                  <Input
+                                    value={item.date}
+                                    onChange={(e) => updateSectionItem(section.id, itemIndex, 'date', e.target.value)}
+                                    placeholder="Date Range"
+                                    className="w-48"
+                                  />
+                                </div>
+                                <div className="pl-5 space-y-2">
+                                  {item.bullets?.map((bullet, bulletIndex) => (
+                                    <div key={bulletIndex} className="flex gap-2 items-start">
+                                      <span className="mt-2.5">•</span>
+                                      <Input
+                                        value={bullet}
+                                        onChange={(e) => updateBulletPoint(section.id, itemIndex, bulletIndex, e.target.value)}
+                                        placeholder="Add accomplishment or responsibility..."
+                                        className="flex-1"
+                                      />
+                                    </div>
+                                  ))}
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => addBulletPoint(section.id, itemIndex)}
+                                    className="ml-4"
+                                  >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Add Bullet Point
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          <Button
+                            variant="outline"
+                            onClick={() => addSectionItem(section.id)}
+                            className="w-full"
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add {section.title} Entry
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </ScrollArea>
           </Card>
         </div>
 
