@@ -346,6 +346,28 @@ export async function registerRoutes(app: Express) {
     try {
       const { content, sectionType } = req.body;
 
+      if (sectionType === "skills") {
+        // Use OpenAI to extract skills from resume content
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "You are an expert at analyzing resumes and extracting technical and professional skills. Extract all relevant skills and return them as a JSON array."
+            },
+            {
+              role: "user",
+              content: `Extract all technical and professional skills from this resume content: ${content}`
+            }
+          ],
+          response_format: { type: "json_object" }
+        });
+
+        const skills = JSON.parse(response.choices[0].message.content);
+        res.json({ skills: skills.skills || [] });
+        return;
+      }
+
       // Prepare the prompt based on section type
       let prompt = `Analyze and improve the following ${sectionType} section of a resume:\n\n${content}\n\n`;
       prompt += "Provide specific suggestions for improvements in JSON format with the following structure:\n";
@@ -374,7 +396,6 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message });
     }
   });
-
 
   // Add job search route
   app.post("/api/jobs/search", async (req, res) => {
