@@ -100,7 +100,7 @@ function extractRelevantSections(content: string): string {
     }
   }
 
-  console.log("Final content length:", combinedContent.length, 
+  console.log("Final content length:", combinedContent.length,
               "Estimated tokens:", estimateTokenCount(combinedContent));
 
   return combinedContent.trim();
@@ -404,8 +404,8 @@ export async function registerRoutes(app: Express) {
         const estimatedTokens = estimateTokenCount(relevantContent);
 
         if (estimatedTokens > 2000) {
-          return res.status(400).json({ 
-            message: "Content too complex for analysis. Please try with a simpler resume." 
+          return res.status(400).json({
+            message: "Content too complex for analysis. Please try with a simpler resume."
           });
         }
 
@@ -484,15 +484,24 @@ IMPORTANT INSTRUCTIONS:
     try {
       const { keywords, resumeId } = req.body;
 
+      if (!keywords || !resumeId) {
+        return res.status(400).json({
+          message: "Missing required parameters: keywords and resumeId"
+        });
+      }
+
       // First get the resume content if available
       let resumeContent = "";
       if (resumeId) {
         const resume = await storage.getResume(resumeId);
-        if (resume) {
-          // Truncate resume content to avoid token limits
-          resumeContent = truncateText(resume.content);
+        if (!resume) {
+          return res.status(404).json({ message: "Resume not found" });
         }
+        // Truncate resume content to avoid token limits
+        resumeContent = truncateText(resume.content);
       }
+
+      console.log("Starting job search with keywords:", keywords);
 
       // Use OpenAI to analyze resume and create optimal search queries
       const searchAnalysisResponse = await openai.chat.completions.create({
@@ -507,13 +516,21 @@ IMPORTANT INSTRUCTIONS:
             content: `Based on these keywords: ${keywords}\nAnd this truncated resume content: ${resumeContent}\n\nCreate a focused job search strategy. Return JSON with searchQueries (array, max 5 most relevant search strings), requiredSkills (array, max 10 key skills), and niceToHaveSkills (array, max 5 skills).`
           }
         ],
-        response_format: { type: "json_object" }
+        temperature: 0.7
       });
+
+      if (!searchAnalysisResponse.choices[0].message.content) {
+        throw new Error("No search strategy generated");
+      }
+
+      console.log("Generated search strategy:", searchAnalysisResponse.choices[0].message.content);
 
       const searchStrategy = JSON.parse(searchAnalysisResponse.choices[0].message.content);
       const searchQueries = searchStrategy.searchQueries;
 
       // Scrape jobs from multiple sources using all search queries
+      console.log("Starting job scraping with queries:", searchQueries);
+
       const jobPromises = searchQueries.map(query => jobScraper.searchJobs(query));
       const jobsByQuery = await Promise.all(jobPromises);
 
@@ -523,6 +540,8 @@ IMPORTANT INSTRUCTIONS:
           jobsByQuery.flat().map(job => [job.url, job])
         ).values()
       );
+
+      console.log(`Found ${uniqueJobs.length} unique jobs`);
 
       // For each job, perform detailed matching analysis
       const jobsWithAnalysis = await Promise.all(
@@ -543,12 +562,15 @@ IMPORTANT INSTRUCTIONS:
       // Filter out failed analyses and sort by match score
       const validJobs = jobsWithAnalysis
         .filter(Boolean)
-        .sort((a, b) => b.matchScore - a.matchScore);
+        .sort((a, b) => (b?.matchScore || 0) - (a?.matchScore || 0));
 
+      console.log(`Returning ${validJobs.length} analyzed jobs`);
       res.json(validJobs);
     } catch (error) {
       console.error("Job search error:", error);
-      res.status(500).json({ message: "Failed to search for jobs" });
+      res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to search for jobs"
+      });
     }
   });
 

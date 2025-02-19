@@ -141,12 +141,17 @@ export default function JobSearchAgent() {
 
   const { data: jobListings, refetch: refetchJobs } = useQuery<JobListing[]>({
     queryKey: ['/api/jobs/search'],
-    enabled: false,
+    enabled: false, // Don't fetch on mount
   });
 
   const searchMutation = useMutation({
     mutationFn: async (data: { keywords: string, resumeId: number }) => {
-      return apiRequest("POST", "/api/jobs/search", data).then(r => r.json());
+      const response = await apiRequest("POST", "/api/jobs/search", data);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to search jobs");
+      }
+      return response.json();
     },
     onSuccess: () => {
       refetchJobs();
@@ -156,10 +161,10 @@ export default function JobSearchAgent() {
       });
       setIsSearching(false);
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: "Search Failed",
-        description: "Unable to complete job search. Please try again.",
+        description: error instanceof Error ? error.message : "Unable to complete job search. Please try again.",
         variant: "destructive"
       });
       setIsSearching(false);
@@ -204,6 +209,15 @@ export default function JobSearchAgent() {
       toast({
         title: "No Resume Selected",
         description: "Please select a resume to start the job search",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (selectedSkills.length === 0) {
+      toast({
+        title: "No Skills Selected",
+        description: "Please select at least one skill for the job search",
         variant: "destructive"
       });
       return;
