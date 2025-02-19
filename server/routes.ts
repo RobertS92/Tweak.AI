@@ -398,6 +398,9 @@ export async function registerRoutes(app: Express) {
   });
 
   // Add job search route from edited snippet
+  function truncateText(text: string, maxLength: number = 4000): string {
+    return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+  }
   app.post("/api/jobs/search", async (req, res) => {
     try {
       const { keywords, resumeId } = req.body;
@@ -407,7 +410,8 @@ export async function registerRoutes(app: Express) {
       if (resumeId) {
         const resume = await storage.getResume(resumeId);
         if (resume) {
-          resumeContent = resume.content;
+          // Truncate resume content to avoid token limits
+          resumeContent = truncateText(resume.content);
         }
       }
 
@@ -421,7 +425,7 @@ export async function registerRoutes(app: Express) {
           },
           {
             role: "user",
-            content: `Keywords: ${keywords}\nResume content: ${resumeContent}\n\nCreate a comprehensive job search strategy. Return JSON with searchQueries (array of search strings), requiredSkills (array), and niceToHaveSkills (array).`
+            content: `Based on these keywords: ${keywords}\nAnd this truncated resume content: ${resumeContent}\n\nCreate a focused job search strategy. Return JSON with searchQueries (array, max 5 most relevant search strings), requiredSkills (array, max 10 key skills), and niceToHaveSkills (array, max 5 skills).`
           }
         ],
         response_format: { type: "json_object" }
@@ -478,21 +482,14 @@ export async function registerRoutes(app: Express) {
         }
       ];
 
-      // Sort jobs by match score and recency
-      const sortedJobs = mockJobs.sort((a, b) => {
-        // Prioritize both match score and recency
-        return (b.matchScore * 0.7 + new Date(b.postedDate).getTime() * 0.3) - 
-               (a.matchScore * 0.7 + new Date(a.postedDate).getTime() * 0.3);
-      });
-
-      res.json(sortedJobs);
+      res.json(mockJobs);
     } catch (error) {
       console.error("Job search error:", error);
       res.status(500).json({ message: "Failed to search for jobs" });
     }
   });
 
-  // Enhanced resume optimization route from edited snippet
+  // Add new route for resume optimization
   app.post("/api/jobs/:jobId/optimize/:resumeId", async (req, res) => {
     try {
       const jobId = parseInt(req.params.jobId);
