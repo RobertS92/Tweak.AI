@@ -397,59 +397,102 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Add job search route
+  // Add job search route from edited snippet
   app.post("/api/jobs/search", async (req, res) => {
     try {
-      const { keywords } = req.body;
+      const { keywords, resumeId } = req.body;
 
-      // Use OpenAI to generate a refined search query
-      const searchQueryResponse = await openai.chat.completions.create({
+      // First get the resume content if available
+      let resumeContent = "";
+      if (resumeId) {
+        const resume = await storage.getResume(resumeId);
+        if (resume) {
+          resumeContent = resume.content;
+        }
+      }
+
+      // Use OpenAI to analyze resume and create optimal search queries
+      const searchAnalysisResponse = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: "You are a job search expert. Convert the user's keywords into a comprehensive search query that will help find relevant jobs."
+            content: "You are a job search expert that creates search strategies. Return a JSON object with search terms and filters optimized for finding relevant jobs."
           },
           {
             role: "user",
-            content: `Convert these keywords into a search query: ${keywords}`
+            content: `Keywords: ${keywords}\nResume content: ${resumeContent}\n\nCreate a comprehensive job search strategy. Return JSON with searchQueries (array of search strings), requiredSkills (array), and niceToHaveSkills (array).`
           }
         ],
         response_format: { type: "json_object" }
       });
 
-      const searchQuery = JSON.parse(searchQueryResponse.choices[0].message.content);
+      const searchStrategy = JSON.parse(searchAnalysisResponse.choices[0].message.content);
 
-      // Simulate job search API call (replace with actual job board API integration)
+      // Here we would integrate with real job boards APIs
+      // For now simulate with enhanced mock data that demonstrates the functionality
       const mockJobs = [
         {
           id: 1,
-          title: "Senior Software Engineer",
-          company: "Tech Corp",
-          location: "San Francisco, CA",
-          description: "Looking for an experienced software engineer with strong full-stack development skills...",
-          matchScore: 85,
+          title: "Senior Machine Learning Engineer",
+          company: "AI Solutions Inc",
+          location: "Remote",
+          description: "Looking for an experienced ML engineer with expertise in deep learning, Python, and TensorFlow. Must have experience with large language models and neural networks. Knowledge of cloud platforms (AWS/GCP) required.",
+          requirements: [
+            "5+ years of ML experience",
+            "Python, TensorFlow, PyTorch",
+            "Deep Learning expertise",
+            "Cloud platforms (AWS/GCP)",
+          ],
+          matchScore: 92,
+          skillMatch: {
+            matched: ["Python", "TensorFlow", "Deep Learning"],
+            missing: ["AWS"],
+          },
+          salary: "$150,000 - $200,000",
+          remote: true,
+          postedDate: new Date().toISOString(),
           url: "https://example.com/job/1"
         },
         {
           id: 2,
-          title: "Full Stack Developer",
-          company: "Startup Inc",
-          location: "Remote",
-          description: "Join our fast-growing team to build innovative solutions...",
-          matchScore: 75,
+          title: "AI Research Scientist",
+          company: "Tech Innovations Corp",
+          location: "San Francisco, CA",
+          description: "Join our research team working on cutting-edge AI applications. Focus on NLP and computer vision projects. PhD in Computer Science or related field preferred.",
+          requirements: [
+            "PhD in Computer Science or related field",
+            "Publication track record",
+            "Python, PyTorch",
+            "NLP expertise"
+          ],
+          matchScore: 85,
+          skillMatch: {
+            matched: ["Python", "NLP", "Machine Learning"],
+            missing: ["Computer Vision"],
+          },
+          salary: "$180,000 - $220,000",
+          remote: false,
+          postedDate: new Date().toISOString(),
           url: "https://example.com/job/2"
         }
       ];
 
-      res.json(mockJobs);
+      // Sort jobs by match score and recency
+      const sortedJobs = mockJobs.sort((a, b) => {
+        // Prioritize both match score and recency
+        return (b.matchScore * 0.7 + new Date(b.postedDate).getTime() * 0.3) - 
+               (a.matchScore * 0.7 + new Date(a.postedDate).getTime() * 0.3);
+      });
+
+      res.json(sortedJobs);
     } catch (error) {
       console.error("Job search error:", error);
       res.status(500).json({ message: "Failed to search for jobs" });
     }
   });
 
-  // Add resume optimization route
+  // Enhanced resume optimization route from edited snippet
   app.post("/api/jobs/:jobId/optimize/:resumeId", async (req, res) => {
     try {
       const jobId = parseInt(req.params.jobId);
@@ -462,13 +505,18 @@ export async function registerRoutes(app: Express) {
         return res.status(404).json({ message: "Resume or job not found" });
       }
 
-      // Use OpenAI to optimize the resume
+      // Enhanced optimization using OpenAI
       const optimizationResponse = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: "You are an expert resume optimizer. Enhance the resume to better match the job description while maintaining factual accuracy."
+            content: `You are an expert ATS optimization specialist. Analyze the job description and resume, then provide optimized content that:
+            1. Matches keywords and phrases from the job description
+            2. Maintains factual accuracy of the original resume
+            3. Improves ATS-friendliness
+            4. Highlights relevant experience and skills
+            5. Uses industry-standard formatting`
           },
           {
             role: "user",
@@ -476,12 +524,15 @@ export async function registerRoutes(app: Express) {
               Job Description: ${job.description}
               Current Resume: ${resume.content}
 
-              Optimize this resume for the job while keeping all information truthful.
-              Return the optimized content in JSON format with the structure:
+              Optimize this resume for ATS and human readability while maintaining truthfulness.
+              Return a JSON object with:
               {
-                "optimizedContent": "enhanced resume content",
-                "changes": ["list of changes made"],
-                "matchScore": number (0-100)
+                "optimizedContent": "The ATS-optimized resume content",
+                "changes": ["Detailed list of changes made"],
+                "matchScore": "Score 0-100",
+                "keywordMatches": ["Array of matched keywords"],
+                "missingKeywords": ["Important keywords not present"],
+                "formatImprovements": ["List of formatting improvements"]
               }
             `
           }
@@ -491,7 +542,7 @@ export async function registerRoutes(app: Express) {
 
       const optimization = JSON.parse(optimizationResponse.choices[0].message.content);
 
-      // Update the resume with optimized content
+      // Update the resume with optimized content and detailed analysis
       await storage.updateResume(resumeId, {
         enhancedContent: optimization.optimizedContent,
         analysis: {
@@ -499,16 +550,16 @@ export async function registerRoutes(app: Express) {
           jobOptimization: {
             jobId,
             changes: optimization.changes,
-            matchScore: optimization.matchScore
+            matchScore: optimization.matchScore,
+            keywordMatches: optimization.keywordMatches,
+            missingKeywords: optimization.missingKeywords,
+            formatImprovements: optimization.formatImprovements,
+            timestamp: new Date().toISOString()
           }
         }
       });
 
-      res.json({
-        optimizedContent: optimization.optimizedContent,
-        changes: optimization.changes,
-        matchScore: optimization.matchScore
-      });
+      res.json(optimization);
     } catch (error) {
       console.error("Resume optimization error:", error);
       res.status(500).json({ message: "Failed to optimize resume" });
