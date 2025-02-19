@@ -84,65 +84,40 @@ export default function ResumeEditor() {
     },
   });
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     setIsPrinting(true);
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>${resume?.title || 'Enhanced Resume'}</title>
-            <style>
-              body {
-                font-family: Arial, sans-serif;
-                line-height: 1.6;
-                margin: 2rem;
-                max-width: 800px;
-                margin: 0 auto;
-                padding: 2rem;
-              }
-              .resume h2 {
-                color: #1a1a1a;
-                margin-bottom: 1rem;
-                border-bottom: 2px solid #e2e2e2;
-                padding-bottom: 0.5rem;
-              }
-              .job {
-                margin-bottom: 1.5rem;
-              }
-              .job-title {
-                color: #4a4a4a;
-                font-style: italic;
-              }
-              ul {
-                margin: 0.5rem 0;
-                padding-left: 1.5rem;
-              }
-              li {
-                margin-bottom: 0.5rem;
-              }
-              @media print {
-                body {
-                  margin: 1cm;
-                }
-                .no-print {
-                  display: none;
-                }
-              }
-            </style>
-          </head>
-          <body>
-            ${resume?.enhancedContent || resume?.content || ''}
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-        setIsPrinting(false);
-      }, 500);
+    try {
+      const response = await fetch(`/api/resumes/${resumeId}/download-pdf`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      // Create blob from response and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${resume?.title || 'resume'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Download complete",
+        description: "Your enhanced resume has been downloaded",
+      });
+    } catch (error) {
+      toast({
+        title: "Download failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsPrinting(false);
     }
   };
 

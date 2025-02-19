@@ -9,6 +9,7 @@ import PDFParser from 'pdf-parse-fork';
 import * as fs from 'fs';
 import * as path from 'path';
 import OpenAI from "openai";
+import puppeteer from 'puppeteer';
 
 // Add multer type definitions
 declare module 'express-serve-static-core' {
@@ -235,16 +236,16 @@ export async function registerRoutes(app: Express) {
         content = file.buffer.toString('utf-8');
       } else if (file.mimetype.startsWith('image/')) {
         content = await extractTextFromImage(file.buffer);
-      } else if (file.mimetype === 'application/msword' || 
+      } else if (file.mimetype === 'application/msword' ||
                  file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
         // For Word documents, we'll need a conversion library
         // For now, return an error
-        return res.status(400).json({ 
-          message: "Word document support coming soon. Please copy and paste the content for now." 
+        return res.status(400).json({
+          message: "Word document support coming soon. Please copy and paste the content for now."
         });
       } else {
-        return res.status(400).json({ 
-          message: "Unsupported file type. Please upload a PDF, text file, or image." 
+        return res.status(400).json({
+          message: "Unsupported file type. Please upload a PDF, text file, or image."
         });
       }
 
@@ -253,6 +254,89 @@ export async function registerRoutes(app: Express) {
       console.error("Job description upload error:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
       res.status(500).json({ message });
+    }
+  });
+
+  // Add new PDF download route
+  app.post("/api/resumes/:id/download-pdf", async (req, res) => {
+    try {
+      const resumeId = parseInt(req.params.id);
+      const resume = await storage.getResume(resumeId);
+
+      if (!resume) {
+        return res.status(404).json({ message: "Resume not found" });
+      }
+
+      // Launch browser
+      const browser = await puppeteer.launch({
+        headless: 'new',
+      });
+      const page = await browser.newPage();
+
+      // Set content with proper styling
+      await page.setContent(`
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              body {
+                font-family: 'Arial', sans-serif;
+                line-height: 1.6;
+                padding: 40px;
+                max-width: 800px;
+                margin: 0 auto;
+              }
+              .section { margin-bottom: 24px; }
+              h2 {
+                font-size: 18px;
+                color: #333;
+                border-bottom: 1px solid #ddd;
+                padding-bottom: 4px;
+                margin-bottom: 12px;
+              }
+              h3 { 
+                font-size: 16px;
+                color: #444;
+                margin-bottom: 6px;
+              }
+              .job-title {
+                font-style: italic;
+                color: #666;
+                margin-bottom: 8px;
+              }
+              ul {
+                margin: 8px 0;
+                padding-left: 20px;
+              }
+              li {
+                margin: 6px 0;
+              }
+              p { margin: 8px 0; }
+            </style>
+          </head>
+          <body>
+            ${resume.enhancedContent || resume.content}
+          </body>
+        </html>
+      `);
+
+      // Generate PDF
+      const pdf = await page.pdf({
+        format: 'A4',
+        margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' },
+        printBackground: true,
+        displayHeaderFooter: false,
+      });
+
+      await browser.close();
+
+      // Send PDF with proper headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=${resume.title.replace(/\s+/g, '-')}.pdf`);
+      res.send(pdf);
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      res.status(500).json({ message: 'Failed to generate PDF' });
     }
   });
 
