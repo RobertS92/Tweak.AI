@@ -350,11 +350,21 @@ export async function registerRoutes(app: Express) {
       if (sectionType === "skills") {
         // Use OpenAI to extract skills from resume content
         const response = await openai.chat.completions.create({
-          model: "gpt-4o",
+          model: "gpt-4",
           messages: [
             {
               role: "system",
-              content: "You are an expert at analyzing resumes and extracting technical and professional skills. Extract all relevant skills and return them as a JSON array."
+              content: `You are an expert at analyzing resumes and extracting technical and professional skills.
+Extract all relevant skills and return them as a JSON array with the following structure:
+{
+  "skills": ["skill1", "skill2", "skill3"]
+}
+
+Focus on:
+1. Technical skills (programming languages, tools, frameworks)
+2. Domain-specific skills (industry knowledge, methodologies)
+3. Soft skills (leadership, communication)
+4. Certifications and qualifications`
             },
             {
               role: "user",
@@ -364,8 +374,8 @@ export async function registerRoutes(app: Express) {
           response_format: { type: "json_object" }
         });
 
-        const skills = JSON.parse(response.choices[0].message.content);
-        res.json({ skills: skills.skills || [] });
+        const result = JSON.parse(response.choices[0].message.content);
+        res.json({ skills: result.skills || [] });
         return;
       }
 
@@ -375,7 +385,7 @@ export async function registerRoutes(app: Express) {
       prompt += "{\n  'enhancedContent': 'improved version',\n  'suggestions': ['specific suggestion 1', 'specific suggestion 2'],\n  'explanation': 'detailed explanation of improvements'\n}";
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-4",
         messages: [
           {
             role: "system",
@@ -418,7 +428,7 @@ export async function registerRoutes(app: Express) {
 
       // Use OpenAI to analyze resume and create optimal search queries
       const searchAnalysisResponse = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-4",
         messages: [
           {
             role: "system",
@@ -489,7 +499,7 @@ export async function registerRoutes(app: Express) {
 
       // Enhanced optimization using OpenAI
       const optimizationResponse = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "gpt-4",
         messages: [
           {
             role: "system",
