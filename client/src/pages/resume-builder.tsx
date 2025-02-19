@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Download, Plus, Upload } from "lucide-react";
+import { Send, Download, Plus, Upload, ArrowDownWideNarrow, ArrowUpWideNarrow } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -168,6 +168,7 @@ export default function ResumeBuilder() {
 
   const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isAssistantMinimized, setIsAssistantMinimized] = useState(false);
 
 
   const handleGeneratePDF = async () => {
@@ -327,7 +328,7 @@ export default function ResumeBuilder() {
           </div>
         </div>
 
-        <div className="grid grid-cols-[240px_1fr] gap-6 h-[75vh]">
+        <div className="grid grid-cols-[240px_1fr] gap-6 h-[calc(75vh)]">
           <Card className="sticky top-6 h-fit max-h-[calc(75vh-48px)] overflow-hidden">
             <ScrollArea className="h-full max-h-[calc(75vh-48px)]">
               <CardContent className="p-4">
@@ -479,8 +480,11 @@ export default function ResumeBuilder() {
           </Card>
         </div>
 
-        <Card className="h-[25vh]">
-          <CardHeader className="py-3 px-6 border-b">
+        <Card className={cn(
+          "transition-all duration-300",
+          isAssistantMinimized ? "h-[48px]" : "h-[35vh]"
+        )}>
+          <CardHeader className="py-3 px-6 border-b flex flex-row justify-between items-center">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <svg
                 className="w-5 h-5 text-blue-500"
@@ -493,67 +497,81 @@ export default function ResumeBuilder() {
               </svg>
               AI Assistant {isAnalyzing && "(Analyzing...)"}
             </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsAssistantMinimized(!isAssistantMinimized)}
+              className="ml-auto"
+            >
+              {isAssistantMinimized ? (
+                <ArrowUpWideNarrow className="h-4 w-4" />
+              ) : (
+                <ArrowDownWideNarrow className="h-4 w-4" />
+              )}
+            </Button>
           </CardHeader>
-          <CardContent className="p-0 flex flex-col h-[calc(100%-57px)]">
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
-                {messages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={cn(
-                      "max-w-[85%] rounded-xl p-3",
-                      message.type === "assistant"
-                        ? "bg-gray-100 text-gray-800 mr-auto"
-                        : "bg-blue-500 text-white ml-auto"
-                    )}
-                  >
-                    {message.content}
-                  </div>
-                ))}
-                {currentSuggestions.length > 0 && (
-                  <div className="bg-gray-100 rounded-xl p-4 space-y-2">
-                    <p className="font-medium text-sm text-gray-700">Suggested Improvements:</p>
-                    {currentSuggestions.map((suggestion, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        size="sm"
-                        className="w-full text-left justify-start h-auto py-2 px-3"
-                        onClick={() => applySuggestion(suggestion)}
-                      >
-                        {suggestion}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-            <div className="p-4 border-t flex gap-3">
-              <Textarea
-                value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
-                placeholder={
-                  activeSection
-                    ? "Ask for specific improvements or suggestions..."
-                    : "Select a section to get started..."
-                }
-                className="flex-1 resize-none h-14"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
+          {!isAssistantMinimized && (
+            <CardContent className="p-0 flex flex-col h-[calc(100%-57px)]">
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-4">
+                  {messages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={cn(
+                        "max-w-[85%] rounded-xl p-3",
+                        message.type === "assistant"
+                          ? "bg-gray-100 text-gray-800 mr-auto"
+                          : "bg-blue-500 text-white ml-auto"
+                      )}
+                    >
+                      {message.content}
+                    </div>
+                  ))}
+                  {currentSuggestions.length > 0 && (
+                    <div className="bg-gray-100 rounded-xl p-4 space-y-2">
+                      <p className="font-medium text-sm text-gray-700">Suggested Improvements:</p>
+                      {currentSuggestions.map((suggestion, index) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          size="sm"
+                          className="w-full text-left justify-start h-auto py-2 px-3"
+                          onClick={() => applySuggestion(suggestion)}
+                        >
+                          {suggestion}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+              <div className="p-4 border-t flex gap-3">
+                <Textarea
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  placeholder={
+                    activeSection
+                      ? "Ask for specific improvements or suggestions..."
+                      : "Select a section to get started..."
                   }
-                }}
-              />
-              <Button
-                onClick={handleSendMessage}
-                className="h-14 w-14 p-0"
-                disabled={!activeSection}
-              >
-                <Send className="h-5 w-5" />
-              </Button>
-            </div>
-          </CardContent>
+                  className="flex-1 resize-none h-14"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  className="h-14 w-14 p-0"
+                  disabled={!activeSection}
+                >
+                  <Send className="h-5 w-5" />
+                </Button>
+              </div>
+            </CardContent>
+          )}
         </Card>
       </div>
     </div>
