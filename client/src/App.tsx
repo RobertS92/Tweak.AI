@@ -8,17 +8,23 @@ import ResumeEditor from "@/pages/resume-editor";
 import Dashboard from "@/pages/dashboard";
 import ResumeUpload from "@/components/resume-upload";
 import ResumeBuilder from "@/pages/resume-builder";
+import NavigationBar from "@/components/navigation-bar";
 
 function Router() {
   return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/editor/:id" component={ResumeEditor} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/upload" component={ResumeUpload} />
-      <Route path="/builder" component={ResumeBuilder} />
-      <Route component={NotFound} />
-    </Switch>
+    <div className="min-h-screen flex flex-col">
+      <NavigationBar />
+      <main className="flex-1">
+        <Switch>
+          <Route path="/" component={Home} />
+          <Route path="/editor/:id" component={ResumeEditor} />
+          <Route path="/dashboard" component={Dashboard} />
+          <Route path="/upload" component={ResumeUpload} />
+          <Route path="/builder" component={ResumeBuilder} />
+          <Route component={NotFound} />
+        </Switch>
+      </main>
+    </div>
   );
 }
 
