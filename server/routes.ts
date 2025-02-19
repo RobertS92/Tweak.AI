@@ -347,7 +347,13 @@ export async function registerRoutes(app: Express) {
     try {
       const { content, sectionType } = req.body;
 
+      if (!content || typeof content !== 'string') {
+        return res.status(400).json({ message: "Invalid resume content" });
+      }
+
       if (sectionType === "skills") {
+        console.log("Analyzing resume for skills extraction...");
+
         // Use OpenAI to extract skills from resume content
         const response = await openai.chat.completions.create({
           model: "gpt-4",
@@ -364,7 +370,9 @@ Focus on:
 1. Technical skills (programming languages, tools, frameworks)
 2. Domain-specific skills (industry knowledge, methodologies)
 3. Soft skills (leadership, communication)
-4. Certifications and qualifications`
+4. Certifications and qualifications
+
+Important: Always return a valid JSON object with a 'skills' array, even if empty.`
             },
             {
               role: "user",
@@ -374,8 +382,19 @@ Focus on:
           response_format: { type: "json_object" }
         });
 
+        if (!response.choices[0].message.content) {
+          throw new Error("No content in OpenAI response");
+        }
+
+        console.log("OpenAI response:", response.choices[0].message.content);
+
         const result = JSON.parse(response.choices[0].message.content);
-        res.json({ skills: result.skills || [] });
+
+        if (!result.skills || !Array.isArray(result.skills)) {
+          throw new Error("Invalid skills data structure from OpenAI");
+        }
+
+        res.json({ skills: result.skills });
         return;
       }
 

@@ -99,20 +99,36 @@ export default function JobSearchAgent() {
 
   const extractSkillsFromResume = async (content: string) => {
     try {
+      if (!content || content.trim().length === 0) {
+        throw new Error("Resume content is empty");
+      }
+
+      console.log("Sending resume content for analysis:", content.substring(0, 100) + "...");
+
       const response = await apiRequest("POST", "/api/resumes/analyze", {
-        content,
+        content: content,
         sectionType: "skills"
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to analyze resume");
+      }
+
       const analysis = await response.json();
-      if (analysis.skills) {
+      console.log("Received skills analysis:", analysis);
+
+      if (analysis.skills && Array.isArray(analysis.skills)) {
         setExtractedSkills(analysis.skills);
         setSelectedSkills(analysis.skills.slice(0, 5));
+      } else {
+        throw new Error("Invalid skills data received");
       }
     } catch (error) {
       console.error("Failed to extract skills:", error);
       toast({
         title: "Skills Extraction Failed",
-        description: "Unable to analyze resume for skills. Please try again.",
+        description: error instanceof Error ? error.message : "Unable to analyze resume for skills",
         variant: "destructive"
       });
     }
