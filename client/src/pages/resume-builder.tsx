@@ -11,6 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
+import JobSearchAgent from "@/components/job-search-agent";
 
 interface Section {
   id: string;
@@ -572,6 +573,11 @@ export default function ResumeBuilder() {
               </div>
             </CardContent>
           )}
+        </Card>
+
+        {/* Add Job Search Agent */}
+        <Card className="h-[55vh] mt-6">
+          <JobSearchAgent />
         </Card>
       </div>
     </div>

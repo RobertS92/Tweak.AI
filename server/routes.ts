@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import OpenAI from "openai";
 import puppeteer from 'puppeteer';
+import { db } from "./db";
 
 // Add multer type definitions
 declare module 'express-serve-static-core' {
@@ -374,6 +375,124 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+
+  // Add job search route
+  app.post("/api/jobs/search", async (req, res) => {
+    try {
+      const { keywords } = req.body;
+
+      // Use OpenAI to generate a refined search query
+      const searchQueryResponse = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are a job search expert. Convert the user's keywords into a comprehensive search query that will help find relevant jobs."
+          },
+          {
+            role: "user",
+            content: `Convert these keywords into a search query: ${keywords}`
+          }
+        ],
+        response_format: { type: "json_object" }
+      });
+
+      const searchQuery = JSON.parse(searchQueryResponse.choices[0].message.content);
+
+      // Simulate job search API call (replace with actual job board API integration)
+      const mockJobs = [
+        {
+          id: 1,
+          title: "Senior Software Engineer",
+          company: "Tech Corp",
+          location: "San Francisco, CA",
+          description: "Looking for an experienced software engineer with strong full-stack development skills...",
+          matchScore: 85,
+          url: "https://example.com/job/1"
+        },
+        {
+          id: 2,
+          title: "Full Stack Developer",
+          company: "Startup Inc",
+          location: "Remote",
+          description: "Join our fast-growing team to build innovative solutions...",
+          matchScore: 75,
+          url: "https://example.com/job/2"
+        }
+      ];
+
+      res.json(mockJobs);
+    } catch (error) {
+      console.error("Job search error:", error);
+      res.status(500).json({ message: "Failed to search for jobs" });
+    }
+  });
+
+  // Add resume optimization route
+  app.post("/api/jobs/:jobId/optimize/:resumeId", async (req, res) => {
+    try {
+      const jobId = parseInt(req.params.jobId);
+      const resumeId = parseInt(req.params.resumeId);
+
+      const resume = await storage.getResume(resumeId);
+      const job = await storage.getJob(jobId);
+
+      if (!resume || !job) {
+        return res.status(404).json({ message: "Resume or job not found" });
+      }
+
+      // Use OpenAI to optimize the resume
+      const optimizationResponse = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert resume optimizer. Enhance the resume to better match the job description while maintaining factual accuracy."
+          },
+          {
+            role: "user",
+            content: `
+              Job Description: ${job.description}
+              Current Resume: ${resume.content}
+
+              Optimize this resume for the job while keeping all information truthful.
+              Return the optimized content in JSON format with the structure:
+              {
+                "optimizedContent": "enhanced resume content",
+                "changes": ["list of changes made"],
+                "matchScore": number (0-100)
+              }
+            `
+          }
+        ],
+        response_format: { type: "json_object" }
+      });
+
+      const optimization = JSON.parse(optimizationResponse.choices[0].message.content);
+
+      // Update the resume with optimized content
+      await storage.updateResume(resumeId, {
+        enhancedContent: optimization.optimizedContent,
+        analysis: {
+          ...resume.analysis,
+          jobOptimization: {
+            jobId,
+            changes: optimization.changes,
+            matchScore: optimization.matchScore
+          }
+        }
+      });
+
+      res.json({
+        optimizedContent: optimization.optimizedContent,
+        changes: optimization.changes,
+        matchScore: optimization.matchScore
+      });
+    } catch (error) {
+      console.error("Resume optimization error:", error);
+      res.status(500).json({ message: "Failed to optimize resume" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
