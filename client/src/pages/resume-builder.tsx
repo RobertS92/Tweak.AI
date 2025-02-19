@@ -1,14 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Download, Plus, Trash2 } from "lucide-react";
+import { Send, Download, Plus, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 interface Section {
   id: string;
@@ -25,6 +26,7 @@ interface Section {
 
 export default function ResumeBuilder() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState<string>("");
   const [chatMessage, setChatMessage] = useState("");
   const [personalInfo, setPersonalInfo] = useState({
@@ -59,6 +61,18 @@ export default function ResumeBuilder() {
       title: "Skills",
       content: "",
       items: []
+    },
+    {
+      id: "projects",
+      title: "Projects",
+      content: "",
+      items: []
+    },
+    {
+      id: "certifications",
+      title: "Certifications",
+      content: "",
+      items: []
     }
   ]);
 
@@ -68,6 +82,43 @@ export default function ResumeBuilder() {
       content: 'I can help you build a professional resume. Select any section to get started, or ask me for suggestions.'
     }
   ]);
+
+  // Fetch existing resumes
+  const { data: existingResumes } = useQuery({
+    queryKey: ['/api/resumes'],
+  });
+
+  // Populate data from selected resume
+  const populateFromResume = (resumeId: number) => {
+    apiRequest("GET", `/api/resumes/${resumeId}`).then(async (response) => {
+      const resumeData = await response.json();
+
+      if (resumeData.content) {
+        // Parse the resume content and populate the sections
+        try {
+          const parsed = JSON.parse(resumeData.content);
+          if (parsed.personalInfo) {
+            setPersonalInfo(parsed.personalInfo);
+          }
+          if (parsed.sections) {
+            setSections(parsed.sections);
+          }
+
+          toast({
+            title: "Resume Loaded",
+            description: "Your existing resume has been loaded into the builder"
+          });
+        } catch (e) {
+          // If not JSON, use the content as is for the summary
+          setSections(prev => prev.map(section => 
+            section.id === "summary" 
+              ? { ...section, content: resumeData.content }
+              : section
+          ));
+        }
+      }
+    });
+  };
 
   const enhanceMutation = useMutation({
     mutationFn: async (data: { sectionId: string, content: string }) => {
@@ -87,6 +138,39 @@ export default function ResumeBuilder() {
       });
     }
   });
+
+  const handleGeneratePDF = async () => {
+    try {
+      // Prepare the resume data
+      const resumeData = {
+        personalInfo,
+        sections
+      };
+
+      // Create a new resume with the builder data
+      const response = await apiRequest("POST", "/api/resumes", {
+        title: `${personalInfo.name}'s Resume`,
+        content: JSON.stringify(resumeData),
+        fileType: "application/json"
+      });
+
+      const { id } = await response.json();
+
+      // Redirect to the PDF download endpoint
+      window.location.href = `/api/resumes/${id}/download-pdf`;
+
+      toast({
+        title: "Success",
+        description: "Your resume PDF is being generated"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF",
+        variant: "destructive"
+      });
+    }
+  };
 
   const addSectionItem = (sectionId: string) => {
     setSections(prev => prev.map(section => {
@@ -140,7 +224,7 @@ export default function ResumeBuilder() {
     setActiveSection(sectionId);
     setMessages(prev => [...prev, {
       type: 'assistant',
-      content: `Let's work on your ${sectionId} section. What would you like to add or improve?`
+      content: `Let's work on your ${sectionId} section. Would you like some suggestions based on best practices?`
     }]);
   };
 
@@ -149,7 +233,6 @@ export default function ResumeBuilder() {
       setMessages(prev => [...prev, { type: 'user', content: chatMessage }]);
 
       if (activeSection) {
-        // Send the current section content for enhancement
         enhanceMutation.mutate({
           sectionId: activeSection,
           content: chatMessage
@@ -166,8 +249,17 @@ export default function ResumeBuilder() {
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Resume Builder</h1>
           <div className="flex gap-3">
+            {existingResumes && existingResumes.length > 0 && (
+              <Button 
+                variant="outline"
+                onClick={() => populateFromResume(existingResumes[0].id)}
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Use Existing Resume
+              </Button>
+            )}
             <Button variant="outline" onClick={() => {
-              setSections([]);
+              setSections(sections.map(s => ({ ...s, content: "", items: [] })));
               setPersonalInfo({
                 name: "",
                 email: "",
@@ -175,8 +267,10 @@ export default function ResumeBuilder() {
                 location: "",
                 linkedin: ""
               });
-            }}>New Resume</Button>
-            <Button>
+            }}>
+              New Resume
+            </Button>
+            <Button onClick={handleGeneratePDF}>
               <Download className="w-4 h-4 mr-2" />
               Download PDF
             </Button>
@@ -184,7 +278,7 @@ export default function ResumeBuilder() {
         </div>
 
         <div className="flex gap-6 h-[75vh]">
-          <Card className="w-60">
+          <Card className="w-60 self-start sticky top-6">
             <CardContent className="p-4">
               {sections.map((section) => (
                 <div
@@ -212,7 +306,7 @@ export default function ResumeBuilder() {
                   placeholder="Full Name"
                   className="text-3xl font-bold mb-2 text-center"
                 />
-                <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-4">
                   <Input
                     value={personalInfo.email}
                     onChange={(e) => setPersonalInfo(prev => ({ ...prev, email: e.target.value }))}
@@ -247,12 +341,12 @@ export default function ResumeBuilder() {
                     className={cn(
                       "mb-8 p-6 rounded-lg transition-all",
                       activeSection === section.id
-                        ? "border-2 border-blue-500 bg-blue-50"
-                        : "border border-transparent"
+                        ? "border-2 border-blue-500 bg-blue-50/30"
+                        : "border border-transparent hover:border-gray-200"
                     )}
                   >
                     <h2 className="text-xl font-semibold border-b pb-2 mb-4">
-                      {section.title.toUpperCase()}
+                      {section.title}
                     </h2>
 
                     {section.id === "summary" ? (
@@ -261,53 +355,63 @@ export default function ResumeBuilder() {
                         onChange={(e) => setSections(prev => 
                           prev.map(s => s.id === section.id ? { ...s, content: e.target.value } : s)
                         )}
-                        placeholder="Write your professional summary..."
-                        className="min-h-[100px]"
+                        placeholder="Write a compelling professional summary highlighting your key strengths and career objectives..."
+                        className="min-h-[120px]"
                       />
                     ) : (
                       <div className="space-y-6">
                         {section.items?.map((item, itemIndex) => (
-                          <div key={itemIndex} className="space-y-2">
-                            <Input
-                              value={item.title}
-                              onChange={(e) => updateSectionItem(section.id, itemIndex, 'title', e.target.value)}
-                              placeholder={`${section.title} Title`}
-                              className="font-semibold"
-                            />
-                            <Input
-                              value={item.subtitle}
-                              onChange={(e) => updateSectionItem(section.id, itemIndex, 'subtitle', e.target.value)}
-                              placeholder="Organization/Company"
-                              className="italic"
-                            />
-                            <Input
-                              value={item.date}
-                              onChange={(e) => updateSectionItem(section.id, itemIndex, 'date', e.target.value)}
-                              placeholder="Date Range"
-                            />
-                            <div className="pl-5 space-y-2">
-                              {item.bullets?.map((bullet, bulletIndex) => (
+                          <div key={itemIndex} className="p-4 border rounded-lg bg-white/50">
+                            <div className="space-y-3">
+                              <Input
+                                value={item.title}
+                                onChange={(e) => updateSectionItem(section.id, itemIndex, 'title', e.target.value)}
+                                placeholder={`${section.title} Title`}
+                                className="font-semibold text-lg"
+                              />
+                              <div className="flex gap-4">
                                 <Input
-                                  key={bulletIndex}
-                                  value={bullet}
-                                  onChange={(e) => updateBulletPoint(section.id, itemIndex, bulletIndex, e.target.value)}
-                                  placeholder="Add bullet point..."
+                                  value={item.subtitle}
+                                  onChange={(e) => updateSectionItem(section.id, itemIndex, 'subtitle', e.target.value)}
+                                  placeholder="Organization/Company"
+                                  className="italic flex-1"
                                 />
-                              ))}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => addBulletPoint(section.id, itemIndex)}
-                              >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Add Bullet Point
-                              </Button>
+                                <Input
+                                  value={item.date}
+                                  onChange={(e) => updateSectionItem(section.id, itemIndex, 'date', e.target.value)}
+                                  placeholder="Date Range"
+                                  className="w-48"
+                                />
+                              </div>
+                              <div className="pl-5 space-y-2">
+                                {item.bullets?.map((bullet, bulletIndex) => (
+                                  <div key={bulletIndex} className="flex gap-2 items-start">
+                                    <span className="mt-2.5">•</span>
+                                    <Input
+                                      value={bullet}
+                                      onChange={(e) => updateBulletPoint(section.id, itemIndex, bulletIndex, e.target.value)}
+                                      placeholder="Add accomplishment or responsibility..."
+                                      className="flex-1"
+                                    />
+                                  </div>
+                                ))}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => addBulletPoint(section.id, itemIndex)}
+                                  className="ml-4"
+                                >
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Add Bullet Point
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         ))}
                         <Button
                           variant="outline"
                           onClick={() => addSectionItem(section.id)}
+                          className="w-full"
                         >
                           <Plus className="w-4 h-4 mr-2" />
                           Add {section.title} Entry
