@@ -336,25 +336,23 @@ export async function registerRoutes(app: Express) {
             {
               role: "system",
               content: `You are an expert at analyzing resumes and extracting technical and professional skills.
-Extract all relevant skills and return them as a JSON array with the following structure:
-{
-  "skills": ["skill1", "skill2", "skill3"]
-}
+You must respond with a JSON string that contains an array of skills.
+The response must be a valid JSON string in this exact format: {"skills": ["skill1", "skill2", "skill3"]}
 
-Focus on:
+Focus on extracting:
 1. Technical skills (programming languages, tools, frameworks)
 2. Domain-specific skills (industry knowledge, methodologies)
 3. Soft skills (leadership, communication)
 4. Certifications and qualifications
 
-Important: Always return a valid JSON object with a 'skills' array, even if empty.`
+Important: Your entire response must be ONLY the JSON string, nothing else.`
             },
             {
               role: "user",
               content: `Extract all technical and professional skills from this resume content: ${content}`
             }
           ],
-          response_format: { type: "json_object" }
+          temperature: 0.7
         });
 
         if (!response.choices[0].message.content) {
@@ -363,13 +361,16 @@ Important: Always return a valid JSON object with a 'skills' array, even if empt
 
         console.log("OpenAI response:", response.choices[0].message.content);
 
-        const result = JSON.parse(response.choices[0].message.content);
-
-        if (!result.skills || !Array.isArray(result.skills)) {
-          throw new Error("Invalid skills data structure from OpenAI");
+        try {
+          const result = JSON.parse(response.choices[0].message.content);
+          if (!result.skills || !Array.isArray(result.skills)) {
+            throw new Error("Invalid skills data structure from OpenAI");
+          }
+          res.json({ skills: result.skills });
+        } catch (parseError) {
+          console.error("Failed to parse OpenAI response:", parseError);
+          throw new Error("Invalid response format from skills extraction");
         }
-
-        res.json({ skills: result.skills });
         return;
       }
 
