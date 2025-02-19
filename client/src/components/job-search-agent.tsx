@@ -103,10 +103,23 @@ export default function JobSearchAgent() {
         throw new Error("Resume content is empty");
       }
 
-      console.log("Sending resume content for analysis:", content.substring(0, 100) + "...");
+      // Add size validation
+      const contentSize = new Blob([content]).size;
+      if (contentSize > 50 * 1024 * 1024) { // 50MB limit
+        throw new Error("Resume content is too large (max 50MB)");
+      }
+
+      console.log("Sending resume content for analysis...");
+
+      // Send content in chunks if needed
+      let processedContent = content;
+      if (contentSize > 1024 * 1024) { // If larger than 1MB, truncate
+        processedContent = content.slice(0, 1024 * 1024) + "...";
+        console.log("Content truncated for processing");
+      }
 
       const response = await apiRequest("POST", "/api/resumes/analyze", {
-        content: content,
+        content: processedContent,
         sectionType: "skills"
       });
 

@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer } from "http";
+import express from 'express';
 import multer from "multer";
 import { storage } from "./storage";
 import { analyzeResume } from "./services/resume-analyzer";
@@ -12,9 +13,8 @@ import OpenAI from "openai";
 import puppeteer from 'puppeteer';
 import { db } from "./db";
 import { jobScraper } from './services/job-scraper';
-import express from 'express';
 
-// Add multer type definitions
+// Add type definitions
 declare module 'express-serve-static-core' {
   interface Request {
     file?: Express.Multer.File
@@ -25,6 +25,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Configure multer
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
@@ -36,9 +37,10 @@ function truncateText(text: string, maxLength: number = 4000): string {
 }
 
 export async function registerRoutes(app: Express) {
-  // Increase body parser limit
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ limit: '10mb', extended: true }));
+  // Configure express middleware BEFORE routes
+  app.use(express.json({ limit: '50mb', strict: false }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
+  app.use(express.text({ limit: '50mb' }));
 
   // Resume routes
   app.post("/api/resumes", upload.single("resume"), async (req, res) => {
@@ -311,7 +313,7 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Resume analysis route with proper error handling
+  // Resume analysis route with proper content handling
   app.post("/api/resumes/analyze", async (req, res) => {
     try {
       const { content, sectionType } = req.body;
@@ -320,7 +322,12 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "Invalid resume content" });
       }
 
-      // Truncate content to avoid token limits while keeping essential information
+      // Validate content size
+      if (Buffer.byteLength(content) > 50 * 1024 * 1024) { // 50MB limit
+        return res.status(413).json({ message: "Resume content too large" });
+      }
+
+      // Truncate content for OpenAI analysis
       const truncatedContent = truncateText(content);
 
       if (sectionType === "skills") {
