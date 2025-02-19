@@ -4,10 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Briefcase, BarChart2, FileText, ExternalLink, Plus, X } from "lucide-react";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Briefcase, BarChart2, FileText, ExternalLink, Plus, X, Loader2 } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+interface Resume {
+  id: number;
+  title: string;
+  content: string;
+  analysis: {
+    skills?: string[];
+  };
+}
 
 interface JobListing {
   id: number;
@@ -58,11 +68,13 @@ interface JobListing {
   remote: boolean;
   postedDate: string;
   url: string;
+  source: string;
   optimizedResume?: string;
 }
 
 export default function JobSearchAgent() {
   const { toast } = useToast();
+  const [selectedResumeId, setSelectedResumeId] = useState<number | null>(null);
   const [jobKeywords, setJobKeywords] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [extractedSkills, setExtractedSkills] = useState<string[]>([]);
@@ -70,15 +82,20 @@ export default function JobSearchAgent() {
   const [newSkill, setNewSkill] = useState("");
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
 
-  // Fetch the latest resume
-  const { data: latestResume } = useQuery({
+  // Fetch all resumes
+  const { data: resumes } = useQuery<Resume[]>({
     queryKey: ['/api/resumes'],
-    onSuccess: (resumes) => {
-      if (resumes && resumes.length > 0) {
-        extractSkillsFromResume(resumes[0].content);
+  });
+
+  // Effect to extract skills when a resume is selected
+  useEffect(() => {
+    if (selectedResumeId && resumes) {
+      const selectedResume = resumes.find(r => r.id === selectedResumeId);
+      if (selectedResume) {
+        extractSkillsFromResume(selectedResume.content);
       }
     }
-  });
+  }, [selectedResumeId, resumes]);
 
   const extractSkillsFromResume = async (content: string) => {
     try {
@@ -93,6 +110,11 @@ export default function JobSearchAgent() {
       }
     } catch (error) {
       console.error("Failed to extract skills:", error);
+      toast({
+        title: "Skills Extraction Failed",
+        description: "Unable to analyze resume for skills. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -102,11 +124,8 @@ export default function JobSearchAgent() {
   });
 
   const searchMutation = useMutation({
-    mutationFn: async (data: { keywords: string, resumeId?: number }) => {
-      return apiRequest("POST", "/api/jobs/search", {
-        ...data,
-        resumeId: latestResume?.[0]?.id
-      }).then(r => r.json());
+    mutationFn: async (data: { keywords: string, resumeId: number }) => {
+      return apiRequest("POST", "/api/jobs/search", data).then(r => r.json());
     },
     onSuccess: () => {
       refetchJobs();
@@ -115,15 +134,23 @@ export default function JobSearchAgent() {
         description: "Found relevant positions based on your profile"
       });
       setIsSearching(false);
+    },
+    onError: () => {
+      toast({
+        title: "Search Failed",
+        description: "Unable to complete job search. Please try again.",
+        variant: "destructive"
+      });
+      setIsSearching(false);
     }
   });
 
   const optimizeMutation = useMutation({
     mutationFn: async (data: { jobId: number, resumeId: number }) => {
-      if (!latestResume?.[0]?.id) {
-        throw new Error("No resume found");
+      if (!selectedResumeId) {
+        throw new Error("No resume selected");
       }
-      return apiRequest("POST", `/api/jobs/${data.jobId}/optimize/${latestResume[0].id}`).then(r => r.json());
+      return apiRequest("POST", `/api/jobs/${data.jobId}/optimize/${selectedResumeId}`).then(r => r.json());
     },
     onSuccess: () => {
       refetchJobs();
@@ -152,10 +179,10 @@ export default function JobSearchAgent() {
   };
 
   const handleSearch = () => {
-    if (!latestResume?.[0]?.id) {
+    if (!selectedResumeId) {
       toast({
-        title: "No Resume Found",
-        description: "Please upload a resume first to enable job search",
+        title: "No Resume Selected",
+        description: "Please select a resume to start the job search",
         variant: "destructive"
       });
       return;
@@ -164,7 +191,7 @@ export default function JobSearchAgent() {
     setIsSearching(true);
     searchMutation.mutate({ 
       keywords: [...selectedSkills, jobKeywords].filter(Boolean).join(", "),
-      resumeId: latestResume[0].id
+      resumeId: selectedResumeId
     });
   };
 
@@ -275,6 +302,27 @@ export default function JobSearchAgent() {
       </CardHeader>
       <CardContent className="p-0 flex flex-col h-[calc(100%-57px)]">
         <div className="p-4 border-b">
+          <div className="mb-4">
+            <p className="text-sm text-muted-foreground mb-2">Select a resume to start:</p>
+            <Select
+              value={selectedResumeId?.toString()}
+              onValueChange={(value) => setSelectedResumeId(parseInt(value))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a resume..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {resumes?.map((resume) => (
+                    <SelectItem key={resume.id} value={resume.id.toString()}>
+                      {resume.title}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+
           {extractedSkills.length > 0 && (
             <div className="mb-4">
               <p className="text-sm text-muted-foreground mb-2">Available skills from your resume:</p>
@@ -340,10 +388,17 @@ export default function JobSearchAgent() {
             />
             <Button
               onClick={handleSearch}
-              disabled={isSearching || selectedSkills.length === 0}
+              disabled={isSearching || !selectedResumeId || selectedSkills.length === 0}
               className="min-w-[100px]"
             >
-              {isSearching ? "Searching..." : "Search"}
+              {isSearching ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Searching...
+                </>
+              ) : (
+                "Search Jobs"
+              )}
             </Button>
           </div>
         </div>
@@ -358,7 +413,10 @@ export default function JobSearchAgent() {
                     <p className="text-sm text-gray-500">
                       {job.company} • {job.location} • {job.remote ? "Remote" : "On-site"}
                     </p>
-                    <p className="text-sm text-gray-500">{job.salary}</p>
+                    <p className="text-sm text-gray-500">
+                      {job.salary} • Posted {new Date(job.postedDate).toLocaleDateString()}
+                    </p>
+                    <p className="text-xs text-gray-400">Source: {job.source}</p>
                   </div>
                   <Badge 
                     variant={job.matchScore >= 80 ? "default" : "secondary"}
@@ -383,9 +441,9 @@ export default function JobSearchAgent() {
                       className="flex items-center gap-1"
                       onClick={() => optimizeMutation.mutate({ 
                         jobId: job.id, 
-                        resumeId: latestResume?.[0]?.id || 0 
+                        resumeId: selectedResumeId || 0 
                       })}
-                      disabled={!latestResume?.[0]?.id}
+                      disabled={!selectedResumeId}
                     >
                       <FileText className="w-4 h-4" />
                       Optimize Resume

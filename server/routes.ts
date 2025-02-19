@@ -11,6 +11,7 @@ import * as path from 'path';
 import OpenAI from "openai";
 import puppeteer from 'puppeteer';
 import { db } from "./db";
+import { jobScraper } from './services/job-scraper';
 
 // Add multer type definitions
 declare module 'express-serve-static-core' {
@@ -432,57 +433,41 @@ export async function registerRoutes(app: Express) {
       });
 
       const searchStrategy = JSON.parse(searchAnalysisResponse.choices[0].message.content);
+      const searchQueries = searchStrategy.searchQueries;
 
-      // Here we would integrate with real job boards APIs
-      // For now simulate with enhanced mock data that demonstrates the functionality
-      const mockJobs = [
-        {
-          id: 1,
-          title: "Senior Machine Learning Engineer",
-          company: "AI Solutions Inc",
-          location: "Remote",
-          description: "Looking for an experienced ML engineer with expertise in deep learning, Python, and TensorFlow. Must have experience with large language models and neural networks. Knowledge of cloud platforms (AWS/GCP) required.",
-          requirements: [
-            "5+ years of ML experience",
-            "Python, TensorFlow, PyTorch",
-            "Deep Learning expertise",
-            "Cloud platforms (AWS/GCP)",
-          ],
-          matchScore: 92,
-          skillMatch: {
-            matched: ["Python", "TensorFlow", "Deep Learning"],
-            missing: ["AWS"],
-          },
-          salary: "$150,000 - $200,000",
-          remote: true,
-          postedDate: new Date().toISOString(),
-          url: "https://example.com/job/1"
-        },
-        {
-          id: 2,
-          title: "AI Research Scientist",
-          company: "Tech Innovations Corp",
-          location: "San Francisco, CA",
-          description: "Join our research team working on cutting-edge AI applications. Focus on NLP and computer vision projects. PhD in Computer Science or related field preferred.",
-          requirements: [
-            "PhD in Computer Science or related field",
-            "Publication track record",
-            "Python, PyTorch",
-            "NLP expertise"
-          ],
-          matchScore: 85,
-          skillMatch: {
-            matched: ["Python", "NLP", "Machine Learning"],
-            missing: ["Computer Vision"],
-          },
-          salary: "$180,000 - $220,000",
-          remote: false,
-          postedDate: new Date().toISOString(),
-          url: "https://example.com/job/2"
-        }
-      ];
+      // Scrape jobs from multiple sources using all search queries
+      const jobPromises = searchQueries.map(query => jobScraper.searchJobs(query));
+      const jobsByQuery = await Promise.all(jobPromises);
 
-      res.json(mockJobs);
+      // Flatten and deduplicate jobs by URL
+      const uniqueJobs = Array.from(
+        new Map(
+          jobsByQuery.flat().map(job => [job.url, job])
+        ).values()
+      );
+
+      // For each job, perform detailed matching analysis
+      const jobsWithAnalysis = await Promise.all(
+        uniqueJobs.map(async (job) => {
+          try {
+            const analysis = await matchJob(resumeContent, job.description);
+            return {
+              ...job,
+              ...analysis
+            };
+          } catch (error) {
+            console.error('Job analysis failed:', error);
+            return null;
+          }
+        })
+      );
+
+      // Filter out failed analyses and sort by match score
+      const validJobs = jobsWithAnalysis
+        .filter(Boolean)
+        .sort((a, b) => b.matchScore - a.matchScore);
+
+      res.json(validJobs);
     } catch (error) {
       console.error("Job search error:", error);
       res.status(500).json({ message: "Failed to search for jobs" });
