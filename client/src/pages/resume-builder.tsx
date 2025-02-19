@@ -2,52 +2,160 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Download } from "lucide-react";
+import { Send, Download, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface Section {
   id: string;
   title: string;
   content: string;
+  items?: Array<{
+    title?: string;
+    subtitle?: string;
+    date?: string;
+    description?: string;
+    bullets?: string[];
+  }>;
 }
 
 export default function ResumeBuilder() {
-  const [activeSection, setActiveSection] = useState<string>("summary");
+  const { toast } = useToast();
+  const [activeSection, setActiveSection] = useState<string>("");
   const [chatMessage, setChatMessage] = useState("");
-  const [messages, setMessages] = useState<Array<{ type: 'assistant' | 'user'; content: string }>>([
+  const [personalInfo, setPersonalInfo] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    location: "",
+    linkedin: ""
+  });
+
+  const [sections, setSections] = useState<Section[]>([
+    { 
+      id: "summary",
+      title: "Professional Summary",
+      content: "",
+      items: []
+    },
     {
-      type: 'assistant',
-      content: 'Select any section of the resume, and I\'ll help you improve it with better wording and impact.'
+      id: "experience",
+      title: "Work Experience",
+      content: "",
+      items: []
+    },
+    {
+      id: "education",
+      title: "Education",
+      content: "",
+      items: []
+    },
+    {
+      id: "skills",
+      title: "Skills",
+      content: "",
+      items: []
     }
   ]);
 
-  const sections: Section[] = [
-    { id: "summary", title: "Professional Summary", content: "Senior Software Engineer with 8+ years of experience..." },
-    { id: "experience", title: "Work Experience", content: "" },
-    { id: "education", title: "Education", content: "" },
-    { id: "skills", title: "Skills", content: "" }
-  ];
+  const [messages, setMessages] = useState<Array<{ type: 'assistant' | 'user'; content: string }>>([
+    {
+      type: 'assistant',
+      content: 'I can help you build a professional resume. Select any section to get started, or ask me for suggestions.'
+    }
+  ]);
+
+  const enhanceMutation = useMutation({
+    mutationFn: async (data: { sectionId: string, content: string }) => {
+      return apiRequest("POST", "/api/resumes/enhance", data).then(r => r.json());
+    },
+    onSuccess: (data, variables) => {
+      const updatedSections = sections.map(section => {
+        if (section.id === variables.sectionId) {
+          return { ...section, content: data.enhancedContent };
+        }
+        return section;
+      });
+      setSections(updatedSections);
+      toast({
+        title: "Section Enhanced",
+        description: "Your content has been improved by AI"
+      });
+    }
+  });
+
+  const addSectionItem = (sectionId: string) => {
+    setSections(prev => prev.map(section => {
+      if (section.id === sectionId) {
+        return {
+          ...section,
+          items: [
+            ...(section.items || []),
+            { title: "", subtitle: "", date: "", description: "", bullets: [] }
+          ]
+        };
+      }
+      return section;
+    }));
+  };
+
+  const updateSectionItem = (sectionId: string, itemIndex: number, field: string, value: string) => {
+    setSections(prev => prev.map(section => {
+      if (section.id === sectionId && section.items) {
+        const newItems = [...section.items];
+        newItems[itemIndex] = { ...newItems[itemIndex], [field]: value };
+        return { ...section, items: newItems };
+      }
+      return section;
+    }));
+  };
+
+  const addBulletPoint = (sectionId: string, itemIndex: number) => {
+    setSections(prev => prev.map(section => {
+      if (section.id === sectionId && section.items) {
+        const newItems = [...section.items];
+        newItems[itemIndex].bullets = [...(newItems[itemIndex].bullets || []), ""];
+        return { ...section, items: newItems };
+      }
+      return section;
+    }));
+  };
+
+  const updateBulletPoint = (sectionId: string, itemIndex: number, bulletIndex: number, value: string) => {
+    setSections(prev => prev.map(section => {
+      if (section.id === sectionId && section.items) {
+        const newItems = [...section.items];
+        newItems[itemIndex].bullets![bulletIndex] = value;
+        return { ...section, items: newItems };
+      }
+      return section;
+    }));
+  };
 
   const handleSectionClick = (sectionId: string) => {
     setActiveSection(sectionId);
     setMessages(prev => [...prev, {
       type: 'assistant',
-      content: `I see you're looking at the ${sectionId} section. Would you like me to help improve it?`
+      content: `Let's work on your ${sectionId} section. What would you like to add or improve?`
     }]);
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (chatMessage.trim()) {
       setMessages(prev => [...prev, { type: 'user', content: chatMessage }]);
-      // Simulate AI response
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          type: 'assistant',
-          content: 'I can help improve this section. Here are some suggestions...'
-        }]);
-      }, 1000);
+
+      if (activeSection) {
+        // Send the current section content for enhancement
+        enhanceMutation.mutate({
+          sectionId: activeSection,
+          content: chatMessage
+        });
+      }
+
       setChatMessage("");
     }
   };
@@ -58,7 +166,16 @@ export default function ResumeBuilder() {
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Resume Builder</h1>
           <div className="flex gap-3">
-            <Button variant="outline">New Resume</Button>
+            <Button variant="outline" onClick={() => {
+              setSections([]);
+              setPersonalInfo({
+                name: "",
+                email: "",
+                phone: "",
+                location: "",
+                linkedin: ""
+              });
+            }}>New Resume</Button>
             <Button>
               <Download className="w-4 h-4 mr-2" />
               Download PDF
@@ -88,15 +205,42 @@ export default function ResumeBuilder() {
 
           <Card className="flex-1">
             <CardContent className="p-12">
-              <div className="text-center mb-3">
-                <h1 className="text-3xl font-bold mb-2">John Smith</h1>
-                <p className="text-gray-600">
-                  john.smith@email.com | (123) 456-7890<br />
-                  New York, NY | linkedin.com/in/johnsmith
-                </p>
+              <div className="text-center mb-8">
+                <Input
+                  value={personalInfo.name}
+                  onChange={(e) => setPersonalInfo(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Full Name"
+                  className="text-3xl font-bold mb-2 text-center"
+                />
+                <div className="space-y-2">
+                  <Input
+                    value={personalInfo.email}
+                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="Email"
+                    className="text-center"
+                  />
+                  <Input
+                    value={personalInfo.phone}
+                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="Phone"
+                    className="text-center"
+                  />
+                  <Input
+                    value={personalInfo.location}
+                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, location: e.target.value }))}
+                    placeholder="Location"
+                    className="text-center"
+                  />
+                  <Input
+                    value={personalInfo.linkedin}
+                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, linkedin: e.target.value }))}
+                    placeholder="LinkedIn URL"
+                    className="text-center"
+                  />
+                </div>
               </div>
 
-              <ScrollArea className="h-[calc(100%-100px)] pr-4">
+              <ScrollArea className="h-[calc(100%-180px)] pr-4">
                 {sections.map((section) => (
                   <div
                     key={section.id}
@@ -110,20 +254,65 @@ export default function ResumeBuilder() {
                     <h2 className="text-xl font-semibold border-b pb-2 mb-4">
                       {section.title.toUpperCase()}
                     </h2>
-                    {section.id === "experience" ? (
-                      <div className="space-y-6">
-                        <div>
-                          <h3 className="font-semibold">Senior Software Engineer</h3>
-                          <p className="text-gray-600 italic">Tech Solutions Inc. | 2020 - Present</p>
-                          <ul className="list-disc pl-5 mt-2 space-y-2">
-                            <li>Led development of cloud-native applications using microservices architecture</li>
-                            <li>Implemented CI/CD pipelines reducing deployment time by 60%</li>
-                            <li>Mentored junior developers and conducted code reviews</li>
-                          </ul>
-                        </div>
-                      </div>
+
+                    {section.id === "summary" ? (
+                      <Textarea
+                        value={section.content}
+                        onChange={(e) => setSections(prev => 
+                          prev.map(s => s.id === section.id ? { ...s, content: e.target.value } : s)
+                        )}
+                        placeholder="Write your professional summary..."
+                        className="min-h-[100px]"
+                      />
                     ) : (
-                      <p>{section.content}</p>
+                      <div className="space-y-6">
+                        {section.items?.map((item, itemIndex) => (
+                          <div key={itemIndex} className="space-y-2">
+                            <Input
+                              value={item.title}
+                              onChange={(e) => updateSectionItem(section.id, itemIndex, 'title', e.target.value)}
+                              placeholder={`${section.title} Title`}
+                              className="font-semibold"
+                            />
+                            <Input
+                              value={item.subtitle}
+                              onChange={(e) => updateSectionItem(section.id, itemIndex, 'subtitle', e.target.value)}
+                              placeholder="Organization/Company"
+                              className="italic"
+                            />
+                            <Input
+                              value={item.date}
+                              onChange={(e) => updateSectionItem(section.id, itemIndex, 'date', e.target.value)}
+                              placeholder="Date Range"
+                            />
+                            <div className="pl-5 space-y-2">
+                              {item.bullets?.map((bullet, bulletIndex) => (
+                                <Input
+                                  key={bulletIndex}
+                                  value={bullet}
+                                  onChange={(e) => updateBulletPoint(section.id, itemIndex, bulletIndex, e.target.value)}
+                                  placeholder="Add bullet point..."
+                                />
+                              ))}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => addBulletPoint(section.id, itemIndex)}
+                              >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Bullet Point
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline"
+                          onClick={() => addSectionItem(section.id)}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add {section.title} Entry
+                        </Button>
+                      </div>
                     )}
                   </div>
                 ))}
