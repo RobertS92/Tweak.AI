@@ -328,9 +328,9 @@ export default function ResumeBuilder() {
           </div>
         </div>
 
-        <div className="grid grid-cols-[240px_1fr] gap-6 h-[calc(65vh)]">
-          <Card className="sticky top-6 h-fit max-h-[calc(65vh-48px)] overflow-hidden">
-            <ScrollArea className="h-full max-h-[calc(65vh-48px)]">
+        <div className="grid grid-cols-[240px_1fr] gap-6 h-[calc(55vh)]">
+          <Card className="sticky top-6 h-fit max-h-[calc(55vh-48px)] overflow-hidden">
+            <ScrollArea className="h-full max-h-[calc(55vh-48px)]">
               <CardContent className="p-4">
                 {sections.map((section) => (
                   <div
@@ -350,7 +350,7 @@ export default function ResumeBuilder() {
             </ScrollArea>
           </Card>
 
-          <Card className="h-[65vh] overflow-hidden">
+          <Card className="h-[55vh] overflow-hidden">
             <ScrollArea className="h-full">
               <CardContent className="p-12">
                 <div className="text-center mb-8">
@@ -482,7 +482,7 @@ export default function ResumeBuilder() {
 
         <Card className={cn(
           "transition-all duration-300",
-          isAssistantMinimized ? "h-[48px]" : "h-[45vh]"
+          isAssistantMinimized ? "h-[48px]" : "h-[55vh]"
         )}>
           <CardHeader className="py-3 px-6 border-b flex flex-row justify-between items-center">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
