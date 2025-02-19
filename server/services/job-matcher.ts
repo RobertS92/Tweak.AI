@@ -11,9 +11,37 @@ const matchResponseSchema = z.object({
   suggestedEdits: z.array(z.string()),
   suggestedRoles: z.array(z.string()).optional(),
   analysis: z.object({
-    strengthMatches: z.array(z.string()),
-    gapAreas: z.array(z.string()),
-    recommendedAdditions: z.array(z.string())
+    skillMatching: z.object({
+      score: z.number(),
+      matchedSkills: z.array(z.string()),
+      missingSkills: z.array(z.string()),
+      relatedSkills: z.array(z.string())
+    }),
+    experienceRelevance: z.object({
+      score: z.number(),
+      yearsMatch: z.boolean(),
+      roleAlignmentScore: z.number(),
+      industrySimilarity: z.number(),
+      careerProgressionMatch: z.boolean()
+    }),
+    educationalBackground: z.object({
+      score: z.number(),
+      degreeMatch: z.boolean(),
+      fieldRelevance: z.number(),
+      certificationsValue: z.number()
+    }),
+    technicalProficiency: z.object({
+      score: z.number(),
+      toolsMatch: z.array(z.string()),
+      technicalSkillsGap: z.array(z.string()),
+      proficiencyLevel: z.string()
+    }),
+    softSkillsFit: z.object({
+      score: z.number(),
+      culturalAlignment: z.number(),
+      communicationScore: z.number(),
+      leadershipMatch: z.boolean()
+    })
   })
 });
 
@@ -24,28 +52,35 @@ export async function matchJob(resumeContent: string, jobDescription: string) {
       messages: [
         {
           role: "system",
-          content: `You are an expert resume matcher. Analyze the resume against the job description and provide detailed matching analysis.
+          content: `You are an expert ATS and job matching specialist. Analyze the resume against the job description using this comprehensive scoring system:
 
-Analyze:
-1. Match Score: Calculate overall match percentage (0-100)
-2. Required Skills/Keywords: Identify missing key requirements
-3. Experience Alignment: Compare experience level and relevance
-4. Suggested Improvements: Specific ways to better align with the role
+1. Skill Matching (30% of total score)
+   - Direct keyword matches
+   - Related/transferable skills
+   - Skill depth assessment
 
-If match score is below 70%, analyze the candidate's skills and experience to suggest 3-5 alternative roles that would be a better fit.
+2. Experience Relevance (25% of total score)
+   - Years of experience match
+   - Role similarity
+   - Industry relevance
+   - Career progression alignment
 
-Return response in this exact JSON structure:
-{
-  "matchScore": number,
-  "missingKeywords": string[],
-  "suggestedEdits": string[],
-  "suggestedRoles": string[] (only if matchScore < 70),
-  "analysis": {
-    "strengthMatches": string[],
-    "gapAreas": string[],
-    "recommendedAdditions": string[]
-  }
-}`
+3. Educational Background (15% of total score)
+   - Degree requirements match
+   - Field of study relevance
+   - Certifications value
+
+4. Technical Proficiency (20% of total score)
+   - Tools and technologies match
+   - Technical skill level assessment
+   - Gap analysis
+
+5. Soft Skills & Cultural Fit (10% of total score)
+   - Communication skills
+   - Leadership capabilities
+   - Cultural alignment indicators
+
+Return a detailed JSON analysis with scores and explanations for each category.`
         },
         {
           role: "user",
@@ -59,7 +94,18 @@ Return response in this exact JSON structure:
     const result = JSON.parse(response.choices[0].message.content || "{}");
     const validatedResult = matchResponseSchema.parse(result);
 
-    return validatedResult;
+    // Calculate weighted total score
+    const totalScore = 
+      (validatedResult.analysis.skillMatching.score * 0.3) +
+      (validatedResult.analysis.experienceRelevance.score * 0.25) +
+      (validatedResult.analysis.educationalBackground.score * 0.15) +
+      (validatedResult.analysis.technicalProficiency.score * 0.20) +
+      (validatedResult.analysis.softSkillsFit.score * 0.10);
+
+    return {
+      ...validatedResult,
+      matchScore: Math.round(totalScore)
+    };
   } catch (error) {
     console.error("Job matching analysis failed:", error);
     if (error instanceof z.ZodError) {
@@ -76,52 +122,31 @@ export async function tweakResume(resumeContent: string, jobDescription: string)
       messages: [
         {
           role: "system",
-          content: `You are an expert resume optimizer. Enhance the provided resume to better match the job description while maintaining authenticity. Respond with a JSON object containing the enhanced resume content and improvements made.
+          content: `You are an expert ATS optimization specialist. Enhance the provided resume to better match the job description while maintaining authenticity. Focus on:
 
-Tasks:
-1. Analyze the job description for key requirements and preferred qualifications
-2. Modify the resume to better highlight relevant experience and skills
-3. Add missing keywords naturally into the content
-4. Improve impact of achievements to match job priorities
-5. Adjust professional summary to align with the role
-6. Keep all enhancements truthful and based on the original content
+1. Keyword Optimization
+   - Match critical job requirements
+   - Use industry-standard terminology
+   - Maintain natural language flow
 
-Format the enhanced resume using HTML structure and return a JSON response in this format:
-{
-  "resumeContent": string (HTML formatted with the structure below),
-  "improvements": string[]
-}
+2. ATS-Friendly Formatting
+   - Clear section headers
+   - Standard section ordering
+   - Consistent bullet point formatting
+   - Proper spacing and hierarchy
 
-Use this HTML structure for resumeContent:
-<div class="resume">
-  <div class="section">
-    <h2>PROFESSIONAL SUMMARY</h2>
-    <p>[Enhanced summary content]</p>
-  </div>
+3. Experience Enhancement
+   - Highlight relevant achievements
+   - Quantify results where possible
+   - Use action verbs
+   - Focus on transferable skills
 
-  <div class="section">
-    <h2>EXPERIENCE</h2>
-    <div class="job">
-      <h3>[Company Name]</h3>
-      <p class="job-title">[Title] | [Dates]</p>
-      <ul>
-        <li>[Enhanced bullet point]</li>
-      </ul>
-    </div>
-  </div>
+4. Skills Alignment
+   - Prioritize matching technical skills
+   - Include both hard and soft skills
+   - Add missing key competencies if user possesses them
 
-  <div class="section">
-    <h2>EDUCATION</h2>
-    <p>[Enhanced education details]</p>
-  </div>
-
-  <div class="section">
-    <h2>SKILLS</h2>
-    <ul>
-      <li>[Enhanced skill]</li>
-    </ul>
-  </div>
-</div>`
+Return optimized content in clean HTML format with semantic structure.`
         },
         {
           role: "user",
@@ -136,6 +161,8 @@ Use this HTML structure for resumeContent:
     return {
       enhancedContent: result.resumeContent,
       improvements: result.improvements || [],
+      keywordMatches: result.keywordMatches || [],
+      formattingImprovements: result.formattingImprovements || []
     };
   } catch (error) {
     console.error("Resume tweaking failed:", error);

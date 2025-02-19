@@ -21,6 +21,39 @@ interface JobListing {
     matched: string[];
     missing: string[];
   };
+  analysis: {
+    skillMatching: {
+      score: number;
+      matchedSkills: string[];
+      missingSkills: string[];
+      relatedSkills: string[];
+    };
+    experienceRelevance: {
+      score: number;
+      yearsMatch: boolean;
+      roleAlignmentScore: number;
+      industrySimilarity: number;
+      careerProgressionMatch: boolean;
+    };
+    educationalBackground: {
+      score: number;
+      degreeMatch: boolean;
+      fieldRelevance: number;
+      certificationsValue: number;
+    };
+    technicalProficiency: {
+      score: number;
+      toolsMatch: string[];
+      technicalSkillsGap: string[];
+      proficiencyLevel: string;
+    };
+    softSkillsFit: {
+      score: number;
+      culturalAlignment: number;
+      communicationScore: number;
+      leadershipMatch: boolean;
+    };
+  };
   salary: string;
   remote: boolean;
   postedDate: string;
@@ -35,6 +68,7 @@ export default function JobSearchAgent() {
   const [extractedSkills, setExtractedSkills] = useState<string[]>([]);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [newSkill, setNewSkill] = useState("");
+  const [activeJobId, setActiveJobId] = useState<number | null>(null);
 
   // Fetch the latest resume
   const { data: latestResume } = useQuery({
@@ -55,7 +89,6 @@ export default function JobSearchAgent() {
       const analysis = await response.json();
       if (analysis.skills) {
         setExtractedSkills(analysis.skills);
-        // Pre-populate selected skills with top skills from resume
         setSelectedSkills(analysis.skills.slice(0, 5));
       }
     } catch (error) {
@@ -133,6 +166,103 @@ export default function JobSearchAgent() {
       keywords: [...selectedSkills, jobKeywords].filter(Boolean).join(", "),
       resumeId: latestResume[0].id
     });
+  };
+
+  const renderMatchAnalysis = (job: JobListing) => {
+    const categories = [
+      {
+        title: "Skill Match",
+        score: job.analysis.skillMatching.score,
+        weight: "30%",
+        details: (
+          <div className="space-y-1">
+            <div className="flex flex-wrap gap-1">
+              {job.analysis.skillMatching.matchedSkills.map((skill, i) => (
+                <Badge key={i} variant="success" className="bg-green-100 text-green-800">✓ {skill}</Badge>
+              ))}
+            </div>
+            {job.analysis.skillMatching.missingSkills.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {job.analysis.skillMatching.missingSkills.map((skill, i) => (
+                  <Badge key={i} variant="destructive" className="bg-red-100 text-red-800">! {skill}</Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      },
+      {
+        title: "Experience",
+        score: job.analysis.experienceRelevance.score,
+        weight: "25%",
+        details: (
+          <div className="text-sm">
+            <p>Role Alignment: {(job.analysis.experienceRelevance.roleAlignmentScore * 100).toFixed(0)}%</p>
+            <p>Industry Match: {(job.analysis.experienceRelevance.industrySimilarity * 100).toFixed(0)}%</p>
+          </div>
+        )
+      },
+      {
+        title: "Education",
+        score: job.analysis.educationalBackground.score,
+        weight: "15%",
+        details: (
+          <div className="text-sm">
+            <p>Field Relevance: {(job.analysis.educationalBackground.fieldRelevance * 100).toFixed(0)}%</p>
+            <p>Certifications Value: {(job.analysis.educationalBackground.certificationsValue * 100).toFixed(0)}%</p>
+          </div>
+        )
+      },
+      {
+        title: "Technical",
+        score: job.analysis.technicalProficiency.score,
+        weight: "20%",
+        details: (
+          <div className="space-y-1">
+            <p className="text-sm">Level: {job.analysis.technicalProficiency.proficiencyLevel}</p>
+            <div className="flex flex-wrap gap-1">
+              {job.analysis.technicalProficiency.toolsMatch.map((tool, i) => (
+                <Badge key={i} variant="secondary">{tool}</Badge>
+              ))}
+            </div>
+          </div>
+        )
+      },
+      {
+        title: "Soft Skills",
+        score: job.analysis.softSkillsFit.score,
+        weight: "10%",
+        details: (
+          <div className="text-sm">
+            <p>Cultural Fit: {(job.analysis.softSkillsFit.culturalAlignment * 100).toFixed(0)}%</p>
+            <p>Communication: {(job.analysis.softSkillsFit.communicationScore * 100).toFixed(0)}%</p>
+          </div>
+        )
+      }
+    ];
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+        {categories.map((category, index) => (
+          <div key={index} className="bg-muted/50 rounded-lg p-4">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="font-medium">{category.title}</h4>
+              <span className="text-sm text-muted-foreground">Weight: {category.weight}</span>
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-2 flex-1 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 rounded-full"
+                  style={{ width: `${category.score}%` }}
+                />
+              </div>
+              <span className="text-sm font-medium">{category.score}%</span>
+            </div>
+            {category.details}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -243,22 +373,9 @@ export default function JobSearchAgent() {
                   {job.description}
                 </p>
 
-                <div className="mb-3">
-                  <div className="flex flex-wrap gap-2 mb-2">
-                    {job.skillMatch.matched.map((skill, index) => (
-                      <Badge key={index} variant="success" className="bg-green-100 text-green-800">
-                        ✓ {skill}
-                      </Badge>
-                    ))}
-                    {job.skillMatch.missing.map((skill, index) => (
-                      <Badge key={index} variant="destructive" className="bg-red-100 text-red-800">
-                        ! {skill}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
+                {activeJobId === job.id && job.analysis && renderMatchAnalysis(job)}
 
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center mt-4">
                   <div className="flex gap-2">
                     <Button
                       size="sm"
@@ -272,6 +389,15 @@ export default function JobSearchAgent() {
                     >
                       <FileText className="w-4 h-4" />
                       Optimize Resume
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex items-center gap-1"
+                      onClick={() => setActiveJobId(activeJobId === job.id ? null : job.id)}
+                    >
+                      <BarChart2 className="w-4 h-4" />
+                      {activeJobId === job.id ? "Hide Analysis" : "Show Analysis"}
                     </Button>
                     <Button
                       size="sm"
