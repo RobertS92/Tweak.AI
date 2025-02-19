@@ -36,6 +36,76 @@ function truncateText(text: string, maxLength: number = 4000): string {
   return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
 }
 
+// Add this helper function for token estimation
+function estimateTokenCount(text: string): number {
+  // GPT models typically use ~4 chars per token
+  return Math.ceil(text.length / 4);
+}
+
+// Update the section extraction function
+function extractRelevantSections(content: string): string {
+  console.log("Starting content extraction. Initial length:", content.length);
+
+  // Split into sections
+  const sections = content.split(/\n\n+/);
+
+  // Keywords that likely indicate skills-related content
+  const skillsKeywords = [
+    'skills', 'technologies', 'competencies', 'expertise',
+    'proficiencies', 'technical', 'tools', 'languages',
+    'frameworks', 'platforms', 'software', 'certifications'
+  ];
+
+  // Find relevant sections with scoring
+  const scoredSections = sections.map(section => {
+    const lowerSection = section.toLowerCase();
+    let score = 0;
+
+    // Score based on keywords
+    skillsKeywords.forEach(keyword => {
+      if (lowerSection.includes(keyword)) score += 2;
+    });
+
+    // Score bullet points and lists
+    if (section.includes('•') || section.includes('-')) score += 1;
+    if (section.split(',').length > 2) score += 1;
+
+    // Penalize very long sections
+    if (section.length > 500) score -= 1;
+
+    return { section, score };
+  });
+
+  // Sort by score and take top sections
+  const relevantSections = scoredSections
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(({ section }) => section);
+
+  // Combine sections and ensure we're well under token limit
+  let combinedContent = relevantSections.join('\n\n');
+  const maxTokens = 2000; // Conservative limit, ~8k characters
+
+  // If still too long, take most relevant sections until under limit
+  if (estimateTokenCount(combinedContent) > maxTokens) {
+    console.log("Content too long, truncating sections...");
+    combinedContent = '';
+    for (const section of relevantSections) {
+      const potentialContent = combinedContent + '\n\n' + section;
+      if (estimateTokenCount(potentialContent) <= maxTokens) {
+        combinedContent = potentialContent;
+      } else {
+        break;
+      }
+    }
+  }
+
+  console.log("Final content length:", combinedContent.length, 
+              "Estimated tokens:", estimateTokenCount(combinedContent));
+
+  return combinedContent.trim();
+}
+
 export async function registerRoutes(app: Express) {
   // Configure express middleware BEFORE routes
   app.use(express.json({ limit: '50mb', strict: false }));
@@ -313,7 +383,7 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Resume analysis route with proper content handling
+  // Update the analyze route to use the improved extraction
   app.post("/api/resumes/analyze", upload.none(), async (req, res) => {
     try {
       const { content, sectionType } = req.body;
@@ -329,6 +399,15 @@ export async function registerRoutes(app: Express) {
 
       if (sectionType === "skills") {
         console.log("Analyzing resume for skills extraction...");
+
+        const relevantContent = extractRelevantSections(content);
+        const estimatedTokens = estimateTokenCount(relevantContent);
+
+        if (estimatedTokens > 2000) {
+          return res.status(400).json({ 
+            message: "Content too complex for analysis. Please try with a simpler resume." 
+          });
+        }
 
         const response = await openai.chat.completions.create({
           model: "gpt-4",
@@ -349,7 +428,7 @@ Important: Your entire response must be ONLY the JSON string, nothing else.`
             },
             {
               role: "user",
-              content: `Extract all technical and professional skills from this resume content: ${content}`
+              content: `Extract all technical and professional skills from this resume content: ${relevantContent}`
             }
           ],
           temperature: 0.7
@@ -358,8 +437,6 @@ Important: Your entire response must be ONLY the JSON string, nothing else.`
         if (!response.choices[0].message.content) {
           throw new Error("No content in OpenAI response");
         }
-
-        console.log("OpenAI response:", response.choices[0].message.content);
 
         try {
           const result = JSON.parse(response.choices[0].message.content);
