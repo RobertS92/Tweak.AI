@@ -12,6 +12,7 @@ import OpenAI from "openai";
 import puppeteer from 'puppeteer';
 import { db } from "./db";
 import { jobScraper } from './services/job-scraper';
+import express from 'express';
 
 // Add multer type definitions
 declare module 'express-serve-static-core' {
@@ -29,48 +30,16 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 
-async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  try {
-    const data = await PDFParser(buffer);
-    return data.text;
-  } catch (error) {
-    console.error('PDF parsing error:', error);
-    throw new Error('Failed to parse PDF file');
-  }
-}
-
-async function extractTextFromImage(buffer: Buffer): Promise<string> {
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4-vision-preview",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Extract and return only the text content from this job description image. Include all details but remove any irrelevant text or formatting."
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:image/jpeg;base64,${buffer.toString('base64')}`
-              }
-            }
-          ],
-        },
-      ],
-      max_tokens: 1000,
-    });
-
-    return response.choices[0].message.content || '';
-  } catch (error) {
-    console.error('Image text extraction error:', error);
-    throw new Error('Failed to extract text from image');
-  }
+// Helper function to truncate text
+function truncateText(text: string, maxLength: number = 4000): string {
+  return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
 }
 
 export async function registerRoutes(app: Express) {
+  // Increase body parser limit
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
   // Resume routes
   app.post("/api/resumes", upload.single("resume"), async (req, res) => {
     try {
@@ -342,7 +311,7 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Add this to the existing route handlers in registerRoutes
+  // Resume analysis route with proper error handling
   app.post("/api/resumes/analyze", async (req, res) => {
     try {
       const { content, sectionType } = req.body;
@@ -351,10 +320,12 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "Invalid resume content" });
       }
 
+      // Truncate content to avoid token limits while keeping essential information
+      const truncatedContent = truncateText(content);
+
       if (sectionType === "skills") {
         console.log("Analyzing resume for skills extraction...");
 
-        // Use OpenAI to extract skills from resume content
         const response = await openai.chat.completions.create({
           model: "gpt-4",
           messages: [
@@ -376,7 +347,7 @@ Important: Always return a valid JSON object with a 'skills' array, even if empt
             },
             {
               role: "user",
-              content: `Extract all technical and professional skills from this resume content: ${content}`
+              content: `Extract all technical and professional skills from this resume content: ${truncatedContent}`
             }
           ],
           response_format: { type: "json_object" }
@@ -399,7 +370,7 @@ Important: Always return a valid JSON object with a 'skills' array, even if empt
       }
 
       // Prepare the prompt based on section type
-      let prompt = `Analyze and improve the following ${sectionType} section of a resume:\n\n${content}\n\n`;
+      let prompt = `Analyze and improve the following ${sectionType} section of a resume:\n\n${truncatedContent}\n\n`;
       prompt += "Provide specific suggestions for improvements in JSON format with the following structure:\n";
       prompt += "{\n  'enhancedContent': 'improved version',\n  'suggestions': ['specific suggestion 1', 'specific suggestion 2'],\n  'explanation': 'detailed explanation of improvements'\n}";
 
@@ -428,9 +399,6 @@ Important: Always return a valid JSON object with a 'skills' array, even if empt
   });
 
   // Add job search route from edited snippet
-  function truncateText(text: string, maxLength: number = 4000): string {
-    return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
-  }
   app.post("/api/jobs/search", async (req, res) => {
     try {
       const { keywords, resumeId } = req.body;
@@ -579,4 +547,45 @@ Important: Always return a valid JSON object with a 'skills' array, even if empt
 
   const httpServer = createServer(app);
   return httpServer;
+}
+
+async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  try {
+    const data = await PDFParser(buffer);
+    return data.text;
+  } catch (error) {
+    console.error('PDF parsing error:', error);
+    throw new Error('Failed to parse PDF file');
+  }
+}
+
+async function extractTextFromImage(buffer: Buffer): Promise<string> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-vision-preview",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Extract and return only the text content from this job description image. Include all details but remove any irrelevant text or formatting."
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpeg;base64,${buffer.toString('base64')}`
+              }
+            }
+          ],
+        },
+      ],
+      max_tokens: 1000,
+    });
+
+    return response.choices[0].message.content || '';
+  } catch (error) {
+    console.error('Image text extraction error:', error);
+    throw new Error('Failed to extract text from image');
+  }
 }
