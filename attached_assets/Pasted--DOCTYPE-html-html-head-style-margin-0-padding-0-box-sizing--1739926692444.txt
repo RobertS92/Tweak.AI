@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+
+    body {
+      padding: 24px;
+      background: #f3f4f6;
+      height: 100vh;
+      color: #1f2937;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      height: calc(100vh - 48px);
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    button {
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .button-primary {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .button-primary:hover {
+      background: #2563eb;
+    }
+
+    .button-outline {
+      background: white;
+      border: 1px solid #e5e7eb;
+    }
+
+    .button-outline:hover {
+      background: #f9fafb;
+    }
+
+    .main-content {
+      display: flex;
+      gap: 24px;
+      height: calc(75vh - 80px);
+    }
+
+    .sidebar {
+      width: 240px;
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .section-item {
+      padding: 12px 16px;
+      margin: 4px 0;
+      cursor: pointer;
+      border-radius: 8px;
+      border-left: 3px solid transparent;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .section-item:hover {
+      background: #f3f4f6;
+    }
+
+    .section-item.active {
+      background: #eff6ff;
+      border-left-color: #3b82f6;
+      color: #1d4ed8;
+    }
+
+    .resume-area {
+      flex: 1;
+      background: white;
+      border-radius: 12px;
+      padding: 48px;
+      overflow-y: auto;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .resume-section {
+      margin-bottom: 36px;
+      padding: 24px;
+      border-radius: 12px;
+      transition: all 0.2s ease;
+      border: 2px solid transparent;
+    }
+
+    .resume-section.selected {
+      border-color: #3b82f6;
+      background: #f8fafc;
+    }
+
+    .resume-name {
+      font-size: 36px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 12px;
+      color: #111827;
+    }
+
+    .resume-contact {
+      text-align: center;
+      color: #4b5563;
+      margin-bottom: 40px;
+      line-height: 1.7;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 8px;
+    }
+
+    .chat-container {
+      height: 25vh;
+      background: white;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .chat-title {
+      padding: 16px 24px;
+      border-bottom: 1px solid #e5e7eb;
+      font-weight: 600;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chat-title svg {
+      width: 20px;
+      height: 20px;
+      color: #3b82f6;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .message {
+      padding: 12px 16px;
+      border-radius: 12px;
+      max-width: 85%;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .message.assistant {
+      background: #f3f4f6;
+      margin-right: auto;
+      color: #1f2937;
+    }
+
+    .message.user {
+      background: #3b82f6;
+      color: white;
+      margin-left: auto;
+    }
+
+    .chat-input {
+      padding: 16px;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      gap: 12px;
+    }
+
+    .chat-input textarea {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      resize: none;
+      height: 56px;
+      font-size: 14px;
+      transition: border-color 0.2s ease;
+    }
+
+    .chat-input textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .send-button {
+      align-self: flex-end;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #3b82f6;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .send-button:hover {
+      background: #2563eb;
+    }
+
+    .experience-item {
+      margin-bottom: 24px;
+    }
+
+    .job-title {
+      font-weight: 600;
+      font-size: 16px;
+      color: #111827;
+      margin-bottom: 4px;
+    }
+
+    .company-date {
+      color: #4b5563;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .responsibilities {
+      padding-left: 24px;
+      list-style-type: disc;
+    }
+
+    .responsibilities li {
+      margin-bottom: 8px;
+      color: #374151;
+      line-height: 1.5;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <!-- Rest of the HTML remains the same, just updated class names for styling -->
+  <div class="container">
+    <div class="header">
+      <h1 class="title">Resume Builder</h1>
+      <div class="actions">
+        <button class="button-outline">New Resume</button>
+        <button class="button-primary">Download PDF</button>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="sidebar">
+        <div class="section-item active" onclick="selectSection('summary')">Professional Summary</div>
+        <div class="section-item" onclick="selectSection('experience')">Work Experience</div>
+        <div class="section-item" onclick="selectSection('education')">Education</div>
+        <div class="section-item" onclick="selectSection('skills')">Skills</div>
+      </div>
+
+      <div class="resume-area">
+        <div class="resume-name">John Smith</div>
+        <div class="resume-contact">
+          john.smith@email.com | (123) 456-7890<br>
+          New York, NY | linkedin.com/in/johnsmith
+        </div>
+
+        <!-- Resume sections remain the same, just updated styling -->
+        <div id="summary" class="resume-section">
+          <div class="section-title">Professional Summary</div>
+          Senior Software Engineer with 8+ years of experience in full-stack development and cloud architecture. 
+          Proven track record of delivering scalable solutions and leading development teams.
+        </div>
+
+        <div id="experience" class="resume-section">
+          <div class="section-title">Work Experience</div>
+          <div class="experience-item">
+            <div class="job-title">Senior Software Engineer</div>
+            <div class="company-date">Tech Solutions Inc. | 2020 - Present</div>
+            <ul class="responsibilities">
+              <li>Led development of cloud-native applications using microservices architecture</li>
+              <li>Implemented CI/CD pipelines reducing deployment time by 60%</li>
+              <li>Mentored junior developers and conducted code reviews</li>
+            </ul>
+          </div>
+        </div>
+
+        <div id="education" class="resume-section">
+          <div class="section-title">Education</div>
+          <div class="experience-item">
+            <div class="job-title">Master of Science in Computer Science</div>
+            <div class="company-date">University of Technology | 2015 - 2017</div>
+          </div>
+        </div>
+
+        <div id="skills" class="resume-section">
+          <div class="section-title">Skills</div>
+          <div class="experience-item">
+            <strong>Programming:</strong> JavaScript, Python, Java, Go<br>
+            <strong>Technologies:</strong> React, Node.js, AWS, Docker<br>
+            <strong>Tools:</strong> Git, Jenkins, Terraform
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-container">
+      <div class="chat-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        AI Assistant
+      </div>
+      <div class="chat-messages">
+        <div class="message assistant">
+          Select any section of the resume, and I'll help you improve it with better wording and impact.
+        </div>
+      </div>
+      <div class="chat-input">
+        <textarea placeholder="Ask me to help improve the selected section..."></textarea>
+        <button class="send-button" onclick="sendMessage()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript remains the same -->
+  <script>
+    function selectSection(sectionId) {
+      document.querySelectorAll('.resume-section').forEach(section => {
+        section.classList.remove('selected');
+      });
+      
+      document.getElementById(sectionId).classList.add('selected');
+      
+      document.querySelectorAll('.section-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      document.querySelector(`.section-item[onclick*="${sectionId}"]`).classList.add('active');
+
+      document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      addMessage(`I see you're looking at the ${sectionId} section. Would you like me to help improve it?`, 'assistant');
+    }
+
+    function addMessage(content, type) {
+      const messagesContainer = document.querySelector('.chat-messages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `message ${type}`;
+      messageDiv.textContent = content;
+      messagesContainer.appendChild(messageDiv);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function sendMessage() {
+      const textarea = document.querySelector('.chat-input textarea');
+      const message = textarea.value.trim();
+      
+      if (message) {
+        addMessage(message, 'user');
+        textarea.value = '';
+        
+        setTimeout(() => {
+          addMessage('I can help improve this section. Here are some suggestions...', 'assistant');
+        }, 1000);
+      }
+    }
+
+    document.querySelector('.chat-input textarea').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
