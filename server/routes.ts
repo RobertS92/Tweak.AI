@@ -122,37 +122,54 @@ export async function registerRoutes(app: Express) {
 
       // Extract text content from the file
       let content: string;
-      if (file.mimetype === 'application/pdf') {
-        content = await extractTextFromPDF(file.buffer);
-      } else if (file.mimetype === 'text/plain') {
-        content = file.buffer.toString('utf-8');
-      } else {
-        return res.status(400).json({ message: "Only PDF and TXT files are supported at this time" });
+      try {
+        if (file.mimetype === 'application/pdf') {
+          content = await extractTextFromPDF(file.buffer);
+        } else if (file.mimetype === 'text/plain') {
+          content = file.buffer.toString('utf-8');
+        } else {
+          return res.status(400).json({ message: "Only PDF and TXT files are supported at this time" });
+        }
+      } catch (error) {
+        console.error("File parsing error:", error);
+        return res.status(400).json({ message: "Failed to parse file content" });
       }
 
-      // First create the resume record
+      // First create the resume record with basic content
       const resume = await storage.createResume({
         userId: "temp-user", // TODO: Add proper user management
         title: file.originalname,
         content: content,
         fileType: file.mimetype,
-      });
-
-      // Analyze the resume using OpenAI
-      const analysis = await analyzeResume(content);
-
-      // Update the resume with analysis results and enhanced content
-      const updatedResume = await storage.updateResume(resume.id, {
-        atsScore: analysis.overallScore,
-        enhancedContent: analysis.enhancedContent,
+        atsScore: 0, // Default score
+        enhancedContent: content, // Use original content as fallback
         analysis: {
-          categoryScores: analysis.categoryScores,
-          improvements: analysis.improvements,
-          formattingFixes: analysis.formattingFixes
+          categoryScores: {},
+          improvements: [],
+          formattingFixes: []
         }
       });
 
-      res.json(updatedResume);
+      // Try to analyze the resume, but don't fail if analysis fails
+      try {
+        const analysis = await analyzeResume(content);
+
+        // Update the resume with analysis results if successful
+        await storage.updateResume(resume.id, {
+          atsScore: analysis.overallScore,
+          enhancedContent: analysis.enhancedContent,
+          analysis: {
+            categoryScores: analysis.categoryScores,
+            improvements: analysis.improvements,
+            formattingFixes: analysis.formattingFixes
+          }
+        });
+      } catch (analysisError) {
+        console.error("Resume analysis failed:", analysisError);
+        // Don't fail the upload if analysis fails
+      }
+
+      res.json(resume);
     } catch (error: unknown) {
       console.error("Resume upload error:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
