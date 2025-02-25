@@ -20,9 +20,15 @@ export default function NavigationBar() {
                 Dashboard
               </Button>
             </Link>
-            <Link href="/builder">
+            <Link href="/editor">
               <Button variant="ghost" className="flex items-center">
                 <FileEdit className="mr-2 h-4 w-4" />
+                Tweak Resume
+              </Button>
+            </Link>
+            <Link href="/builder">
+              <Button variant="ghost" className="flex items-center">
+                <FileText className="mr-2 h-4 w-4" />
                 Resume Builder
               </Button>
             </Link>

@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import ResumeEditor from "@/pages/resume-editor";
 import Dashboard from "@/pages/dashboard";
+import ResumeUpload from "@/components/resume-upload";
 import ResumeBuilder from "@/pages/resume-builder";
 import JobSearch from "@/pages/job-search";
 import NavigationBar from "@/components/navigation-bar";
@@ -17,8 +18,9 @@ function Router() {
       <main className="flex-1">
         <Switch>
           <Route path="/" component={Home} />
-          <Route path="/resume/:id" component={ResumeEditor} />
+          <Route path="/editor/:id" component={ResumeEditor} />
           <Route path="/dashboard" component={Dashboard} />
+          <Route path="/upload" component={ResumeUpload} />
           <Route path="/builder" component={ResumeBuilder} />
           <Route path="/job-search" component={JobSearch} />
           <Route component={NotFound} />
