@@ -33,9 +33,7 @@ export default function ResumeUpload() {
       console.log("Upload success:", data);
       toast({
         title: "Resume uploaded successfully",
-        description: data.atsScore > 0 
-          ? "Resume analyzed and ready for job search" 
-          : "Resume uploaded. Analysis will complete shortly.",
+        description: "Analyzing your resume...",
       });
       // Navigate to job search page after successful upload
       navigate(`/job-search`);
