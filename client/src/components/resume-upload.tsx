@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Upload, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 
 export default function ResumeUpload() {
   const [, navigate] = useLocation();
@@ -36,8 +35,8 @@ export default function ResumeUpload() {
         title: "Resume uploaded successfully",
         description: "Analyzing your resume...",
       });
-      // Redirect to editor page to see analysis
-      navigate(`/editor/${data.id}`);
+      // Navigate to job search page after successful upload
+      navigate(`/job-search`);
     },
     onError: (error: Error) => {
       console.error("Upload error:", error);
