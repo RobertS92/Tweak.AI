@@ -242,62 +242,15 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
                   <h4 className="text-lg font-semibold">
                     {showEnhanced ? "Enhanced Resume" : "Original Resume"}
                   </h4>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowEnhanced(!showEnhanced)}
-                      className="flex items-center gap-2"
-                    >
-                      <ArrowLeftRight className="w-4 h-4" />
-                      Toggle Version
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          const response = await fetch(`/api/resumes/${resumeId}/download-pdf`, {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                              content: showEnhanced ? enhancedContent : originalContent
-                            }),
-                          });
-
-                          if (!response.ok) {
-                            throw new Error('Failed to generate PDF');
-                          }
-
-                          // Create a blob from the PDF Stream
-                          const blob = await response.blob();
-                          // Create a link element
-                          const downloadUrl = window.URL.createObjectURL(blob);
-                          const link = document.createElement('a');
-                          link.href = downloadUrl;
-                          link.download = `resume-${showEnhanced ? 'enhanced' : 'original'}.pdf`;
-                          // Trigger download
-                          document.body.appendChild(link);
-                          link.click();
-                          link.remove();
-                          // Clean up
-                          window.URL.revokeObjectURL(downloadUrl);
-                        } catch (error) {
-                          toast({
-                            title: "Download Failed",
-                            description: error instanceof Error ? error.message : "Failed to download PDF",
-                            variant: "destructive"
-                          });
-                        }
-                      }}
-                      className="flex items-center gap-2"
-                    >
-                      <FileText className="w-4 h-4" />
-                      Download PDF
-                    </Button>
-                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEnhanced(!showEnhanced)}
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowLeftRight className="w-4 h-4" />
+                    Toggle Version
+                  </Button>
                 </div>
                 <Card className="bg-muted/50">
                   <ScrollArea className="h-[400px]">
