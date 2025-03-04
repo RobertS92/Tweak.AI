@@ -352,9 +352,11 @@ export async function registerRoutes(app: Express) {
         return res.status(404).json({ message: "Resume not found" });
       }
 
-      // Launch browser
+      // Launch browser with specific path to chromium
       const browser = await puppeteer.launch({
         headless: 'new',
+        executablePath: '/nix/store/chromium/bin/chromium',
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
       });
       const page = await browser.newPage();
 
