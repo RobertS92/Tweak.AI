@@ -14,6 +14,11 @@ import puppeteer from 'puppeteer';
 import { db } from "./db";
 import { jobScraper } from './services/job-scraper';
 
+declare module 'pdf-parse-fork' {
+  const PDFParser: any;
+  export default PDFParser;
+}
+
 // Add type definitions
 declare module 'express-serve-static-core' {
   interface Request {
@@ -145,11 +150,7 @@ export async function registerRoutes(app: Express) {
       const updatedResume = await storage.updateResume(resume.id, {
         atsScore: analysis.overallScore,
         enhancedContent: analysis.enhancedContent,
-        analysis: {
-          categoryScores: analysis.categoryScores,
-          improvements: analysis.improvements,
-          formattingFixes: analysis.formattingFixes
-        }
+        analysis: analysis
       });
 
       res.json(updatedResume);
@@ -160,6 +161,210 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // Add new PDF download route
+  app.post("/api/resumes/:id/download-pdf", async (req, res) => {
+    try {
+      const resumeId = parseInt(req.params.id);
+      const { content } = req.body;
+
+      // Launch browser with explicit headless flag
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      const page = await browser.newPage();
+
+      // Set content with proper styling
+      await page.setContent(`
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              body {
+                font-family: 'Arial', sans-serif;
+                line-height: 1.6;
+                padding: 40px;
+                max-width: 800px;
+                margin: 0 auto;
+              }
+              .section { margin-bottom: 24px; }
+              h2 {
+                font-size: 18px;
+                color: #333;
+                border-bottom: 1px solid #ddd;
+                padding-bottom: 4px;
+                margin-bottom: 12px;
+              }
+              h3 { 
+                font-size: 16px;
+                color: #444;
+                margin-bottom: 6px;
+              }
+              .job-title {
+                font-style: italic;
+                color: #666;
+                margin-bottom: 8px;
+              }
+              ul {
+                margin: 8px 0;
+                padding-left: 20px;
+              }
+              li {
+                margin: 6px 0;
+              }
+              p { margin: 8px 0; }
+            </style>
+          </head>
+          <body>
+            ${content || ''}
+          </body>
+        </html>
+      `);
+
+      // Generate PDF
+      const pdf = await page.pdf({
+        format: 'A4',
+        margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' },
+        printBackground: true,
+      });
+
+      await browser.close();
+
+      // Send PDF with proper headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=resume-${Date.now()}.pdf`);
+      res.send(pdf);
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      res.status(500).json({ message: 'Failed to generate PDF' });
+    }
+  });
+
+  // Update the analyze route with stricter JSON handling
+  app.post("/api/resumes/analyze", upload.none(), async (req, res) => {
+    try {
+      const { content, sectionType } = req.body;
+
+      if (!content || typeof content !== 'string') {
+        return res.status(400).json({ message: "Invalid resume content" });
+      }
+
+      // Validate content size
+      if (Buffer.byteLength(content) > 50 * 1024 * 1024) { // 50MB limit
+        return res.status(413).json({ message: "Resume content too large" });
+      }
+
+      if (sectionType === "skills") {
+        console.log("Analyzing resume for skills extraction...");
+
+        const relevantContent = extractRelevantSections(content);
+        const estimatedTokens = estimateTokenCount(relevantContent);
+
+        if (estimatedTokens > 2000) {
+          return res.status(400).json({
+            message: "Content too complex for analysis. Please try with a simpler resume."
+          });
+        }
+
+        const response = await openai.chat.completions.create({
+          model: "gpt-4",
+          messages: [
+            {
+              role: "system",
+              content: `You are an expert at analyzing resumes and extracting technical and professional skills.
+Format your response as a valid JSON object with a "skills" array containing strings.
+Example response format: {"skills": ["JavaScript", "Python", "Project Management"]}
+
+Extract the following types of skills:
+1. Technical skills (programming languages, tools, frameworks)
+2. Domain-specific skills (industry knowledge, methodologies)
+3. Soft skills (leadership, communication)
+4. Certifications and qualifications
+
+IMPORTANT INSTRUCTIONS:
+- You must ONLY output a JSON object with a "skills" array
+- Do not include any explanations or additional text
+- Every skill must be a string in the array
+- Return an empty array if no skills are found
+- Ensure the response is valid JSON`
+            },
+            {
+              role: "user",
+              content: `Extract all technical and professional skills from this resume content:\n${relevantContent}`
+            }
+          ],
+          temperature: 0.3, // Lower temperature for more consistent formatting
+        });
+
+        if (!response.choices[0].message.content) {
+          throw new Error("No content in OpenAI response");
+        }
+
+        const responseContent = response.choices[0].message.content.trim();
+        console.log("Raw OpenAI response:", responseContent);
+
+        try {
+          // Attempt to parse the response as JSON
+          const result = JSON.parse(responseContent);
+
+          // Validate the response structure
+          if (!result.skills || !Array.isArray(result.skills)) {
+            console.error("Invalid response structure:", result);
+            throw new Error("Invalid skills data structure");
+          }
+
+          // Filter out any non-string values and deduplicate
+          const validSkills = Array.from(new Set(
+            result.skills
+              .filter((skill: any): skill is string => typeof skill === 'string')
+              .map((skill: string) => skill.trim())
+              .filter(Boolean)
+          ));
+
+          res.json({ skills: validSkills });
+        } catch (parseError) {
+          console.error("Failed to parse OpenAI response:", parseError, "Response was:", responseContent);
+          throw new Error("Invalid response format from skills extraction");
+        }
+      } else {
+        res.status(400).json({ message: "Invalid section type" });
+      }
+    } catch (error: unknown) {
+      console.error("Resume analysis error:", error);
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ message });
+    }
+  });
+
+  // Resume update route for enhanced content
+  app.post("/api/resumes/:id/tweak", async (req, res) => {
+    try {
+      const resumeId = parseInt(req.params.id);
+      const { jobDescription } = req.body;
+
+      const resume = await storage.getResume(resumeId);
+      if (!resume) {
+        return res.status(404).json({ message: "Resume not found" });
+      }
+
+      const { enhancedContent, improvements } = await tweakResume(resume.content, jobDescription);
+
+      // Update the resume with the tweaked content
+      const updatedResume = await storage.updateResume(resumeId, {
+        enhancedContent,
+        analysis: {
+          ...resume.analysis || {},
+          improvements,
+        }
+      });
+
+      res.json(updatedResume);
+    } catch (error: unknown) {
+      console.error("Resume tweaking error:", error);
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ message });
+    }
+  });
   app.get("/api/resumes/:id", async (req, res) => {
     try {
       const resume = await storage.getResume(parseInt(req.params.id));
@@ -184,36 +389,6 @@ export async function registerRoutes(app: Express) {
   });
 
   // Add this route after the other resume routes
-  app.post("/api/resumes/:id/tweak", async (req, res) => {
-    try {
-      const resumeId = parseInt(req.params.id);
-      const { jobDescription } = req.body;
-
-      const resume = await storage.getResume(resumeId);
-      if (!resume) {
-        return res.status(404).json({ message: "Resume not found" });
-      }
-
-      const { enhancedContent, improvements } = await tweakResume(resume.content, jobDescription);
-
-      // Update the resume with the tweaked content
-      const updatedResume = await storage.updateResume(resumeId, {
-        enhancedContent,
-        analysis: {
-          ...resume.analysis,
-          improvements,
-        }
-      });
-
-      res.json(updatedResume);
-    } catch (error: unknown) {
-      console.error("Resume tweaking error:", error);
-      const message = error instanceof Error ? error.message : "An unknown error occurred";
-      res.status(500).json({ message });
-    }
-  });
-
-  // Job routes
   app.post("/api/jobs", async (req, res) => {
     try {
       const { title, description } = req.body;
@@ -466,102 +641,6 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Update the analyze route with stricter JSON handling
-  app.post("/api/resumes/analyze", upload.none(), async (req, res) => {
-    try {
-      const { content, sectionType } = req.body;
-
-      if (!content || typeof content !== 'string') {
-        return res.status(400).json({ message: "Invalid resume content" });
-      }
-
-      // Validate content size
-      if (Buffer.byteLength(content) > 50 * 1024 * 1024) { // 50MB limit
-        return res.status(413).json({ message: "Resume content too large" });
-      }
-
-      if (sectionType === "skills") {
-        console.log("Analyzing resume for skills extraction...");
-
-        const relevantContent = extractRelevantSections(content);
-        const estimatedTokens = estimateTokenCount(relevantContent);
-
-        if (estimatedTokens > 2000) {
-          return res.status(400).json({
-            message: "Content too complex for analysis. Please try with a simpler resume."
-          });
-        }
-
-        const response = await openai.chat.completions.create({
-          model: "gpt-4",
-          messages: [
-            {
-              role: "system",
-              content: `You are an expert at analyzing resumes and extracting technical and professional skills.
-Format your response as a valid JSON object with a "skills" array containing strings.
-Example response format: {"skills": ["JavaScript", "Python", "Project Management"]}
-
-Extract the following types of skills:
-1. Technical skills (programming languages, tools, frameworks)
-2. Domain-specific skills (industry knowledge, methodologies)
-3. Soft skills (leadership, communication)
-4. Certifications and qualifications
-
-IMPORTANT INSTRUCTIONS:
-- You must ONLY output a JSON object with a "skills" array
-- Do not include any explanations or additional text
-- Every skill must be a string in the array
-- Return an empty array if no skills are found
-- Ensure the response is valid JSON`
-            },
-            {
-              role: "user",
-              content: `Extract all technical and professional skills from this resume content:\n${relevantContent}`
-            }
-          ],
-          temperature: 0.3, // Lower temperature for more consistent formatting
-        });
-
-        if (!response.choices[0].message.content) {
-          throw new Error("No content in OpenAI response");
-        }
-
-        const responseContent = response.choices[0].message.content.trim();
-        console.log("Raw OpenAI response:", responseContent);
-
-        try {
-          // Attempt to parse the response as JSON
-          const result = JSON.parse(responseContent);
-
-          // Validate the response structure
-          if (!result.skills || !Array.isArray(result.skills)) {
-            console.error("Invalid response structure:", result);
-            throw new Error("Invalid skills data structure");
-          }
-
-          // Filter out any non-string values and deduplicate
-          const validSkills = [...new Set(
-            result.skills
-              .filter((skill): skill is string => typeof skill === 'string')
-              .map(skill => skill.trim())
-              .filter(Boolean)
-          )];
-
-          res.json({ skills: validSkills });
-        } catch (parseError) {
-          console.error("Failed to parse OpenAI response:", parseError, "Response was:", responseContent);
-          throw new Error("Invalid response format from skills extraction");
-        }
-      } else {
-        res.status(400).json({ message: "Invalid section type" });
-      }
-    } catch (error) {
-      console.error("Resume analysis error:", error);
-      const message = error instanceof Error ? error.message : "An unknown error occurred";
-      res.status(500).json({ message });
-    }
-  });
-
   // Add job search route from edited snippet
   app.post("/api/jobs/search", async (req, res) => {
     try {
@@ -711,7 +790,7 @@ IMPORTANT INSTRUCTIONS:
       await storage.updateResume(resumeId, {
         enhancedContent: optimization.optimizedContent,
         analysis: {
-          ...resume.analysis,
+          ...resume.analysis || {},
           jobOptimization: {
             jobId,
             changes: optimization.changes,
