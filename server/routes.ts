@@ -303,16 +303,17 @@ export async function registerRoutes(app: Express) {
   // Add new PDF download route from edited snippet
   app.post("/api/resumes/:id/download-pdf-from-content", async (req, res) => { //Renamed route to avoid conflict
     try {
-      const resumeId = parseInt(req.params.id);
       const { content } = req.body;
 
       if (!content) {
         return res.status(400).json({ message: "No content provided" });
       }
 
-      // Launch browser
+      // Launch browser with specific executable path for Chromium
       const browser = await puppeteer.launch({
-        headless: 'new',
+        headless: true,
+        executablePath: '/nix/store/chromium/bin/chromium',
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
       });
       const page = await browser.newPage();
 

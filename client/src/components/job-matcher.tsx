@@ -257,7 +257,7 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
                       size="sm"
                       onClick={async () => {
                         try {
-                          const response = await fetch(`/api/resumes/${resumeId}/download-pdf`, {
+                          const response = await fetch(`/api/resumes/${resumeId}/download-pdf-from-content`, {
                             method: 'POST',
                             headers: {
                               'Content-Type': 'application/json',

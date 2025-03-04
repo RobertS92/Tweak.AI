@@ -1,0 +1,249 @@
+Tweak Resume for This Job
+Original Resume
+Toggle Version
+Download PDF
+
+
+Rob Seals 
+AI / ML Engineer 
+Email: rseals13@gmail.com | Phone: 832-517-0329 | Location: Houston, TX 
+http://github.com/RobertS92
+ 
+ 
+Professional Summary 
+Highly skilled AI/ML Engineer with over five years of experience in designing, developing, and 
+deploying advanced machine learning and natural language processing solutions. Proficient in 
+Python and adept with leading ML frameworks such as TensorFlow, PyTorch, Cuda and 
+Scikit-learn. Specialized in Agents, conversational AI, LLMs, generative ai, and prompt 
+engineering. Possesses a strong interdisciplinary background in computer science, finance, and 
+social sciences, enabling the creation of  AI solutions tailored to diverse business needs. 
+ 
+Work Experience 
+AI / ML Engineer 
+Tata Consultancy Services (TCS) | June 2024 – October 2024 
+● Designed and deployed a customer-facing AI assistant using NLP models to enhance 
+retail customer interactions. 
+● Utilized LLMs like GPT, Llama, and Claude for NLU and generative responses, boosting 
+user engagement. 
+● Developed intent classification and speech recognition tools for improved virtual 
+assistant performance. 
+● Used google dialog flow to work with CX team in order to refine conversational 
+experience for in house and client facing products  
+● Utilized prompt engineering to generate dynamic dialogues and improve conversational 
+AI interactions. 
+● Integrated LLMs with RAG systems, optimizing prompt engineering for better response 
+quality. 
+● Deployed models to AWS Lambda, ensuring scalability and efficient model management. 
+● Created monitoring tools to track model accuracy and performance, implementing 
+scalability solutions. 
+NLP / Conversational AI Scientist 
+Charter Communications (Spectrum) | June 2023 – June 2024 
+● Built an NLU system with 7 domain-specific bots and a universal routing bot, achieving a 
+95% F1 score. 
+
+● Created preprocessing pipelines and fine-tuned models using platforms like Kore AI. 
+● Implemented data analysis scripts, visualization tools, and semantic search algorithms. 
+● Developed custom prompts for conversational AI, enhancing intent recognition and user 
+experience. 
+● Collaborated with cross-functional teams to improve customer experience and 
+conversational flows. 
+●  I used google dialog flow to an test different NLU models intent section and different 
+prompt configurations 
+● Used google dialog flow to work with CX team in order to refine conversational 
+experience for the IVR 
+● Utilized prompt engineering to generate dynamic dialogues and improve conversational 
+AI interactions. 
+Machine Learning Engineer 
+Vision R&D | Aug 2021 – Jun 2023 
+● Built AI solutions including computer vision, NLP, traditional ML, and reinforcement 
+learning. 
+● Developed and fine-tuned models, creating scalable microservices for client integration. 
+● Designed retrieval systems with Faiss and Rust for enhanced model performance. 
+● Developed tools and models for application use and analyzed data to solve complex 
+business problems using N.L.P., computer vision, deep learning, statistical modeling, 
+recommendation systems, and data visualizations. 
+● Architected and implemented analytics and visualization components for a device data 
+analysis platform, predicting hardware performance. 
+● Led data operations, ensuring data security and alignment with business needs. 
+Financial Data Analyst 
+Hudson Way Capital | Oct 2020 – Jun 2021 
+● Sourced data and built financial models  to assess company valuations, earnings 
+potential, and risks, supporting the firm’s investment decisions. 
+● Used machine learning and sentiment analysis to identify financial market trends. 
+● Generated trading signals and conducted risk assessments for investment opportunities. 
+● Employed web scraping to gather financial data for trading strategies and portfolio 
+management. 
+Intent Analyst 
+Socorro Asset Management | June 2020 – September 2020 
+● Conducted research on publicly traded, income-producing securities across various 
+asset classes, capital structures, and sectors, aligning with Socorro's bottom-up, 
+fundamental investment approach. 
+● Conducted risk assessments and monitored a diversified portfolio to ensure stability. 
+
+● Utilized quantitative methods to identify market trends and supported strategic 
+investment decisions. 
+● Prepared detailed reports and presentations on investment findings and portfolio 
+performance. 
+Co-Founder 
+Vuzag App | Jan 2016 – Jun 2020 
+● Developed MVP for a location based visual search iOS app, raising $800,000 in seed 
+funding. 
+● Managed technical teams to enhance app features, achieving over 30,000 downloads 
+with a 5-star rating. 
+● Executed sales and marketing strategies, fostering partnerships and maintaining brand 
+identity. 
+○ Apple Apps: Promoted Vuzag's search and social features through direct 
+outreach and community engagement. 
+○ Dallas Innovates: Partnered with local businesses to enrich app content with 
+real-time event information. 
+○ TCU 360: Maintained consistent brand messaging across all platforms and 
+marketing materials. 
+ 
+Projects (Personal & Freelance) 
+CryptoSenti: Fine-tuned Bert model for crypto sentiment analysis 
+● Skills: NLU, NLP, Generative AI, Data Augmentation, Model Fine-Tuning 
+● Technologies: DeepSeek, BERT, TensorFlow, Huggingface, Python, AWS S3, 
+Scikit-learn 
+● Description: Created synthetic datasets for sentiment analysis of crypto tweets. 
+Fine-tuned BERT models to categorize sentiments, supporting algorithmic trading 
+strategies. Integrated data pipelines for seamless data flow and model deployment. 
+Reinforcement Learning-based Cryptocurrency Trading Agent 
+● Skills: Reinforcement Learning, Machine Learning, Financial Modeling, Predictive 
+Analytics, Risk Management 
+● Technologies: TensorFlow, PyTorch, Graph Neural Networks, Python, Docker, 
+Kubernetes, AWS EC2, Jenkins 
+● Description: Developed an RL agent for cryptocurrency trading, integrating market data 
+and social sentiments. The Goal was to experiment if an Rl agent can learn an optimal 
+trading strategy through self-learning.  
+ 
+
+Reinforcement Learning Agent Expert at Monopoly 
+● Skills: Reinforcement Learning,  Real-Time Systems, Model Deployment 
+● Technologies: Python, TensorFlow, Flask, React.js, Docker, Kubernetes, AWS, OpenAI 
+Gym, Git 
+● Description: Fine-tuned an LLM using PPO with TRL to master Monopoly’s gameplay 
+and controlled negotiation strategies.  
+AutoML System for Financial Signal Data 
+● Skills: AutoML, Hyperparameter Optimization, Meta-Learning, Pipeline Development, 
+Model Evaluation 
+● Technologies: Python, scikit-learn, TensorFlow, PyTorch, Optuna, Flask, Docker, 
+Kubernetes, AWS (S3, EC2), Git 
+● Description: Built an AutoML pipeline for stock and financial data, automating 
+preprocessing, model selection, and hyperparameter tuning to enhance prediction 
+accuracy. 
+NLP Pipeline for Financial Data Analysis 
+● Skills: NLP, Entity Recognition, Sentiment Analysis, Topic Modeling 
+● Technologies: Python, spaCy, NLTK, Gensim, scikit-learn, TensorFlow, Huggingface, 
+Docker, Kubernetes, Azure, Git 
+● Description: Developed an NLP pipeline to analyze financial texts, extracting entities 
+and sentiments to support investment decisions. deployed on Azure. 
+Stark: Comprehensive Assistant for Laptops and Smart TVs 
+● Skills: Voice Recognition, Gesture Recognition, Multimodal AI, Core Assistant 
+Functionalities, Application Integration 
+● Technologies: Python, TensorFlow, Keras, OpenAI GPT, Node.js, React.js, Docker, 
+Kubernetes, AWS (Lambda, S3), Apache Airflow 
+● Description: Built Stark to enhance user experience through voice and gesture 
+interactions to replace your “remote” 
+ 
+300 Acres: AI-Driven Investment Platform for Africa regions 
+● Skills: Data Integration, Synthetic Data Generation, Machine Learning, Predictive 
+Analytics, Data Quality Assurance 
+● Technologies: Django, React.js, PostgreSQL, TensorFlow, PyTorch, Docker, 
+Kubernetes, AWS (EC2, RDS, S3), GitLab CI/CD, CatBoost, GNNs, CTGAN, TabNet 
+● Description: Built an AI-powered platform to identify high-potential investments across 
+African markets. Integrated real and synthetic data, leveraged GNNs for market 
+
+correlation, and deployed LLMs for explainable investment recommendations. Scalable 
+system with automated data pipelines, CI/CD, and cloud deployment. 
+Epiphany: Multimodal Voice Assistant for Client-Facing Duties 
+● Skills: Multimodal AI, Voice Recognition, RAG Systems, Persona Fine-Tuning, 
+Conversational AI 
+● Technologies: Node.js, React.js, MongoDB, TensorFlow, Open AI API 
+● Description: Developed Epiphany to provide 24/7 client support through voice and text. 
+Implemented NLU, sentiment analysis, Prompt engineering for persona, fine tuning for 
+specified dialog, and RAG systems, deploying with Docker and Kubernetes.  
+NLP Models Repository 
+● Skills: Model Fine-Tuning, NLP 
+● Technologies: GPT, BERT, Huggingface, Python 
+● Description: Curated a repository of fine-tuned GPT and BERT models for various NLP 
+tasks, showcasing model performance and applications. 
+ 
+Core Skills 
+● Programming Languages: Python, Java, Javascript 
+● Machine Learning Frameworks: TensorFlow, Keras, PyTorch, Scikit-learn, XGBoost, 
+Huggingface 
+● Machine Learning: Predictive modeling, Time series modeling (Arima/LSTM), Neural 
+networks, Gans, Graph networks, Linear regression, Logistic regression 
+● Natural Language Processing (NLP): LLM fine-tuning (GPT, BERT), NLU/NLG, 
+Conversational AI, Sentiment Analysis, Language Modeling, Sentence Transformer 
+● Computer Vision: Image Recognition, Object Detection, Deep Learning (CNNs) 
+● Reinforcement Learning: Algorithm Development, Decision-Making Optimization, 
+System Adaptability, Meta Learning, HFRL 
+● Conversational AI: Intent accuracy, Intent recognition, Data Sourcing, NLU data 
+pipeline, Conversational persona fine-tuning, Model finetuning, Generative AI for dialog, 
+Prompt engineering for optimal output, Rasa, Kore.ai, Google Dialogflow, Amelia  
+● Data Science: Exploratory Data Analysis (EDA), Statistical Analysis, Data Cleaning, 
+Feature Engineering, Data Visualization, Hypothesis Testing, ETL/ELT Pipeline 
+Development, Data Integration, Data Transformation, Supervised Learning, 
+Unsupervised Learning, Clustering, Classification 
+● Prompt Engineering: Designing, testing, and refining prompts; jailbreak analysis; 
+vulnerability testing, Red teaming 
+● Model Evaluation: BLEU, ROUGE, MAUVE, F1 Score, Intent Success Rate 
+● LLM Frameworks: LangChain, Llama Index, Semantic Kernel, OpenAI Frontier Models: 
+Claude, LLAMA, ChatGPT, Mistral, DeepSeek 
+
+● Vector Databases: Faiss, Chroma 
+● MLOps: Model lifecycle management, deployment, and continuous optimization 
+● API & Microservices Development: Scalable API design, AI service integration 
+● Data Architecture: Distributed systems, container services, NoSQL databases 
+(Cassandra) 
+● Cloud, Containerization & Orchestration: Docker, Kubernetes, Apache, Azure, AWS 
+● Data Manipulation & Visualization: Pandas, NumPy, Plotly, Seaborn, Matplotlib 
+● Collaboration Tools: Git, Agile methodologies, cross-functional team collaboration 
+ 
+Education
+ 
+Post Graduate Degree: Artificial Intelligence & Machine Learning 
+University of Texas| January 2022 - December 2023 
+● Relevant Coursework: Advanced Machine Learning, Data Engineering, Cloud 
+Computing for AI, MLOps, NLP, Traditional ML, Computer Vision, Deep Learning, 
+Reinforcement Learning 
+Master of Business Administration: Finance 
+Southern Methodist University | Jan 2020 - Feb 2021 
+Bachelor of Arts: Sociology, Computer Science 
+Southern Methodist University | July 2011 – Dec 2015 
+ 
+Missing Keywords
+FastAPI
+pytest
+PEP8
+PEP257
+Next.js
+SHAP
+MLflow
+Airflow
+SageMaker
+Terraform
+Ansible
+IAM role-based access controls
+VPC
+security groups
+private subnets
+Label Studio
+DVC
+Jenkins
+Prometheus
+Grafana
+Helm
+Suggested Improvements
+Add experience with Python FastAPI and pytest
+Specify adherence to PEP8 and PEP257 coding standards
+Add experience with ReactJS (Next.js)
+Include experience with SHAP and MLflow
+Mention experience with AWS services like SageMaker and EKS
+Add experience with Infrastructure as Code (IaC) using Terraform and Ansible
+Specify experience with IAM role-based access controls and network security best practices
+Include experience with MLOps, specifically Model training, monitoring, & deployment
+Add experience with data labeling & versioning tools like Label Studio, DVC
+Include experience with CI/CD & Monitoring tools like Jenkins, Prometheus, Grafana
+Specify experience with containerization & orchestration tools like Docker, Kubernetes, Helm
