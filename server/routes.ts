@@ -200,55 +200,54 @@ export async function registerRoutes(app: Express) {
         messages: [
           {
             role: "system",
-            content: `You are an expert ATS optimization specialist. Analyze the job description and resume, then provide optimized content that:
-            1. Matches keywords and phrases from the job description
-            2. Maintains factual accuracy of the original resume
-            3. Improves ATS-friendliness
-            4. Highlights relevant experience and skills
-            5. Uses industry-standard formatting`
+            content: 'You are an expert ATS optimization specialist. Format your response as a valid JSON object with specific fields. Example format: {"optimizedContent": "...", "changes": ["..."], "matchScore": 85, "keywordMatches": ["..."], "missingKeywords": ["..."], "formatImprovements": ["..."]}. Use proper JSON escaping for any special characters in strings.'
           },
           {
             role: "user",
-            content: `
-              Job Description: ${jobDescription}
-              Current Resume: ${resume.content}
+            content: `Here is the job description and resume to optimize:
+Job Description:
+${jobDescription}
 
-              Optimize this resume for ATS and human readability while maintaining truthfulness.
-              Return a JSON object with:
-              {
-                "optimizedContent": "The ATS-optimized resume content",
-                "changes": ["Detailed list of changes made"],
-                "matchScore": "Score 0-100",
-                "keywordMatches": ["Array of matched keywords"],
-                "missingKeywords": ["Important keywords not present"],
-                "formatImprovements": ["List of formatting improvements"]
-              }
-            `
+Current Resume:
+${resume.content}
+
+Return an optimized version that matches keywords and improves ATS score while maintaining truthfulness.`
           }
         ],
         temperature: 0.3
       });
 
-      const optimization = JSON.parse(optimizationResponse.choices[0].message.content);
+      if (!optimizationResponse.choices[0].message.content) {
+        throw new Error("No optimization response received");
+      }
 
-      // Update the resume with optimized content and detailed analysis
-      await storage.updateResume(resumeId, {
-        enhancedContent: optimization.optimizedContent,
-        analysis: {
-          ...resume.analysis,
-          jobOptimization: {
-            jobId: null,
-            changes: optimization.changes,
-            matchScore: optimization.matchScore,
-            keywordMatches: optimization.keywordMatches,
-            missingKeywords: optimization.missingKeywords,
-            formatImprovements: optimization.formatImprovements,
-            timestamp: new Date().toISOString()
+      console.log("Raw optimization response:", optimizationResponse.choices[0].message.content);
+
+      try {
+        const optimization = JSON.parse(optimizationResponse.choices[0].message.content.trim());
+
+        // Update the resume with optimized content and detailed analysis
+        await storage.updateResume(resumeId, {
+          enhancedContent: optimization.optimizedContent,
+          analysis: {
+            ...resume.analysis,
+            jobOptimization: {
+              jobId: null,
+              changes: optimization.changes || [],
+              matchScore: optimization.matchScore || 0,
+              keywordMatches: optimization.keywordMatches || [],
+              missingKeywords: optimization.missingKeywords || [],
+              formatImprovements: optimization.formatImprovements || [],
+              timestamp: new Date().toISOString()
+            }
           }
-        }
-      });
+        });
 
-      res.json(optimization);
+        res.json(optimization);
+      } catch (parseError) {
+        console.error("Failed to parse optimization response:", parseError);
+        throw new Error("Invalid response format from optimization");
+      }
     } catch (error) {
       console.error("Resume optimization error:", error);
       res.status(500).json({ message: "Failed to optimize resume" });
