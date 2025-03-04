@@ -161,12 +161,12 @@ export async function tweakResume(resumeContent: string, jobDescription: string)
    - Include both hard and soft skills
    - Add missing key competencies if user possesses them
 
-Return a JSON response with:
+Format the response in HTML with proper semantic structure and return a JSON object:
 {
-  "enhancedContent": "string (optimized resume content)",
-  "improvements": ["string (list of changes made)"],
-  "keywordMatches": ["string (matched keywords)"],
-  "formattingImprovements": ["string (formatting changes)"]
+  "enhancedContent": "<div class='resume'><div class='section'>...(HTML formatted resume content)...</div></div>",
+  "improvements": ["List of specific improvements made"],
+  "keywordMatches": ["Matched keywords"],
+  "formattingImprovements": ["Formatting changes made"]
 }`
         },
         {
@@ -174,20 +174,27 @@ Return a JSON response with:
           content: `Resume Content:\n${resumeContent}\n\nJob Description:\n${jobDescription}`
         }
       ],
-      temperature: 0.7,
+      temperature: 0.3, // Lower temperature for more consistent formatting
     });
 
     if (!response.choices[0].message.content) {
       throw new Error("No optimization received from OpenAI");
     }
 
-    const result = JSON.parse(response.choices[0].message.content);
-    return {
-      enhancedContent: result.enhancedContent,
-      improvements: result.improvements || [],
-      keywordMatches: result.keywordMatches || [],
-      formattingImprovements: result.formattingImprovements || []
-    };
+    console.log("Raw tweak response:", response.choices[0].message.content);
+
+    try {
+      const result = JSON.parse(response.choices[0].message.content);
+      return {
+        enhancedContent: result.enhancedContent || resumeContent,
+        improvements: result.improvements || [],
+        keywordMatches: result.keywordMatches || [],
+        formattingImprovements: result.formattingImprovements || []
+      };
+    } catch (parseError) {
+      console.error("Failed to parse OpenAI response:", parseError);
+      throw new Error("Failed to parse optimization response");
+    }
   } catch (error) {
     console.error("Resume tweaking failed:", error);
     throw new Error("Failed to tweak resume");
