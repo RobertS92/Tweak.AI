@@ -204,32 +204,32 @@ export default function ResumeEditor() {
   const categoryScores = [
     {
       name: "ATS Compliance",
-      score: resume.analysis?.categoryScores?.atsCompliance.score ?? 0,
-      description: resume.analysis?.categoryScores?.atsCompliance.description,
+      score: resume.analysis?.categoryScores?.atsCompliance?.score ?? 0,
+      description: resume.analysis?.categoryScores?.atsCompliance?.description,
       color: "bg-blue-600"
     },
     {
       name: "Keyword Density",
-      score: resume.analysis?.categoryScores?.keywordDensity.score ?? 0,
-      description: resume.analysis?.categoryScores?.keywordDensity.description,
+      score: resume.analysis?.categoryScores?.keywordDensity?.score ?? 0,
+      description: resume.analysis?.categoryScores?.keywordDensity?.description,
       color: "bg-blue-600"
     },
     {
       name: "Role Alignment",
-      score: resume.analysis?.categoryScores?.roleAlignment.score ?? 0,
-      description: resume.analysis?.categoryScores?.roleAlignment.description,
+      score: resume.analysis?.categoryScores?.roleAlignment?.score ?? 0,
+      description: resume.analysis?.categoryScores?.roleAlignment?.description,
       color: "bg-blue-600"
     },
     {
       name: "Recruiter-Friendliness",
-      score: resume.analysis?.categoryScores?.recruiterFriendliness.score ?? 0,
-      description: resume.analysis?.categoryScores?.recruiterFriendliness.description,
+      score: resume.analysis?.categoryScores?.recruiterFriendliness?.score ?? 0,
+      description: resume.analysis?.categoryScores?.recruiterFriendliness?.description,
       color: "bg-blue-600"
     },
     {
       name: "Conciseness",
-      score: resume.analysis?.categoryScores?.conciseness.score ?? 0,
-      description: resume.analysis?.categoryScores?.conciseness.description,
+      score: resume.analysis?.categoryScores?.conciseness?.score ?? 0,
+      description: resume.analysis?.categoryScores?.conciseness?.description,
       color: "bg-blue-600"
     }
   ];
