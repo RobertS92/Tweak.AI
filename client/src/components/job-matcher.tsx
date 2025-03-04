@@ -160,7 +160,7 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
       }
 
       const result = await response.json();
-      setEnhancedContent(result.enhancedContent);
+      setEnhancedContent(result.optimizedContent); // Changed to optimizedContent
       return result;
     },
     onSuccess: () => {
