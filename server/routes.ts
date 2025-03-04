@@ -183,7 +183,7 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Add this route after the other resume routes
+  // Add new route for resume optimization
   app.post("/api/resumes/:id/tweak", async (req, res) => {
     try {
       const resumeId = parseInt(req.params.id);
@@ -194,22 +194,64 @@ export async function registerRoutes(app: Express) {
         return res.status(404).json({ message: "Resume not found" });
       }
 
-      const { enhancedContent, improvements } = await tweakResume(resume.content, jobDescription);
+      // Enhanced optimization using OpenAI
+      const optimizationResponse = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert ATS optimization specialist. Analyze the job description and resume, then provide optimized content that:
+            1. Matches keywords and phrases from the job description
+            2. Maintains factual accuracy of the original resume
+            3. Improves ATS-friendliness
+            4. Highlights relevant experience and skills
+            5. Uses industry-standard formatting`
+          },
+          {
+            role: "user",
+            content: `
+              Job Description: ${jobDescription}
+              Current Resume: ${resume.content}
 
-      // Update the resume with the tweaked content
-      const updatedResume = await storage.updateResume(resumeId, {
-        enhancedContent,
+              Optimize this resume for ATS and human readability while maintaining truthfulness.
+              Return a JSON object with:
+              {
+                "optimizedContent": "The ATS-optimized resume content",
+                "changes": ["Detailed list of changes made"],
+                "matchScore": "Score 0-100",
+                "keywordMatches": ["Array of matched keywords"],
+                "missingKeywords": ["Important keywords not present"],
+                "formatImprovements": ["List of formatting improvements"]
+              }
+            `
+          }
+        ],
+        temperature: 0.3
+      });
+
+      const optimization = JSON.parse(optimizationResponse.choices[0].message.content);
+
+      // Update the resume with optimized content and detailed analysis
+      await storage.updateResume(resumeId, {
+        enhancedContent: optimization.optimizedContent,
         analysis: {
           ...resume.analysis,
-          improvements,
+          jobOptimization: {
+            jobId: null,
+            changes: optimization.changes,
+            matchScore: optimization.matchScore,
+            keywordMatches: optimization.keywordMatches,
+            missingKeywords: optimization.missingKeywords,
+            formatImprovements: optimization.formatImprovements,
+            timestamp: new Date().toISOString()
+          }
         }
       });
 
-      res.json(updatedResume);
-    } catch (error: unknown) {
-      console.error("Resume tweaking error:", error);
-      const message = error instanceof Error ? error.message : "An unknown error occurred";
-      res.status(500).json({ message });
+      res.json(optimization);
+    } catch (error) {
+      console.error("Resume optimization error:", error);
+      res.status(500).json({ message: "Failed to optimize resume" });
     }
   });
 
