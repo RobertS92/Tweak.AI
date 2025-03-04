@@ -300,7 +300,90 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  // Add new PDF download route
+  // Add new PDF download route from edited snippet
+  app.post("/api/resumes/:id/download-pdf-from-content", async (req, res) => { //Renamed route to avoid conflict
+    try {
+      const resumeId = parseInt(req.params.id);
+      const { content } = req.body;
+
+      if (!content) {
+        return res.status(400).json({ message: "No content provided" });
+      }
+
+      // Launch browser
+      const browser = await puppeteer.launch({
+        headless: 'new',
+      });
+      const page = await browser.newPage();
+
+      // Set content with proper styling
+      await page.setContent(`
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              body {
+                font-family: 'Arial', sans-serif;
+                line-height: 1.6;
+                padding: 40px;
+                max-width: 800px;
+                margin: 0 auto;
+              }
+              .section { margin-bottom: 24px; }
+              h2 {
+                font-size: 18px;
+                color: #333;
+                border-bottom: 1px solid #ddd;
+                padding-bottom: 4px;
+                margin-bottom: 12px;
+              }
+              h3 { 
+                font-size: 16px;
+                color: #444;
+                margin-bottom: 6px;
+              }
+              .job-title {
+                font-style: italic;
+                color: #666;
+                margin-bottom: 8px;
+              }
+              ul {
+                margin: 8px 0;
+                padding-left: 20px;
+              }
+              li {
+                margin: 6px 0;
+              }
+              p { margin: 8px 0; }
+            </style>
+          </head>
+          <body>
+            ${content}
+          </body>
+        </html>
+      `);
+
+      // Generate PDF
+      const pdf = await page.pdf({
+        format: 'A4',
+        margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' },
+        printBackground: true,
+        displayHeaderFooter: false,
+      });
+
+      await browser.close();
+
+      // Send PDF with proper headers
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=resume-${Date.now()}.pdf`);
+      res.send(pdf);
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      res.status(500).json({ message: 'Failed to generate PDF' });
+    }
+  });
+
+  // Add new PDF download route (original)
   app.post("/api/resumes/:id/download-pdf", async (req, res) => {
     try {
       const resumeId = parseInt(req.params.id);
