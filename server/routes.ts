@@ -354,7 +354,7 @@ Return an optimized version that matches keywords and improves ATS score while m
       // Launch browser with specific path to chromium
       const browser = await puppeteer.launch({
         headless: 'new',
-        executablePath: '/nix/store/chromium/bin/chromium',
+        executablePath: '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
         args: ['--no-sandbox', '--disable-setuid-sandbox']
       });
       const page = await browser.newPage();
