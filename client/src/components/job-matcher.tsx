@@ -7,9 +7,10 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Upload } from "lucide-react";
+import { Upload, FileText, ArrowLeftRight } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface JobMatcherProps {
   resumeId: number;
@@ -26,6 +27,9 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
   const { toast } = useToast();
   const [jobDescription, setJobDescription] = useState("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [showEnhanced, setShowEnhanced] = useState(false);
+  const [originalContent, setOriginalContent] = useState("");
+  const [enhancedContent, setEnhancedContent] = useState("");
 
   const uploadJobDescriptionMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -106,6 +110,15 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
 
   const tweakResumeMutation = useMutation({
     mutationFn: async () => {
+      // First get the original resume content
+      const resumeResponse = await apiRequest("GET", `/api/resumes/${resumeId}`);
+      if (!resumeResponse.ok) {
+        throw new Error("Failed to fetch original resume");
+      }
+      const resume = await resumeResponse.json();
+      setOriginalContent(resume.content);
+
+      // Then tweak it
       const response = await apiRequest("POST", `/api/resumes/${resumeId}/tweak`, {
         jobDescription,
       });
@@ -115,15 +128,16 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
         throw new Error(error.message || 'Failed to tweak resume');
       }
 
-      return response.json();
+      const result = await response.json();
+      setEnhancedContent(result.enhancedContent);
+      return result;
     },
     onSuccess: () => {
       toast({
         title: "Resume Tweaked",
         description: "Your resume has been optimized for this job",
       });
-      // Invalidate the resume query to refresh the data
-      queryClient.invalidateQueries({ queryKey: [`/api/resumes/${resumeId}`] });
+      setShowEnhanced(true);
     },
     onError: (error: Error) => {
       toast({
@@ -137,7 +151,6 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Check file type
       const validTypes = [
         'application/pdf',
         'text/plain',
@@ -221,6 +234,37 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
               >
                 Tweak Resume for This Job
               </Button>
+            )}
+
+            {(originalContent || enhancedContent) && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-lg font-semibold">
+                    {showEnhanced ? "Enhanced Resume" : "Original Resume"}
+                  </h4>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEnhanced(!showEnhanced)}
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowLeftRight className="w-4 h-4" />
+                    Toggle Version
+                  </Button>
+                </div>
+                <Card className="bg-muted/50">
+                  <ScrollArea className="h-[400px]">
+                    <div className="p-6 whitespace-pre-wrap font-mono text-sm">
+                      <div 
+                        className="prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ 
+                          __html: showEnhanced ? enhancedContent : originalContent 
+                        }} 
+                      />
+                    </div>
+                  </ScrollArea>
+                </Card>
+              </div>
             )}
 
             {matchMutation.data.missingKeywords?.length > 0 && (
