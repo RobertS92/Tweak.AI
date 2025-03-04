@@ -201,13 +201,6 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
           >
             Analyze Match
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => coverLetterMutation.mutate()}
-            disabled={!jobDescription || coverLetterMutation.isPending}
-          >
-            Generate Cover Letter
-          </Button>
         </div>
 
         {matchMutation.data && (
