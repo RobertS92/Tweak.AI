@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Upload, FileText, ArrowLeftRight } from "lucide-react";
+import { Upload, FileText, ArrowLeftRight, Download } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -30,6 +30,41 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
   const [showEnhanced, setShowEnhanced] = useState(false);
   const [originalContent, setOriginalContent] = useState("");
   const [enhancedContent, setEnhancedContent] = useState("");
+
+  const downloadPdfMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/resumes/${resumeId}/download-pdf`, {
+        method: 'POST'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `optimized_resume_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Download Complete",
+        description: "Your optimized resume has been downloaded",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Download Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const uploadJobDescriptionMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -67,7 +102,6 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
 
   const matchMutation = useMutation({
     mutationFn: async () => {
-      // First create the job
       const jobResponse = await apiRequest("POST", "/api/jobs", {
         title: "Job Match",
         description: jobDescription,
@@ -80,7 +114,6 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
 
       const job = await jobResponse.json();
 
-      // Then get the match analysis
       const matchResponse = await apiRequest(
         "POST",
         `/api/jobs/${job.id}/match/${resumeId}`
@@ -110,7 +143,6 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
 
   const tweakResumeMutation = useMutation({
     mutationFn: async () => {
-      // First get the original resume content
       const resumeResponse = await apiRequest("GET", `/api/resumes/${resumeId}`);
       if (!resumeResponse.ok) {
         throw new Error("Failed to fetch original resume");
@@ -118,7 +150,6 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
       const resume = await resumeResponse.json();
       setOriginalContent(resume.content);
 
-      // Then tweak it
       const response = await apiRequest("POST", `/api/resumes/${resumeId}/tweak`, {
         jobDescription,
       });
@@ -242,15 +273,29 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
                   <h4 className="text-lg font-semibold">
                     {showEnhanced ? "Enhanced Resume" : "Original Resume"}
                   </h4>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowEnhanced(!showEnhanced)}
-                    className="flex items-center gap-2"
-                  >
-                    <ArrowLeftRight className="w-4 h-4" />
-                    Toggle Version
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowEnhanced(!showEnhanced)}
+                      className="flex items-center gap-2"
+                    >
+                      <ArrowLeftRight className="w-4 h-4" />
+                      Toggle Version
+                    </Button>
+                    {showEnhanced && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => downloadPdfMutation.mutate()}
+                        disabled={downloadPdfMutation.isPending}
+                        className="flex items-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        {downloadPdfMutation.isPending ? "Downloading..." : "Download PDF"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <Card className="bg-muted/50">
                   <ScrollArea className="h-[400px]">
