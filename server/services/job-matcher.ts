@@ -137,56 +137,48 @@ export async function tweakResume(resumeContent: string, jobDescription: string)
       messages: [
         {
           role: "system",
-          content: `You are an expert ATS optimization specialist. Enhance the provided resume to better match the job description while maintaining authenticity. Focus on:
-
-1. Keyword Optimization
-   - Match critical job requirements
-   - Use industry-standard terminology
-   - Maintain natural language flow
-
-2. ATS-Friendly Formatting
-   - Clear section headers
-   - Standard section ordering
-   - Consistent bullet point formatting
-   - Proper spacing and hierarchy
-
-3. Experience Enhancement
-   - Highlight relevant achievements
-   - Quantify results where possible
-   - Use action verbs
-   - Focus on transferable skills
-
-4. Skills Alignment
-   - Prioritize matching technical skills
-   - Include both hard and soft skills
-   - Add missing key competencies if user possesses them
-
-Return a JSON response with:
+          content: `You are an expert resume optimization specialist. Analyze the resume and job description to create an enhanced version optimized for ATS systems. Return ONLY a JSON response in the following format:
 {
-  "enhancedContent": "string (optimized resume content)",
-  "improvements": ["string (list of changes made)"],
-  "keywordMatches": ["string (matched keywords)"],
-  "formattingImprovements": ["string (formatting changes)"]
-}`
+  "enhancedContent": "string containing the optimized HTML resume content with proper formatting",
+  "improvements": ["list of specific improvements made"],
+  "keywordMatches": ["list of keywords matched"],
+  "formattingImprovements": ["list of formatting changes made"]
+}
+
+IMPORTANT:
+- The enhancedContent should be valid HTML with proper formatting
+- Use semantic HTML tags (h1, h2, p, ul, li, etc.)
+- Maintain professional formatting
+- Preserve all important content
+- Focus on keyword optimization and clear structure
+- Do not add fictional content
+- Ensure the response is valid JSON with proper escaping`
         },
         {
           role: "user",
           content: `Resume Content:\n${resumeContent}\n\nJob Description:\n${jobDescription}`
         }
       ],
-      temperature: 0.7,
+      temperature: 0.3,
     });
 
     if (!response.choices[0].message.content) {
       throw new Error("No optimization received from OpenAI");
     }
 
+    console.log("Raw tweak response:", response.choices[0].message.content);
+
     const result = JSON.parse(response.choices[0].message.content);
+
+    if (!result.enhancedContent || typeof result.enhancedContent !== 'string') {
+      throw new Error("Invalid response format: missing or invalid enhancedContent");
+    }
+
     return {
       enhancedContent: result.enhancedContent,
-      improvements: result.improvements || [],
-      keywordMatches: result.keywordMatches || [],
-      formattingImprovements: result.formattingImprovements || []
+      improvements: Array.isArray(result.improvements) ? result.improvements : [],
+      keywordMatches: Array.isArray(result.keywordMatches) ? result.keywordMatches : [],
+      formattingImprovements: Array.isArray(result.formattingImprovements) ? result.formattingImprovements : []
     };
   } catch (error) {
     console.error("Resume tweaking failed:", error);
