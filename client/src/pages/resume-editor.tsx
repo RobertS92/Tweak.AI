@@ -56,6 +56,13 @@ interface Resume {
   };
 }
 
+interface CategoryScoreProps {
+  name: string;
+  score: number;
+  color?: string;
+  description?: string;
+}
+
 export default function ResumeEditor() {
   const { id } = useParams();
   const { toast } = useToast();
@@ -63,7 +70,7 @@ export default function ResumeEditor() {
   const [showEnhanced, setShowEnhanced] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
 
-  const { data: resume, isLoading } = useQuery<Resume>({
+  const { data: resume, isLoading, error } = useQuery<Resume>({
     queryKey: [`/api/resumes/${resumeId}`],
     enabled: !!resumeId,
   });
@@ -71,9 +78,14 @@ export default function ResumeEditor() {
   const updateMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!resumeId) throw new Error("No resume ID provided");
-      return apiRequest("PATCH", `/api/resumes/${resumeId}`, {
+      const response = await apiRequest("PATCH", `/api/resumes/${resumeId}`, {
         content,
-      }).then((r) => r.json());
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update resume");
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/resumes/${resumeId}`] });
@@ -82,9 +94,25 @@ export default function ResumeEditor() {
         description: "Your changes have been saved",
       });
     },
+    onError: (error: Error) => {
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const handleDownload = async () => {
+    if (!resumeId) {
+      toast({
+        title: "Error",
+        description: "Resume ID is missing",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsPrinting(true);
     try {
       const response = await fetch(`/api/resumes/${resumeId}/download-pdf`, {
@@ -92,15 +120,20 @@ export default function ResumeEditor() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate PDF');
+        const errorData = await response.json().catch(() => ({ message: 'PDF generation failed' }));
+        throw new Error(errorData.message || 'Failed to generate PDF');
       }
 
-      // Create blob from response and download
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/pdf')) {
+        throw new Error('Invalid response format from server');
+      }
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${resume?.title || 'resume'}.pdf`;
+      a.download = `${resume?.title || 'resume'}_${new Date().toISOString().split('T')[0]}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -111,9 +144,10 @@ export default function ResumeEditor() {
         description: "Your enhanced resume has been downloaded",
       });
     } catch (error) {
+      console.error("Download error:", error);
       toast({
         title: "Download failed",
-        description: error.message,
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
@@ -131,16 +165,16 @@ export default function ResumeEditor() {
     );
   }
 
-  if (!resume) {
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card>
           <CardContent className="p-6">
-            <p className="text-lg text-muted-foreground">Resume not found</p>
-            <Link href="/">
+            <p className="text-lg text-destructive">Error loading resume: {error instanceof Error ? error.message : "Unknown error"}</p>
+            <Link href="/dashboard">
               <Button className="mt-4">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Return Home
+                Return to Dashboard
               </Button>
             </Link>
           </CardContent>
@@ -149,11 +183,62 @@ export default function ResumeEditor() {
     );
   }
 
+  if (!resume) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-lg text-muted-foreground">Resume not found</p>
+            <Link href="/dashboard">
+              <Button className="mt-4">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Return to Dashboard
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const categoryScores = [
+    {
+      name: "ATS Compliance",
+      score: resume.analysis?.categoryScores?.atsCompliance.score ?? 0,
+      description: resume.analysis?.categoryScores?.atsCompliance.description,
+      color: "bg-blue-600"
+    },
+    {
+      name: "Keyword Density",
+      score: resume.analysis?.categoryScores?.keywordDensity.score ?? 0,
+      description: resume.analysis?.categoryScores?.keywordDensity.description,
+      color: "bg-blue-600"
+    },
+    {
+      name: "Role Alignment",
+      score: resume.analysis?.categoryScores?.roleAlignment.score ?? 0,
+      description: resume.analysis?.categoryScores?.roleAlignment.description,
+      color: "bg-blue-600"
+    },
+    {
+      name: "Recruiter-Friendliness",
+      score: resume.analysis?.categoryScores?.recruiterFriendliness.score ?? 0,
+      description: resume.analysis?.categoryScores?.recruiterFriendliness.description,
+      color: "bg-blue-600"
+    },
+    {
+      name: "Conciseness",
+      score: resume.analysis?.categoryScores?.conciseness.score ?? 0,
+      description: resume.analysis?.categoryScores?.conciseness.description,
+      color: "bg-blue-600"
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4 max-w-4xl">
         <h1 className="text-3xl font-bold text-center mb-6">
-          {resume?.title || "Resume"}
+          {resume.title}
         </h1>
 
         <div className="flex items-center justify-between mb-6">
@@ -189,10 +274,10 @@ export default function ResumeEditor() {
           <CardContent>
             <div className="flex flex-col items-center mb-8">
               <div className="text-6xl font-bold text-blue-600 mb-4">
-                {resume.atsScore || 0}
+                {resume.atsScore ?? 0}
               </div>
               <Progress
-                value={resume.atsScore || 0}
+                value={resume.atsScore ?? 0}
                 className="w-full h-3 bg-gray-200"
               />
             </div>
@@ -202,26 +287,15 @@ export default function ResumeEditor() {
                 Category Breakdown
               </h3>
               <div className="space-y-4">
-                <CategoryScore
-                  name="ATS Compliance"
-                  score={80}
-                  color="bg-blue-600"
-                />
-                <CategoryScore
-                  name="Keyword Density"
-                  score={60}
-                  color="bg-blue-600"
-                />
-                <CategoryScore
-                  name="Recruiter-Friendliness"
-                  score={75}
-                  color="bg-blue-600"
-                />
-                <CategoryScore
-                  name="Conciseness & Impact"
-                  score={90}
-                  color="bg-blue-600"
-                />
+                {categoryScores.map((category, index) => (
+                  <CategoryScore
+                    key={index}
+                    name={category.name}
+                    score={category.score}
+                    color={category.color}
+                    description={category.description}
+                  />
+                ))}
               </div>
             </div>
           </CardContent>
@@ -237,23 +311,26 @@ export default function ResumeEditor() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm font-medium text-gray-700">
-                  Improvements Made:
-                </span>
+            {resume.analysis?.improvements && resume.analysis.improvements.length > 0 && (
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Improvements Made:
+                  </span>
+                </div>
+                <ul className="space-y-2 text-sm text-gray-600 ml-4">
+                  {resume.analysis.improvements.map((improvement, index) => (
+                    <li key={index}>• {improvement}</li>
+                  ))}
+                </ul>
               </div>
-              <ul className="space-y-2 text-sm text-gray-600 ml-4">
-                {resume.analysis?.improvements?.map((improvement, index) => (
-                  <li key={index}>• {improvement}</li>
-                ))}
-              </ul>
-            </div>
+            )}
 
             <Button
               className="w-full py-6"
               onClick={() => setShowEnhanced(true)}
+              disabled={!resume.enhancedContent}
             >
               <Eye className="mr-2 h-4 w-4" />
               View Enhanced Resume
@@ -308,20 +385,26 @@ export default function ResumeEditor() {
                   >
                     <ScrollArea className="h-full border rounded-lg">
                       <div className="p-6">
-                        <div
-                          dangerouslySetInnerHTML={{
-                            __html: resume.enhancedContent || "",
-                          }}
-                          className="prose max-w-none 
-                            [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:text-gray-900
-                            [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-1 [&_h3]:text-gray-800
-                            [&_p]:mb-2 [&_p]:text-gray-700
-                            [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-4
-                            [&_li]:mb-2 [&_li]:text-gray-700
-                            [&_.job]:mb-6
-                            [&_.job-title]:text-gray-600 [&_.job-title]:mb-2
-                            [&_.section]:mb-8"
-                        />
+                        {resume.enhancedContent ? (
+                          <div
+                            dangerouslySetInnerHTML={{
+                              __html: resume.enhancedContent,
+                            }}
+                            className="prose max-w-none 
+                              [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:text-gray-900
+                              [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-1 [&_h3]:text-gray-800
+                              [&_p]:mb-2 [&_p]:text-gray-700
+                              [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-4
+                              [&_li]:mb-2 [&_li]:text-gray-700
+                              [&_.job]:mb-6
+                              [&_.job-title]:text-gray-600 [&_.job-title]:mb-2
+                              [&_.section]:mb-8"
+                          />
+                        ) : (
+                          <p className="text-muted-foreground text-center py-4">
+                            No enhanced version available yet
+                          </p>
+                        )}
                       </div>
                     </ScrollArea>
                   </TabsContent>
@@ -330,9 +413,9 @@ export default function ResumeEditor() {
             </div>
 
             <div className="absolute bottom-4 right-4">
-              <Button onClick={() => window.print()} size="sm">
+              <Button onClick={handleDownload} size="sm" disabled={isPrinting}>
                 <Download className="w-4 h-4 mr-2" />
-                Download Enhanced Resume
+                {isPrinting ? 'Preparing...' : 'Download Enhanced Resume'}
               </Button>
             </div>
           </DialogContent>
@@ -342,18 +425,13 @@ export default function ResumeEditor() {
   );
 }
 
-interface CategoryScoreProps {
-  name: string;
-  score: number;
-  color?: string;
-}
-
 const CategoryScore = ({
   name,
   score,
   color = "bg-blue-600",
+  description,
 }: CategoryScoreProps) => (
-  <div className="flex items-center justify-between">
+  <div className="flex items-center justify-between group relative">
     <div className="flex-1">
       <span className="text-sm font-medium text-gray-700">{name}</span>
     </div>
@@ -368,5 +446,10 @@ const CategoryScore = ({
         {score}%
       </span>
     </div>
+    {description && (
+      <div className="absolute invisible group-hover:visible bg-black text-white p-2 rounded text-xs -top-8 right-0 max-w-xs">
+        {description}
+      </div>
+    )}
   </div>
 );
