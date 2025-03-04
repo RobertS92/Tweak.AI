@@ -1,0 +1,47 @@
+Job Description Matcher
+Job Description Matcher
+Upload Job Description
+No file chosen
+Supported formats: PDF, Word, Text, PNG, JPEG
+
+Or paste job description
+Job Title : AIML ( Python) Engineer
+Job Location : Sunnyvale, CA or Austin, TX (Onsite)
+Job Duration: Fulltime
+ 
+Role :
+The vendor team will focus on the following key areas:
+• Developing production-ready web applications and machine learning pipelines
+• Deploying, administering, and maintaining ML applications and supporting infrastructure in AWS or other cloud/on-prem infrastructure
+• Setting up scalable ML infrastructure for training and monitoring predictive models
+• Implementing self-hosted LLM inferencing services on AWS
+• Supporting Kubernetes-based workloads on AWS EKS Roles.
+• Implementing best practices for CI/CD, monitoring, and telemetry
+• Ensuring production security and compliance by working within predefined access controls
+• Writing robust and testable code following software engineering best practices.
+ 
+Technology Stack Requirements:
+• Backend: Python (Django, FastAPI)
+• Unit/integration testing (pytest)
+• Asynchronous job scheduling (Celery)
+• Adherence to PEP8 and PEP257 coding standards
+• Frontend: ReactJS (Next.js)
+ 
+Machine Learning:
+• Python ML & DS ecosystem (PyTorch, XGBoost, scikit-learn, pandas, numpy)
+• Model interpretability & explainability frameworks (SHAP)
+• ML pipelines & workflow automation (MLflow, Airflow)
+• Infrastructure: AWS (EC2, S3, EKS, SageMaker)
+• Infrastructure as Code (IaC) using Terraform and Ansible
+• Proper IAM role-based access controls
+• Network security best practices (VPC, security groups, private subnets)
+ 
+MLOps:
+• Model training, monitoring, & deployment (MLflow, AWS SageMaker, AWS Airflow)
+• Data labeling & versioning (Label Studio, DVC
+• CI/CD & Monitoring:
+• Automated linting, test & deployment: Jenkins
+• Telemetry & Monitoring: Prometheus, Grafana, AWS CloudWatch
+• Containerization & Orchestration: Docker, Kubernetes, Helm
+• Additional technologies as needed
+Analyze Match

@@ -48,50 +48,65 @@ const matchResponseSchema = z.object({
 export async function matchJob(resumeContent: string, jobDescription: string) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o", 
+      model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: `You are an expert ATS and job matching specialist. Analyze the resume against the job description using this comprehensive scoring system:
-
-1. Skill Matching (30% of total score)
-   - Direct keyword matches
-   - Related/transferable skills
-   - Skill depth assessment
-
-2. Experience Relevance (25% of total score)
-   - Years of experience match
-   - Role similarity
-   - Industry relevance
-   - Career progression alignment
-
-3. Educational Background (15% of total score)
-   - Degree requirements match
-   - Field of study relevance
-   - Certifications value
-
-4. Technical Proficiency (20% of total score)
-   - Tools and technologies match
-   - Technical skill level assessment
-   - Gap analysis
-
-5. Soft Skills & Cultural Fit (10% of total score)
-   - Communication skills
-   - Leadership capabilities
-   - Cultural alignment indicators
-
-Return a detailed JSON analysis with scores and explanations for each category.`
+          content: `You are an expert ATS and job matching specialist. Analyze the resume against the job description and provide a detailed JSON response with the following structure:
+{
+  "matchScore": number (0-100),
+  "missingKeywords": string[],
+  "suggestedEdits": string[],
+  "analysis": {
+    "skillMatching": {
+      "score": number (0-100),
+      "matchedSkills": string[],
+      "missingSkills": string[],
+      "relatedSkills": string[]
+    },
+    "experienceRelevance": {
+      "score": number (0-100),
+      "yearsMatch": boolean,
+      "roleAlignmentScore": number (0-1),
+      "industrySimilarity": number (0-1),
+      "careerProgressionMatch": boolean
+    },
+    "educationalBackground": {
+      "score": number (0-100),
+      "degreeMatch": boolean,
+      "fieldRelevance": number (0-1),
+      "certificationsValue": number (0-1)
+    },
+    "technicalProficiency": {
+      "score": number (0-100),
+      "toolsMatch": string[],
+      "technicalSkillsGap": string[],
+      "proficiencyLevel": string
+    },
+    "softSkillsFit": {
+      "score": number (0-100),
+      "culturalAlignment": number (0-1),
+      "communicationScore": number (0-1),
+      "leadershipMatch": boolean
+    }
+  }
+}`
         },
         {
           role: "user",
-          content: `Resume Content:\n${resumeContent}\n\nJob Description:\n${jobDescription}`,
-        },
+          content: `Resume Content:\n${resumeContent}\n\nJob Description:\n${jobDescription}`
+        }
       ],
-      response_format: { type: "json_object" },
       temperature: 0.7,
     });
 
-    const result = JSON.parse(response.choices[0].message.content || "{}");
+    if (!response.choices[0].message.content) {
+      throw new Error("No analysis received from OpenAI");
+    }
+
+    console.log("Raw OpenAI response:", response.choices[0].message.content);
+
+    const result = JSON.parse(response.choices[0].message.content);
     const validatedResult = matchResponseSchema.parse(result);
 
     // Calculate weighted total score
@@ -118,7 +133,7 @@ Return a detailed JSON analysis with scores and explanations for each category.`
 export async function tweakResume(resumeContent: string, jobDescription: string) {
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o", 
+      model: "gpt-4",
       messages: [
         {
           role: "system",
@@ -146,20 +161,29 @@ export async function tweakResume(resumeContent: string, jobDescription: string)
    - Include both hard and soft skills
    - Add missing key competencies if user possesses them
 
-Return optimized content in clean HTML format with semantic structure.`
+Return a JSON response with:
+{
+  "enhancedContent": "string (optimized resume content)",
+  "improvements": ["string (list of changes made)"],
+  "keywordMatches": ["string (matched keywords)"],
+  "formattingImprovements": ["string (formatting changes)"]
+}`
         },
         {
           role: "user",
-          content: `Resume Content:\n${resumeContent}\n\nJob Description:\n${jobDescription}`,
-        },
+          content: `Resume Content:\n${resumeContent}\n\nJob Description:\n${jobDescription}`
+        }
       ],
-      response_format: { type: "json_object" },
       temperature: 0.7,
     });
 
-    const result = JSON.parse(response.choices[0].message.content || "{}");
+    if (!response.choices[0].message.content) {
+      throw new Error("No optimization received from OpenAI");
+    }
+
+    const result = JSON.parse(response.choices[0].message.content);
     return {
-      enhancedContent: result.resumeContent,
+      enhancedContent: result.enhancedContent,
       improvements: result.improvements || [],
       keywordMatches: result.keywordMatches || [],
       formattingImprovements: result.formattingImprovements || []
