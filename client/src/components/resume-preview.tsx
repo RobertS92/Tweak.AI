@@ -230,8 +230,16 @@ const handlePrint = () => {
     }, 250);
   };
 
+  // Add better error handling for file operations
   const downloadEnhancedResume = async () => {
-    if (!analysis?.enhancedContent) return;
+    if (!analysis?.enhancedContent) {
+      toast({
+        title: "Error",
+        description: "No enhanced content available to download",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       setIsDownloading(true);
@@ -241,15 +249,29 @@ const handlePrint = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ content: analysis.enhancedContent }),
+        body: JSON.stringify({ 
+          content: analysis.enhancedContent 
+        }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate PDF");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to generate PDF");
+      }
+
+      // Verify content type
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/pdf")) {
+        throw new Error("Invalid response format");
       }
 
       // Create a blob from the PDF Stream
       const blob = await response.blob();
+
+      // Verify blob size
+      if (blob.size < 1000) { // Less than 1KB
+        throw new Error("Generated PDF is too small, likely invalid");
+      }
 
       // Create a temporary URL for the blob
       const url = window.URL.createObjectURL(blob);
@@ -275,7 +297,7 @@ const handlePrint = () => {
       console.error("Failed to download PDF:", error);
       toast({
         title: "Download failed",
-        description: "There was an error downloading your resume. Please try again.",
+        description: error instanceof Error ? error.message : "There was an error downloading your resume. Please try again.",
         variant: "destructive",
       });
     } finally {

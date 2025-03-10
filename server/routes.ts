@@ -106,6 +106,68 @@ function extractRelevantSections(content: string): string {
   return combinedContent.trim();
 }
 
+// Add more robust PDF handling function
+async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  try {
+    // First validate if it's a valid PDF by checking for PDF signature
+    const pdfSignature = buffer.toString('ascii', 0, 5);
+    if (pdfSignature !== '%PDF-') {
+      throw new Error('Invalid PDF format');
+    }
+
+    const data = await PDFParser(buffer, {
+      max: 0, // No page limit
+      version: 'v2.0.550'
+    });
+
+    // Validate extracted text
+    if (!data || !data.text || typeof data.text !== 'string') {
+      throw new Error('No text content extracted from PDF');
+    }
+
+    const text = data.text.trim();
+    if (text.length === 0) {
+      throw new Error('Extracted text is empty');
+    }
+
+    return text;
+  } catch (error) {
+    console.error('PDF parsing error:', error);
+    throw new Error('Unable to extract text from PDF. Please try uploading a different file format or copy-paste the content directly.');
+  }
+}
+
+async function extractTextFromImage(buffer: Buffer): Promise<string> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-vision-preview",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Extract and return only the text content from this job description image. Include all details but remove any irrelevant text or formatting."
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpeg;base64,${buffer.toString('base64')}`
+              }
+            }
+          ],
+        },
+      ],
+      max_tokens: 1000,
+    });
+
+    return response.choices[0].message.content || '';
+  } catch (error) {
+    console.error('Image text extraction error:', error);
+    throw new Error('Failed to extract text from image');
+  }
+}
+
 export async function registerRoutes(app: Express) {
   // Configure express middleware BEFORE routes
   app.use(express.json({ limit: '50mb', strict: false }));
@@ -122,12 +184,26 @@ export async function registerRoutes(app: Express) {
 
       // Extract text content from the file
       let content: string;
-      if (file.mimetype === 'application/pdf') {
-        content = await extractTextFromPDF(file.buffer);
-      } else if (file.mimetype === 'text/plain') {
-        content = file.buffer.toString('utf-8');
-      } else {
-        return res.status(400).json({ message: "Only PDF and TXT files are supported at this time" });
+      try {
+        if (file.mimetype === 'application/pdf') {
+          content = await extractTextFromPDF(file.buffer);
+        } else if (file.mimetype === 'text/plain') {
+          content = file.buffer.toString('utf-8');
+        } else {
+          return res.status(400).json({ 
+            message: "Only PDF and TXT files are supported at this time. Please try a different file format." 
+          });
+        }
+
+        // Validate content
+        if (!content || content.trim().length === 0) {
+          throw new Error('No content could be extracted from the file');
+        }
+      } catch (extractError) {
+        console.error('Content extraction error:', extractError);
+        return res.status(400).json({ 
+          message: extractError.message || "Failed to extract content from file" 
+        });
       }
 
       // First create the resume record
@@ -141,9 +217,9 @@ export async function registerRoutes(app: Express) {
       // Analyze the resume using OpenAI
       const analysis = await analyzeResume(content);
 
-      // Update the resume with analysis results and enhanced content
+      // Update the resume with analysis results
       const updatedResume = await storage.updateResume(resume.id, {
-        atsScore: analysis.overallScore,
+        atsScore: Math.round(analysis.overallScore), // Ensure integer
         enhancedContent: analysis.enhancedContent,
         analysis: {
           categoryScores: analysis.categoryScores,
@@ -730,45 +806,4 @@ Return an optimized version that matches keywords and improves ATS score while m
 
   const httpServer = createServer(app);
   return httpServer;
-}
-
-async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  try {
-    const data = await PDFParser(buffer);
-    return data.text;
-  } catch (error) {
-    console.error('PDF parsing error:', error);
-    throw new Error('Failed to parse PDF file');
-  }
-}
-
-async function extractTextFromImage(buffer: Buffer): Promise<string> {
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4-vision-preview",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Extract and return only the text content from this job description image. Include all details but remove any irrelevant text or formatting."
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:image/jpeg;base64,${buffer.toString('base64')}`
-              }
-            }
-          ],
-        },
-      ],
-      max_tokens: 1000,
-    });
-
-    return response.choices[0].message.content || '';
-  } catch (error) {
-    console.error('Image text extraction error:', error);
-    throw new Error('Failed to extract text from image');
-  }
 }
