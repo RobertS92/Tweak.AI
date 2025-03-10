@@ -149,6 +149,13 @@ export default function ResumeEditor() {
     );
   }
 
+  const categoryScores = resume.analysis?.categoryScores || {
+    atsCompliance: { score: 0, feedback: [], description: "" },
+    keywordDensity: { score: 0, feedback: [], description: "" },
+    recruiterFriendliness: { score: 0, feedback: [], description: "" },
+    conciseness: { score: 0, feedback: [], description: "" },
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4 max-w-4xl">
@@ -204,22 +211,22 @@ export default function ResumeEditor() {
               <div className="space-y-4">
                 <CategoryScore
                   name="ATS Compliance"
-                  score={80}
+                  score={categoryScores.atsCompliance.score}
                   color="bg-blue-600"
                 />
                 <CategoryScore
                   name="Keyword Density"
-                  score={60}
+                  score={categoryScores.keywordDensity.score}
                   color="bg-blue-600"
                 />
                 <CategoryScore
                   name="Recruiter-Friendliness"
-                  score={75}
+                  score={categoryScores.recruiterFriendliness.score}
                   color="bg-blue-600"
                 />
                 <CategoryScore
                   name="Conciseness & Impact"
-                  score={90}
+                  score={categoryScores.conciseness.score}
                   color="bg-blue-600"
                 />
               </div>
