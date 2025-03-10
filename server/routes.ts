@@ -283,7 +283,6 @@ export async function registerRoutes(app: Express) {
             content: `Here is the job description and resume to optimize:
 Job Description:
 ${jobDescription}
-
 Current Resume:
 ${resume.content}
 
@@ -460,25 +459,17 @@ Return an optimized version that matches keywords and improves ATS score while m
               }
 
               body {
-                background-color: #f5f5f5;
+                background-color: white;
                 color: #333;
                 line-height: 1.6;
-                padding: 20px;
-              }
-
-              /* Container for resume */
-              .container {
-                max-width: 850px;
-                margin: 0 auto;
-                background: white;
-                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-                padding: 30px;
-                border-radius: 4px;
+                padding: 40px;
               }
 
               /* Resume styles */
               .resume {
-                padding: 10px;
+                max-width: 850px;
+                margin: 0 auto;
+                padding: 20px;
               }
 
               /* Header section */
@@ -505,11 +496,6 @@ Return an optimized version that matches keywords and improves ATS score while m
               .links {
                 font-size: 16px;
                 color: #3E7CB1;
-              }
-
-              .links a {
-                color: #3E7CB1;
-                text-decoration: none;
               }
 
               /* Section styling */
@@ -560,15 +546,11 @@ Return an optimized version that matches keywords and improves ATS score while m
                 margin-bottom: 8px;
               }
 
-              .skills-list li strong {
-                color: #2C3E50;
-              }
-
               /* Print specific styles */
               @media print {
                 @page {
-                  margin: 0.5in;
                   size: letter;
+                  margin: 0.5in;
                 }
 
                 body {
@@ -576,20 +558,15 @@ Return an optimized version that matches keywords and improves ATS score while m
                   padding: 0;
                 }
 
-                .container {
-                  max-width: 100%;
-                  box-shadow: none;
-                  padding: 0;
-                }
-
                 .resume {
+                  max-width: 100%;
                   padding: 0;
                 }
               }
             </style>
           </head>
           <body>
-            <div class="container">
+            <div class="resume">
               ${content}
             </div>
           </body>
@@ -597,7 +574,7 @@ Return an optimized version that matches keywords and improves ATS score while m
         `, { waitUntil: 'networkidle0' });
 
         // Wait for content to be fully rendered
-        await page.waitForSelector('.container', { timeout: 5000 });
+        await page.waitForSelector('.resume', { timeout: 5000 });
 
         // Generate PDF with proper settings
         const pdf = await page.pdf({
@@ -615,7 +592,7 @@ Return an optimized version that matches keywords and improves ATS score while m
 
         await browser.close();
 
-        // Validate PDF size
+        // Validate PDF size and content
         if (pdf.length < 1000) { // Less than 1KB
           throw new Error('Generated PDF is too small, likely invalid');
         }
