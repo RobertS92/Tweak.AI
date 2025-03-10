@@ -42,104 +42,36 @@ export async function analyzeResume(content: string) {
       messages: [
         {
           role: "system",
-          content: `You are an expert resume analyzer and enhancer. Analyze the provided resume and enhance it to make it more effective while maintaining truthfulness.
+          content: `You are an expert resume analyzer and enhancer. Analyze the provided resume and return ONLY a valid JSON response with this exact structure (no additional text or explanation):
 
-Format the enhanced resume using this exact HTML structure:
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Professional Resume</title>
-</head>
-<body>
-  <div class="container">
-    <div class="resume">
-      <div class="header">
-        <h1>[Full Name]</h1>
-        <p class="contact-info">[Email] | [Phone] | [Location]</p>
-        <p class="links">
-          [Professional Links]
-        </p>
-      </div>
-
-      <div class="section">
-        <h2>Professional Summary</h2>
-        <p>[Enhanced summary]</p>
-      </div>
-
-      <div class="section">
-        <h2>Professional Experience</h2>
-        [For each position:]
-        <div class="job">
-          <h3>[Company Name]</h3>
-          <p class="job-title">[Job Title] | [Month Year - Month Year]</p>
-          <ul>
-            [For each achievement:]
-            <li>[Enhanced achievement with metrics and impact]</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="section">
-        <h2>Education</h2>
-        <div class="education-item">
-          <h3>[Institution Name]</h3>
-          <p>[Degree Title] | [Graduation Month Year]</p>
-          <ul>
-            <li>[Relevant details, honors, etc.]</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="section">
-        <h2>Technical Skills</h2>
-        <ul class="skills-list">
-          <li><strong>[Category]:</strong> [Skills list]</li>
-        </ul>
-      </div>
-
-      [If applicable:]
-      <div class="section">
-        <h2>Certifications</h2>
-        <ul>
-          <li>[Certification Name] - [Issuing Organization] ([Date])</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-</body>
-</html>
-
-Return a JSON object with:
 {
   "categoryScores": {
-    "atsCompliance": { 
-      "score": <whole number 0-100>, 
-      "feedback": [<improvement points>], 
-      "description": <detailed analysis>
+    "atsCompliance": {
+      "score": <number 0-100>,
+      "feedback": ["improvement point 1", "improvement point 2"],
+      "description": "analysis details"
     },
-    "keywordDensity": { 
-      "score": <whole number 0-100>, 
-      "feedback": [<suggestions>], 
-      "identifiedKeywords": [<found keywords>], 
-      "description": <detailed analysis>
+    "keywordDensity": {
+      "score": <number 0-100>,
+      "feedback": ["suggestion 1", "suggestion 2"],
+      "identifiedKeywords": ["keyword1", "keyword2"],
+      "description": "analysis details"
     },
-    "recruiterFriendliness": { 
-      "score": <whole number 0-100>, 
-      "feedback": [<improvements>], 
-      "description": <detailed analysis>
+    "recruiterFriendliness": {
+      "score": <number 0-100>,
+      "feedback": ["improvement 1", "improvement 2"],
+      "description": "analysis details"
     },
-    "conciseness": { 
-      "score": <whole number 0-100>, 
-      "feedback": [<suggestions>], 
-      "description": <detailed analysis>
+    "conciseness": {
+      "score": <number 0-100>,
+      "feedback": ["suggestion 1", "suggestion 2"],
+      "description": "analysis details"
     }
   },
-  "improvements": [<list of actionable improvements>],
-  "formattingFixes": [<list of formatting fixes>],
-  "enhancedContent": <enhanced resume with HTML structure above>,
-  "overallScore": <whole number 0-100>
+  "improvements": ["improvement 1", "improvement 2"],
+  "formattingFixes": ["fix 1", "fix 2"],
+  "enhancedContent": "<HTML formatted content>",
+  "overallScore": <number 0-100>
 }`
         },
         {
@@ -149,18 +81,26 @@ Return a JSON object with:
       ],
       temperature: 0.3,
       max_tokens: 4000,
+      response_format: { type: "json_object" }
     });
 
     if (!response.choices[0].message.content) {
       throw new Error("No analysis received from OpenAI");
     }
 
-    console.log("Raw analysis response:", response.choices[0].message.content);
+    let parsedResponse;
+    try {
+      parsedResponse = JSON.parse(response.choices[0].message.content.trim());
+    } catch (parseError) {
+      console.error("Failed to parse OpenAI response:", parseError);
+      console.error("Raw response:", response.choices[0].message.content);
+      throw new Error("Invalid JSON response from analysis");
+    }
 
-    const result = JSON.parse(response.choices[0].message.content);
-    const validatedResult = analysisResponseSchema.parse(result);
+    // Validate response structure
+    const validatedResult = analysisResponseSchema.parse(parsedResponse);
 
-    // Calculate overall score from category scores and ensure it's an integer
+    // Calculate overall score from category scores
     const weights = {
       atsCompliance: 0.30,
       keywordDensity: 0.25,
@@ -175,14 +115,12 @@ Return a JSON object with:
       weights.conciseness * validatedResult.categoryScores.conciseness.score
     );
 
-    // Return with integer scores and properly formatted content
+    // Return with properly rounded scores
     return {
       ...validatedResult,
       overallScore: calculatedOverallScore,
-      enhancedContent: validatedResult.enhancedContent.replace(/\\n/g, '\n').replace(/\\"/g, '"'),
       categoryScores: {
-        ...validatedResult.categoryScores,
-        atsCompliance: { 
+        atsCompliance: {
           ...validatedResult.categoryScores.atsCompliance,
           score: Math.round(validatedResult.categoryScores.atsCompliance.score)
         },
