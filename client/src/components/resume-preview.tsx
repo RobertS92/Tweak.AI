@@ -100,8 +100,18 @@ export default function ResumePreview({
 
             .header h1 {
               font-size: 24px;
-              margin: 0 0 0.5rem 0;
+              margin: 0;
               color: #1a1a1a;
+            }
+
+            .header .contact-info {
+              margin: 0.5rem 0;
+              color: #4a5568;
+            }
+
+            .header .links {
+              margin: 0.25rem 0;
+              color: #2b6cb0;
             }
 
             .section {
@@ -111,44 +121,63 @@ export default function ResumePreview({
             h2 {
               font-size: 18px;
               color: #2c5282;
-              border-bottom: 1px solid #e2e8f0;
+              border-bottom: 2px solid #e2e8f0;
               padding-bottom: 0.25rem;
-              margin: 1rem 0 0.75rem 0;
+              margin: 1.5rem 0 1rem 0;
             }
 
             h3 {
               font-size: 16px;
               color: #2d3748;
-              margin: 0.75rem 0 0.25rem 0;
+              margin: 1rem 0 0.25rem 0;
+            }
+
+            .job {
+              margin-bottom: 1.25rem;
             }
 
             .job-title {
               font-style: italic;
               color: #4a5568;
-              margin-bottom: 0.5rem;
+              margin: 0.25rem 0 0.5rem 0;
             }
 
             ul {
               margin: 0.5rem 0;
               padding-left: 1.25rem;
+              list-style-type: disc;
+            }
+
+            ul.skills-list {
+              columns: 2;
+              -webkit-columns: 2;
+              -moz-columns: 2;
             }
 
             li {
               margin: 0.25rem 0;
+              break-inside: avoid;
+            }
+
+            .education-item {
+              margin-bottom: 1rem;
             }
 
             p {
               margin: 0.5rem 0;
             }
 
-            a {
-              color: #2b6cb0;
-              text-decoration: none;
+            strong {
+              color: #2d3748;
             }
 
             @media print {
               body {
                 padding: 0;
+              }
+
+              .no-print {
+                display: none;
               }
 
               a {
@@ -203,12 +232,11 @@ export default function ResumePreview({
         throw new Error("Failed to generate PDF");
       }
 
-      const pdfBlob = await response.blob();
-      const url = window.URL.createObjectURL(pdfBlob);
-      const link = document.createElement("a");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
       link.href = url;
-      link.download = "enhanced-resume.pdf";
-
+      link.download = `enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -222,8 +250,7 @@ export default function ResumePreview({
       console.error("Failed to download PDF:", error);
       toast({
         title: "Download failed",
-        description:
-          "There was an error downloading your resume. Please try again.",
+        description: "There was an error downloading your resume. Please try again.",
         variant: "destructive",
       });
     } finally {
