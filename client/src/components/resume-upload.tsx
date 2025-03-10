@@ -5,12 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Upload, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { UploadProgress } from "./upload-progress";
 
 export default function ResumeUpload() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [dragActive, setDragActive] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState<'uploading' | 'analyzing' | 'complete' | 'error'>('uploading');
+  const [currentFileName, setCurrentFileName] = useState<string>();
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -18,29 +21,66 @@ export default function ResumeUpload() {
       const formData = new FormData();
       formData.append("resume", file);
 
-      const response = await fetch('/api/resumes', {
-        method: 'POST',
-        body: formData,
+      // Create XMLHttpRequest to track upload progress
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const progress = (event.loaded / event.total) * 100;
+            setUploadProgress(Math.round(progress));
+          }
+        };
+
+        xhr.onload = async () => {
+          if (xhr.status === 200) {
+            try {
+              const response = JSON.parse(xhr.responseText);
+              resolve(response);
+            } catch (error) {
+              reject(new Error('Invalid response format'));
+            }
+          } else {
+            try {
+              const errorData = JSON.parse(xhr.responseText);
+              reject(new Error(errorData.message || 'Upload failed'));
+            } catch {
+              reject(new Error('Upload failed'));
+            }
+          }
+        };
+
+        xhr.onerror = () => {
+          reject(new Error('Network error occurred'));
+        };
+
+        xhr.open('POST', '/api/resumes', true);
+        xhr.send(formData);
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Upload failed');
-      }
-
-      return response.json();
+    },
+    onMutate: (file) => {
+      setCurrentFileName(file.name);
+      setUploadStatus('uploading');
+      setUploadProgress(0);
     },
     onSuccess: (data) => {
       console.log("Upload success:", data);
-      toast({
-        title: "Resume uploaded successfully",
-        description: "Analyzing your resume...",
-      });
-      // Redirect to editor page to see analysis
-      navigate(`/editor/${data.id}`);
+      setUploadStatus('analyzing');
+      setUploadProgress(100);
+
+      // Show analyzing state for a short period before navigating
+      setTimeout(() => {
+        setUploadStatus('complete');
+        toast({
+          title: "Resume uploaded successfully",
+          description: "Analyzing your resume...",
+        });
+        navigate(`/editor/${data.id}`);
+      }, 1000);
     },
     onError: (error: Error) => {
       console.error("Upload error:", error);
+      setUploadStatus('error');
       toast({
         title: "Upload failed",
         description: error.message,
@@ -64,15 +104,13 @@ export default function ResumeUpload() {
 
     const validTypes = [
       "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "text/plain",
+      "text/plain"
     ];
 
     if (!validTypes.includes(file.type)) {
       toast({
         title: "Invalid file type",
-        description: "Please upload a PDF, Word, or TXT file",
+        description: "Please upload a PDF or TXT file",
         variant: "destructive",
       });
       return;
@@ -114,15 +152,16 @@ export default function ResumeUpload() {
             type="file"
             id="resume-upload"
             className="hidden"
-            accept=".pdf,.doc,.docx,.txt"
+            accept=".pdf,.txt"
             onChange={(e) => handleFile(e.target.files?.[0])}
           />
 
           {uploadMutation.isPending ? (
-            <div className="space-y-4">
-              <FileText className="h-12 w-12 mx-auto text-muted-foreground animate-pulse" />
-              <p className="text-muted-foreground">Uploading resume...</p>
-            </div>
+            <UploadProgress
+              progress={uploadProgress}
+              status={uploadStatus}
+              fileName={currentFileName}
+            />
           ) : (
             <>
               <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -131,7 +170,7 @@ export default function ResumeUpload() {
                 Drag and drop your resume here or click to browse
               </p>
               <p className="text-sm text-muted-foreground mb-4">
-                Supported formats: PDF, Word, or TXT (Max 5MB)
+                Supported formats: PDF or TXT (Max 5MB)
               </p>
               <div className="space-y-2">
                 <Button onClick={handleButtonClick}>Select File</Button>
