@@ -6,34 +6,61 @@ import { storage } from "./storage";
 import { analyzeResume } from "./services/resume-analyzer";
 import { matchJob, tweakResume } from "./services/job-matcher";
 import { insertResumeSchema } from "@shared/schema";
-import PDFParser from 'pdf-parse-fork';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as pdfjsLib from 'pdfjs-dist';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import OpenAI from "openai";
 import puppeteer from 'puppeteer';
 import { db } from "./db";
 import { jobScraper } from './services/job-scraper';
 
-// Add type definitions
-declare module 'express-serve-static-core' {
-  interface Request {
-    file?: Express.Multer.File
+// Initialize pdf.js worker using ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const workerPath = join(__dirname, '../node_modules/pdfjs-dist/build/pdf.worker.js');
+pdfjsLib.GlobalWorkerOptions.workerSrc = fileURLToPath(new URL('file://' + workerPath));
+
+async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  try {
+    console.log("Starting PDF extraction with pdf.js...");
+
+    // Load the PDF document
+    const loadingTask = pdfjsLib.getDocument({ data: buffer });
+    const pdfDocument = await loadingTask.promise;
+    console.log(`PDF loaded successfully. Number of pages: ${pdfDocument.numPages}`);
+
+    // Extract text from all pages
+    let fullText = '';
+    for (let i = 1; i <= pdfDocument.numPages; i++) {
+      const page = await pdfDocument.getPage(i);
+      const content = await page.getTextContent();
+      const pageText = content.items
+        .map((item: any) => item.str)
+        .join(' ');
+      fullText += pageText + '\n\n';
+    }
+
+    if (!fullText.trim()) {
+      throw new Error("No text content found in PDF");
+    }
+
+    console.log("PDF text extraction successful. Length:", fullText.length);
+
+    // Clean up the extracted text
+    const cleanedText = fullText
+      .replace(/\r\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return cleanedText;
+  } catch (error) {
+    console.error('PDF parsing error details:', error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to parse PDF file: ${error.message}`);
+    }
+    throw new Error('Failed to parse PDF file');
   }
-}
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// Configure multer
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-});
-
-// Helper function to truncate text
-function truncateText(text: string, maxLength: number = 4000): string {
-  return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
 }
 
 // Add this helper function for token estimation
@@ -106,6 +133,29 @@ function extractRelevantSections(content: string): string {
   return combinedContent.trim();
 }
 
+// Add type definitions
+declare module 'express-serve-static-core' {
+  interface Request {
+    file?: Express.Multer.File
+  }
+}
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
+// Helper function to truncate text
+function truncateText(text: string, maxLength: number = 4000): string {
+  return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+}
+
+
 export async function registerRoutes(app: Express) {
   // Configure express middleware BEFORE routes
   app.use(express.json({ limit: '50mb', strict: false }));
@@ -126,7 +176,6 @@ export async function registerRoutes(app: Express) {
         size: file.size
       });
 
-      // Extract text content from the file
       let content: string;
       try {
         if (file.mimetype === 'application/pdf') {
@@ -149,7 +198,7 @@ export async function registerRoutes(app: Express) {
       } catch (extractError) {
         console.error("Text extraction failed:", extractError);
         return res.status(400).json({
-          message: "Failed to read file content. Please ensure the file is not corrupted and try again."
+          message: "Failed to read file content. Please try uploading a different PDF file or copy/paste the content directly."
         });
       }
 
@@ -740,73 +789,37 @@ Return an optimized version that matches keywords and improves ATS score while m
     }
   });
 
+  async function extractTextFromImage(buffer: Buffer): Promise<string> {
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4-vision-preview",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Extract and return only the text content from this job description image. Include all details but remove any irrelevant text or formatting."
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/jpeg;base64,${buffer.toString('base64')}`
+                }
+              }
+            ],
+          },
+        ],
+        max_tokens: 1000,
+      });
+
+      return response.choices[0].message.content || '';
+    } catch (error) {
+      console.error('Image text extraction error:', error);
+      throw new Error('Failed to extract text from image');
+    }
+  }
+
   const httpServer = createServer(app);
   return httpServer;
-}
-
-async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  try {
-    console.log("Starting PDF extraction...");
-
-    // Add more detailed PDF parsing options
-    const data = await PDFParser(buffer, {
-      max: 0, // No page limit
-      preserveLineBreaks: true,
-      preserveSpace: true,
-      verbosity: 1 // Increased logging
-    });
-
-    if (!data || !data.text) {
-      console.log("No text content found in PDF");
-      throw new Error("No text content found in PDF");
-    }
-
-    console.log("PDF extraction successful, text length:", data.text.length);
-
-    // Clean up the extracted text
-    const cleanedText = data.text
-      .replace(/\r\n/g, '\n') // Normalize line endings
-      .replace(/\n{3,}/g, '\n\n') // Remove excessive newlines
-      .replace(/\s+/g, ' ') // Normalize spaces
-      .trim();
-
-    return cleanedText;
-  } catch (error) {
-    console.error('PDF parsing error details:', error);
-    if (error instanceof Error) {
-      throw new Error(`Failed to parse PDF file: ${error.message}`);
-    }
-    throw new Error('Failed to parse PDF file');
-  }
-}
-
-async function extractTextFromImage(buffer: Buffer): Promise<string> {
-  try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4-vision-preview",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Extract and return only the text content from this job description image. Include all details but remove any irrelevant text or formatting."
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:image/jpeg;base64,${buffer.toString('base64')}`
-              }
-            }
-          ],
-        },
-      ],
-      max_tokens: 1000,
-    });
-
-    return response.choices[0].message.content || '';
-  } catch (error) {
-    console.error('Image text extraction error:', error);
-    throw new Error('Failed to extract text from image');
-  }
 }
