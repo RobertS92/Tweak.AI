@@ -44,8 +44,7 @@ export async function analyzeResume(content: string) {
           role: "system",
           content: `You are an expert resume analyzer and enhancer. Analyze the provided resume and enhance it to make it more effective while maintaining truthfulness.
 
-Return a JSON response with exact numeric scores and enhanced content in this specific HTML format:
-
+The response should be a JSON object with this exact structure:
 {
   "categoryScores": {
     "atsCompliance": { 
@@ -72,7 +71,61 @@ Return a JSON response with exact numeric scores and enhanced content in this sp
   },
   "improvements": [<list of actionable improvements>],
   "formattingFixes": [<list of formatting fixes>],
-  "enhancedContent": "<div class='container'><div class='resume'><div class='header'><h1>[Full Name]</h1><p class='contact-info'>[Email] | [Phone] | [Location]</p><p class='links'><a href='[LinkedIn URL]' target='_blank'>LinkedIn</a> | <a href='[GitHub URL]' target='_blank'>GitHub</a></p></div><div class='section'><h2>Professional Summary</h2><p>[Enhanced professional summary]</p></div><div class='section'><h2>Professional Experience</h2>[For each position:]<div class='job'><h3>[Company Name]</h3><p class='job-title'>[Job Title] | [Date Range]</p><ul>[For each achievement:]<li>[Enhanced achievement with metrics]</li></ul></div></div><div class='section'><h2>Education</h2><div class='education-item'><h3>[University Name]</h3><p>[Degree] | [Graduation Date]</p><ul><li>[Honors, relevant coursework]</li></ul></div></div><div class='section'><h2>Technical Skills</h2><ul class='skills-list'>[Group by category:]<li><strong>[Category Name]:</strong> [Skill 1], [Skill 2], [Skill 3]</li></ul></div>[If applicable:]<div class='section'><h2>Certifications</h2><ul><li>[Certification] - [Issuing Organization] ([Date])</li></ul></div></div></div>",
+  "enhancedContent": <enhanced resume formatted with this exact HTML structure:
+    <div class="resume">
+      <div class="header">
+        <h1>[Full Name]</h1>
+        <p class="contact-info">[Email] | [Phone] | [Location]</p>
+        <p class="links">[Professional Links]</p>
+      </div>
+
+      <div class="section">
+        <h2>Professional Summary</h2>
+        <p>[Enhanced professional summary]</p>
+      </div>
+
+      <div class="section">
+        <h2>Professional Experience</h2>
+        [For each position:]
+        <div class="job">
+          <h3>[Company Name]</h3>
+          <p class="job-title">[Title] | [Dates]</p>
+          <ul>
+            [For each achievement:]
+            <li>[Enhanced achievement with metrics and impact]</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Education</h2>
+        <div class="education-item">
+          <h3>[Institution Name]</h3>
+          <p>[Degree] | [Graduation Date]</p>
+          [If applicable:]
+          <ul>
+            <li>[Relevant coursework, honors, etc.]</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Technical Skills</h2>
+        <ul class="skills-list">
+          [Group similar skills:]
+          <li><strong>[Category]:</strong> [Skills list]</li>
+        </ul>
+      </div>
+
+      [If applicable:]
+      <div class="section">
+        <h2>Certifications</h2>
+        <ul>
+          <li>[Certification Name] - [Issuing Organization] ([Date])</li>
+        </ul>
+      </div>
+    </div>
+  >,
   "overallScore": <whole number 0-100>
 }`
         },

@@ -6,61 +6,34 @@ import { storage } from "./storage";
 import { analyzeResume } from "./services/resume-analyzer";
 import { matchJob, tweakResume } from "./services/job-matcher";
 import { insertResumeSchema } from "@shared/schema";
-import * as pdfjsLib from 'pdfjs-dist';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import PDFParser from 'pdf-parse-fork';
+import * as fs from 'fs';
+import * as path from 'path';
 import OpenAI from "openai";
 import puppeteer from 'puppeteer';
 import { db } from "./db";
 import { jobScraper } from './services/job-scraper';
 
-// Initialize pdf.js worker using ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const workerPath = join(__dirname, '../node_modules/pdfjs-dist/build/pdf.worker.js');
-pdfjsLib.GlobalWorkerOptions.workerSrc = fileURLToPath(new URL('file://' + workerPath));
-
-async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  try {
-    console.log("Starting PDF extraction with pdf.js...");
-
-    // Load the PDF document
-    const loadingTask = pdfjsLib.getDocument({ data: buffer });
-    const pdfDocument = await loadingTask.promise;
-    console.log(`PDF loaded successfully. Number of pages: ${pdfDocument.numPages}`);
-
-    // Extract text from all pages
-    let fullText = '';
-    for (let i = 1; i <= pdfDocument.numPages; i++) {
-      const page = await pdfDocument.getPage(i);
-      const content = await page.getTextContent();
-      const pageText = content.items
-        .map((item: any) => item.str)
-        .join(' ');
-      fullText += pageText + '\n\n';
-    }
-
-    if (!fullText.trim()) {
-      throw new Error("No text content found in PDF");
-    }
-
-    console.log("PDF text extraction successful. Length:", fullText.length);
-
-    // Clean up the extracted text
-    const cleanedText = fullText
-      .replace(/\r\n/g, '\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    return cleanedText;
-  } catch (error) {
-    console.error('PDF parsing error details:', error);
-    if (error instanceof Error) {
-      throw new Error(`Failed to parse PDF file: ${error.message}`);
-    }
-    throw new Error('Failed to parse PDF file');
+// Add type definitions
+declare module 'express-serve-static-core' {
+  interface Request {
+    file?: Express.Multer.File
   }
+}
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Configure multer
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+// Helper function to truncate text
+function truncateText(text: string, maxLength: number = 4000): string {
+  return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
 }
 
 // Add this helper function for token estimation
@@ -133,29 +106,6 @@ function extractRelevantSections(content: string): string {
   return combinedContent.trim();
 }
 
-// Add type definitions
-declare module 'express-serve-static-core' {
-  interface Request {
-    file?: Express.Multer.File
-  }
-}
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// Configure multer for file uploads
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-});
-
-// Helper function to truncate text
-function truncateText(text: string, maxLength: number = 4000): string {
-  return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
-}
-
-
 export async function registerRoutes(app: Express) {
   // Configure express middleware BEFORE routes
   app.use(express.json({ limit: '50mb', strict: false }));
@@ -170,39 +120,17 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      console.log("Processing uploaded file:", {
-        filename: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size
-      });
-
+      // Extract text content from the file
       let content: string;
-      try {
-        if (file.mimetype === 'application/pdf') {
-          content = await extractTextFromPDF(file.buffer);
-        } else if (file.mimetype === 'text/plain') {
-          content = file.buffer.toString('utf-8');
-        } else {
-          return res.status(400).json({
-            message: "Unsupported file type. Please upload a PDF or TXT file."
-          });
-        }
-
-        if (!content || content.trim().length === 0) {
-          return res.status(400).json({
-            message: "Could not extract any text content from the file. Please ensure the file contains readable text."
-          });
-        }
-
-        console.log("Successfully extracted text content, length:", content.length);
-      } catch (extractError) {
-        console.error("Text extraction failed:", extractError);
-        return res.status(400).json({
-          message: "Failed to read file content. Please try uploading a different PDF file or copy/paste the content directly."
-        });
+      if (file.mimetype === 'application/pdf') {
+        content = await extractTextFromPDF(file.buffer);
+      } else if (file.mimetype === 'text/plain') {
+        content = file.buffer.toString('utf-8');
+      } else {
+        return res.status(400).json({ message: "Only PDF and TXT files are supported at this time" });
       }
 
-      // Create the resume record
+      // First create the resume record
       const resume = await storage.createResume({
         userId: "temp-user", // TODO: Add proper user management
         title: file.originalname,
@@ -213,7 +141,7 @@ export async function registerRoutes(app: Express) {
       // Analyze the resume using OpenAI
       const analysis = await analyzeResume(content);
 
-      // Update the resume with analysis results
+      // Update the resume with analysis results and enhanced content
       const updatedResume = await storage.updateResume(resume.id, {
         atsScore: analysis.overallScore,
         enhancedContent: analysis.enhancedContent,
@@ -228,10 +156,7 @@ export async function registerRoutes(app: Express) {
     } catch (error: unknown) {
       console.error("Resume upload error:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
-      res.status(500).json({
-        message: "Failed to process resume. Please try again or use a different file.",
-        details: message
-      });
+      res.status(500).json({ message });
     }
   });
 
@@ -417,11 +342,13 @@ Return an optimized version that matches keywords and improves ATS score while m
   });
 
   // Update the PDF download route
-  app.post("/api/resumes/download-pdf", async (req, res) => {
+  app.post("/api/resumes/:id/download-pdf", async (req, res) => {
     try {
-      const { content } = req.body;
-      if (!content) {
-        return res.status(400).json({ message: "No content provided" });
+      const resumeId = parseInt(req.params.id);
+      const resume = await storage.getResume(resumeId);
+
+      if (!resume) {
+        return res.status(404).json({ message: "Resume not found" });
       }
 
       // Launch browser with specific path to chromium
@@ -434,157 +361,100 @@ Return an optimized version that matches keywords and improves ATS score while m
       try {
         const page = await browser.newPage();
 
-        // Set content with professional styling
+        // Set content with enhanced styling
         await page.setContent(`
           <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Professional Resume</title>
-            <style>
-              /* Reset and base styles */
-              * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-                font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-              }
-
-              body {
-                background-color: white;
-                color: #333;
-                line-height: 1.6;
-                padding: 20px;
-              }
-
-              /* Container for resume */
-              .container {
-                max-width: 850px;
-                margin: 0 auto;
-                background: white;
-                padding: 30px;
-              }
-
-              /* Resume styles */
-              .resume {
-                padding: 10px;
-              }
-
-              /* Header section */
-              .header {
-                border-bottom: 2px solid #3E7CB1;
-                padding-bottom: 15px;
-                margin-bottom: 20px;
-                text-align: center;
-              }
-
-              .header h1 {
-                font-size: 32px;
-                margin-bottom: 8px;
-                color: #2C3E50;
-                font-weight: 600;
-              }
-
-              .contact-info {
-                font-size: 16px;
-                margin-bottom: 5px;
-                color: #555;
-              }
-
-              .links {
-                font-size: 16px;
-                color: #3E7CB1;
-              }
-
-              .links a {
-                color: #3E7CB1;
-                text-decoration: none;
-              }
-
-              /* Section styling */
-              .section {
-                margin-bottom: 22px;
-              }
-
-              .section h2 {
-                font-size: 20px;
-                color: #2C3E50;
-                margin-bottom: 10px;
-                padding-bottom: 5px;
-                border-bottom: 1px solid #ddd;
-                font-weight: 600;
-              }
-
-              /* Job styling */
-              .job, .education-item {
-                margin-bottom: 18px;
-              }
-
-              .job h3, .education-item h3 {
-                font-size: 18px;
-                color: #2C3E50;
-                margin-bottom: 4px;
-                font-weight: 600;
-              }
-
-              .job-title {
-                font-size: 16px;
-                color: #333;
-                font-style: italic;
-                margin-bottom: 8px;
-              }
-
-              /* List styling */
-              ul {
-                padding-left: 20px;
-                margin-bottom: 10px;
-              }
-
-              ul li {
-                margin-bottom: 6px;
-                font-size: 15px;
-              }
-
-              .skills-list li {
-                margin-bottom: 8px;
-              }
-
-              .skills-list li strong {
-                color: #2C3E50;
-              }
-
-              /* Print specific styles */
-              @media print {
-                body {
-                  background-color: white;
-                  padding: 0;
-                }
-
-                .container {
-                  max-width: 100%;
-                  box-shadow: none;
-                  padding: 0;
-                }
-
-                .resume {
-                  padding: 0;
-                }
-
+          <html>
+            <head>
+              <meta charset="UTF-8">
+              <style>
                 @page {
                   margin: 0.5in;
                   size: letter;
                 }
-              }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="resume">
-                ${content}
-              </div>
-            </div>
-          </body>
+
+                body {
+                  font-family: 'Arial', sans-serif;
+                  line-height: 1.6;
+                  max-width: 8.5in;
+                  margin: 0 auto;
+                  padding: 0.5in;
+                  color: #333;
+                }
+
+                .resume {
+                  max-width: 100%;
+                }
+
+                .header {
+                  text-align: center;
+                  margin-bottom: 1.5rem;
+                }
+
+                .header h1 {
+                  font-size: 24px;
+                  margin: 0 0 0.5rem 0;
+                  color: #1a1a1a;
+                }
+
+                .header .contact-info {
+                  margin: 0.5rem 0;
+                  color: #4a5568;
+                }
+
+                .section {
+                  margin-bottom: 1.5rem;
+                }
+
+                h2 {
+                  font-size: 18px;
+                  color: #2c5282;
+                  border-bottom: 2px solid #e2e8f0;
+                  padding-bottom: 0.25rem;
+                  margin: 1rem 0 0.75rem 0;
+                }
+
+                h3 {
+                  font-size: 16px;
+                  color: #2d3748;
+                  margin: 0.75rem 0 0.25rem 0;
+                }
+
+                .job {
+                  margin-bottom: 1.25rem;
+                }
+
+                .job-title {
+                  font-style: italic;
+                  color: #4a5568;
+                  margin: 0.25rem 0 0.5rem 0;
+                }
+
+                ul {
+                  margin: 0.5rem 0;
+                  padding-left: 1.25rem;
+                  list-style-type: disc;
+                }
+
+                li {
+                  margin: 0.25rem 0;
+                  page-break-inside: avoid;
+                }
+
+                p {
+                  margin: 0.5rem 0;
+                }
+
+                @media print {
+                  body {
+                    padding: 0;
+                  }
+                }
+              </style>
+            </head>
+            <body>
+              ${resume.enhancedContent || resume.content}
+            </body>
           </html>
         `);
 
@@ -789,37 +659,47 @@ Return an optimized version that matches keywords and improves ATS score while m
     }
   });
 
-  async function extractTextFromImage(buffer: Buffer): Promise<string> {
-    try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4-vision-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: "Extract and return only the text content from this job description image. Include all details but remove any irrelevant text or formatting."
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: `data:image/jpeg;base64,${buffer.toString('base64')}`
-                }
-              }
-            ],
-          },
-        ],
-        max_tokens: 1000,
-      });
-
-      return response.choices[0].message.content || '';
-    } catch (error) {
-      console.error('Image text extraction error:', error);
-      throw new Error('Failed to extract text from image');
-    }
-  }
-
   const httpServer = createServer(app);
   return httpServer;
+}
+
+async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  try {
+    const data = await PDFParser(buffer);
+    return data.text;
+  } catch (error) {
+    console.error('PDF parsing error:', error);
+    throw new Error('Failed to parse PDF file');
+  }
+}
+
+async function extractTextFromImage(buffer: Buffer): Promise<string> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4-vision-preview",
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Extract and return only the text content from this job description image. Include all details but remove any irrelevant text or formatting."
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:image/jpeg;base64,${buffer.toString('base64')}`
+              }
+            }
+          ],
+        },
+      ],
+      max_tokens: 1000,
+    });
+
+    return response.choices[0].message.content || '';
+  } catch (error) {
+    console.error('Image text extraction error:', error);
+    throw new Error('Failed to extract text from image');
+  }
 }
