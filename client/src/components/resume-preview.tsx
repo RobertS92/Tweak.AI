@@ -232,14 +232,23 @@ export default function ResumePreview({
         throw new Error("Failed to generate PDF");
       }
 
+      // Create a blob from the PDF Stream
       const blob = await response.blob();
+
+      // Create a temporary URL for the blob
       const url = window.URL.createObjectURL(blob);
+
+      // Create a temporary link element
       const link = document.createElement('a');
       link.href = url;
-      link.download = `enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`;
+      link.download = `optimized_resume_${new Date().toISOString().split('T')[0]}.pdf`;
+
+      // Append to body, click and remove
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+
+      // Clean up the URL
       window.URL.revokeObjectURL(url);
 
       toast({

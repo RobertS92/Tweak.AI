@@ -342,13 +342,11 @@ Return an optimized version that matches keywords and improves ATS score while m
   });
 
   // Update the PDF download route
-  app.post("/api/resumes/:id/download-pdf", async (req, res) => {
+  app.post("/api/resumes/download-pdf", async (req, res) => {
     try {
-      const resumeId = parseInt(req.params.id);
-      const resume = await storage.getResume(resumeId);
-
-      if (!resume) {
-        return res.status(404).json({ message: "Resume not found" });
+      const { content } = req.body;
+      if (!content) {
+        return res.status(400).json({ message: "No content provided" });
       }
 
       // Launch browser with specific path to chromium
@@ -365,10 +363,10 @@ Return an optimized version that matches keywords and improves ATS score while m
         await page.setViewport({
           width: 850,
           height: 1100,
-          deviceScaleFactor: 2,
+          deviceScaleFactor: 1,
         });
 
-        // Set content with enhanced styling
+        // Set content with proper HTML structure
         await page.setContent(`
           <!DOCTYPE html>
           <html lang="en">
@@ -382,7 +380,7 @@ Return an optimized version that matches keywords and improves ATS score while m
                 margin: 0;
                 padding: 0;
                 box-sizing: border-box;
-                font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                font-family: 'Arial', sans-serif;
               }
 
               body {
@@ -493,8 +491,8 @@ Return an optimized version that matches keywords and improves ATS score while m
               /* Print specific styles */
               @media print {
                 @page {
-                  size: letter;
                   margin: 0.5in;
+                  size: letter;
                 }
 
                 body {
@@ -516,18 +514,14 @@ Return an optimized version that matches keywords and improves ATS score while m
           </head>
           <body>
             <div class="container">
-              ${resume.enhancedContent || resume.content}
+              ${content}
             </div>
           </body>
           </html>
-        `);
+        `, { waitUntil: 'networkidle0' });
 
-        // Wait for content and styles to be fully loaded
+        // Wait for content to be fully rendered
         await page.waitForSelector('.container', { timeout: 5000 });
-        await page.waitForFunction(() => {
-          const element = document.querySelector('.container');
-          return element && element.getBoundingClientRect().height > 0;
-        }, { timeout: 5000 });
 
         // Generate PDF with proper settings
         const pdf = await page.pdf({
@@ -541,7 +535,6 @@ Return an optimized version that matches keywords and improves ATS score while m
           printBackground: true,
           preferCSSPageSize: true,
           displayHeaderFooter: false,
-          timeout: 30000,
         });
 
         await browser.close();
@@ -551,9 +544,10 @@ Return an optimized version that matches keywords and improves ATS score while m
           throw new Error('Generated PDF is too small, likely invalid');
         }
 
-        // Send PDF with proper headers
+        // Set proper headers for PDF download
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`);
+        res.setHeader('Content-Length', pdf.length);
+        res.setHeader('Content-Disposition', `attachment; filename=optimized_resume_${new Date().toISOString().split('T')[0]}.pdf`);
         res.send(pdf);
       } catch (error) {
         await browser.close();
