@@ -50,67 +50,31 @@ The response should be a JSON object with this exact structure:
 {
   "categoryScores": {
     "atsCompliance": { 
-      "score": <number 0-100>, 
+      "score": <whole number 0-100>, 
       "feedback": [<improvement points>], 
       "description": <detailed analysis>
     },
     "keywordDensity": { 
-      "score": <number 0-100>, 
+      "score": <whole number 0-100>, 
       "feedback": [<suggestions>], 
       "identifiedKeywords": [<found keywords>], 
       "description": <detailed analysis>
     },
     "recruiterFriendliness": { 
-      "score": <number 0-100>, 
+      "score": <whole number 0-100>, 
       "feedback": [<improvements>], 
       "description": <detailed analysis>
     },
     "conciseness": { 
-      "score": <number 0-100>, 
+      "score": <whole number 0-100>, 
       "feedback": [<suggestions>], 
       "description": <detailed analysis>
     }
   },
   "improvements": [<list of actionable improvements>],
   "formattingFixes": [<list of formatting fixes>],
-  "enhancedContent": <The enhanced resume content with this exact HTML structure:
-    <div class="resume">
-      <div class="header">
-        <h1>[Name]</h1>
-        <p>[Contact Information]</p>
-      </div>
-
-      <div class="section">
-        <h2>Professional Summary</h2>
-        <p>[Enhanced summary]</p>
-      </div>
-
-      <div class="section">
-        <h2>Experience</h2>
-        [For each position:]
-        <div class="job">
-          <h3>[Company Name]</h3>
-          <p class="job-title">[Title] | [Dates]</p>
-          <ul>
-            <li>[Enhanced bullet point]</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="section">
-        <h2>Education</h2>
-        <p>[Enhanced education details]</p>
-      </div>
-
-      <div class="section">
-        <h2>Skills</h2>
-        <ul>
-          <li>[Enhanced skills]</li>
-        </ul>
-      </div>
-    </div>
-  >,
-  "overallScore": <calculated overall score>
+  "enhancedContent": <enhanced resume content with proper HTML formatting>,
+  "overallScore": <whole number 0-100>
 }`
         },
         {
@@ -131,9 +95,45 @@ The response should be a JSON object with this exact structure:
     const result = JSON.parse(response.choices[0].message.content);
     const validatedResult = analysisResponseSchema.parse(result);
 
+    // Calculate overall score from category scores and ensure it's an integer
+    const weights = {
+      atsCompliance: 0.30,
+      keywordDensity: 0.25,
+      recruiterFriendliness: 0.25,
+      conciseness: 0.20
+    };
+
+    const calculatedOverallScore = Math.round(
+      weights.atsCompliance * validatedResult.categoryScores.atsCompliance.score +
+      weights.keywordDensity * validatedResult.categoryScores.keywordDensity.score +
+      weights.recruiterFriendliness * validatedResult.categoryScores.recruiterFriendliness.score +
+      weights.conciseness * validatedResult.categoryScores.conciseness.score
+    );
+
+    // Return with integer overall score and properly formatted content
     return {
       ...validatedResult,
-      enhancedContent: validatedResult.enhancedContent.replace(/\\n/g, '\n').replace(/\\"/g, '"')
+      overallScore: calculatedOverallScore,
+      enhancedContent: validatedResult.enhancedContent.replace(/\\n/g, '\n').replace(/\\"/g, '"'),
+      categoryScores: {
+        ...validatedResult.categoryScores,
+        atsCompliance: { 
+          ...validatedResult.categoryScores.atsCompliance,
+          score: Math.round(validatedResult.categoryScores.atsCompliance.score)
+        },
+        keywordDensity: {
+          ...validatedResult.categoryScores.keywordDensity,
+          score: Math.round(validatedResult.categoryScores.keywordDensity.score)
+        },
+        recruiterFriendliness: {
+          ...validatedResult.categoryScores.recruiterFriendliness,
+          score: Math.round(validatedResult.categoryScores.recruiterFriendliness.score)
+        },
+        conciseness: {
+          ...validatedResult.categoryScores.conciseness,
+          score: Math.round(validatedResult.categoryScores.conciseness.score)
+        }
+      }
     };
   } catch (error) {
     console.error("Resume analysis failed:", error);
