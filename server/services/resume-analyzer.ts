@@ -42,69 +42,76 @@ export async function analyzeResume(content: string) {
       messages: [
         {
           role: "system",
-          content: `You are an expert resume analyzer. Analyze the provided resume and return a JSON response with the following structure exactly:
+          content: `You are an expert resume analyzer and enhancer. 
 
+Analyze the provided resume and enhance it to make it more effective while maintaining truthfulness.
+
+The response should be a JSON object with this exact structure:
 {
   "categoryScores": {
-    "atsCompliance": {
-      "score": <number 0-100>,
-      "feedback": ["specific improvement points"],
-      "description": "detailed analysis"
+    "atsCompliance": { 
+      "score": <number 0-100>, 
+      "feedback": [<improvement points>], 
+      "description": <detailed analysis>
     },
-    "keywordDensity": {
-      "score": <number 0-100>,
-      "feedback": ["specific suggestions"],
-      "identifiedKeywords": ["found keywords"],
-      "description": "detailed analysis"
+    "keywordDensity": { 
+      "score": <number 0-100>, 
+      "feedback": [<suggestions>], 
+      "identifiedKeywords": [<found keywords>], 
+      "description": <detailed analysis>
     },
-    "recruiterFriendliness": {
-      "score": <number 0-100>,
-      "feedback": ["specific improvements"],
-      "description": "detailed analysis"
+    "recruiterFriendliness": { 
+      "score": <number 0-100>, 
+      "feedback": [<improvements>], 
+      "description": <detailed analysis>
     },
-    "conciseness": {
-      "score": <number 0-100>,
-      "feedback": ["specific suggestions"],
-      "description": "detailed analysis"
+    "conciseness": { 
+      "score": <number 0-100>, 
+      "feedback": [<suggestions>], 
+      "description": <detailed analysis>
     }
   },
-  "improvements": ["actionable improvements"],
-  "formattingFixes": ["specific formatting fixes"],
-  "enhancedContent": "<optimized resume content with HTML formatting>",
+  "improvements": [<list of actionable improvements>],
+  "formattingFixes": [<list of formatting fixes>],
+  "enhancedContent": <The enhanced resume content with this exact HTML structure:
+    <div class="resume">
+      <div class="header">
+        <h1>[Name]</h1>
+        <p>[Contact Information]</p>
+      </div>
+
+      <div class="section">
+        <h2>Professional Summary</h2>
+        <p>[Enhanced summary]</p>
+      </div>
+
+      <div class="section">
+        <h2>Experience</h2>
+        [For each position:]
+        <div class="job">
+          <h3>[Company Name]</h3>
+          <p class="job-title">[Title] | [Dates]</p>
+          <ul>
+            <li>[Enhanced bullet point]</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Education</h2>
+        <p>[Enhanced education details]</p>
+      </div>
+
+      <div class="section">
+        <h2>Skills</h2>
+        <ul>
+          <li>[Enhanced skills]</li>
+        </ul>
+      </div>
+    </div>
+  >,
   "overallScore": <calculated overall score>
-}
-
-Analyze the resume based on these criteria:
-
-1. ATS Compliance:
-- Standard section headers
-- Proper formatting and structure
-- Machine-readable content
-- Clear hierarchy
-- Consistent spacing
-
-2. Keyword Density:
-- Relevant industry terms
-- Technical skills presence
-- Role-specific terminology
-- Balanced keyword distribution
-- Natural language use
-
-3. Recruiter-Friendliness:
-- Clear and concise language
-- Achievement quantification
-- Professional tone
-- Logical flow
-- Visual clarity
-
-4. Conciseness & Impact:
-- Direct and focused statements
-- Strong action verbs
-- Results-oriented descriptions
-- No redundancy
-- Efficient use of space
-
-Calculate scores dynamically based on the resume's content. Do not use hardcoded values.`
+}`
         },
         {
           role: "user",
@@ -112,6 +119,7 @@ Calculate scores dynamically based on the resume's content. Do not use hardcoded
         },
       ],
       temperature: 0.3,
+      max_tokens: 4000,
     });
 
     if (!response.choices[0].message.content) {
@@ -123,24 +131,9 @@ Calculate scores dynamically based on the resume's content. Do not use hardcoded
     const result = JSON.parse(response.choices[0].message.content);
     const validatedResult = analysisResponseSchema.parse(result);
 
-    // Calculate overall score from category scores dynamically
-    const weights = {
-      atsCompliance: 0.30,
-      keywordDensity: 0.25,
-      recruiterFriendliness: 0.25,
-      conciseness: 0.20
-    };
-
-    const calculatedOverallScore = Math.round(
-      weights.atsCompliance * validatedResult.categoryScores.atsCompliance.score +
-      weights.keywordDensity * validatedResult.categoryScores.keywordDensity.score +
-      weights.recruiterFriendliness * validatedResult.categoryScores.recruiterFriendliness.score +
-      weights.conciseness * validatedResult.categoryScores.conciseness.score
-    );
-
     return {
       ...validatedResult,
-      overallScore: calculatedOverallScore
+      enhancedContent: validatedResult.enhancedContent.replace(/\\n/g, '\n').replace(/\\"/g, '"')
     };
   } catch (error) {
     console.error("Resume analysis failed:", error);

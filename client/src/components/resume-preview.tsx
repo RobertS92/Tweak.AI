@@ -306,14 +306,17 @@ export default function ResumePreview({
                             __html: analysis.enhancedContent,
                           }}
                           className="prose max-w-none 
+                            [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-2 [&_h1]:text-gray-900
                             [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:text-gray-900
                             [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-1 [&_h3]:text-gray-800
                             [&_p]:mb-2 [&_p]:text-gray-700
                             [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-4
                             [&_li]:mb-2 [&_li]:text-gray-700
+                            [&_.resume]:max-w-4xl [&_.resume]:mx-auto [&_.resume]:space-y-6
+                            [&_.header]:text-center [&_.header]:mb-6
+                            [&_.section]:mb-8
                             [&_.job]:mb-6
-                            [&_.job-title]:text-gray-600 [&_.job-title]:mb-2
-                            [&_.section]:mb-8"
+                            [&_.job-title]:text-gray-600 [&_.job-title]:mb-2"
                         />
                       ) : (
                         <div className="text-center text-muted-foreground py-8">
@@ -326,7 +329,6 @@ export default function ResumePreview({
               </div>
             </Tabs>
           </div>
-
           <div className="absolute bottom-4 right-4">
             <Button
               onClick={downloadEnhancedResume}
