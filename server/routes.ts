@@ -341,7 +341,7 @@ Return an optimized version that matches keywords and improves ATS score while m
     }
   });
 
-  // Add new PDF download route
+  // Update the PDF download route
   app.post("/api/resumes/:id/download-pdf", async (req, res) => {
     try {
       const resumeId = parseInt(req.params.id);
@@ -359,45 +359,95 @@ Return an optimized version that matches keywords and improves ATS score while m
       });
       const page = await browser.newPage();
 
-      // Set content with proper styling
+      // Set content with enhanced styling
       await page.setContent(`
         <html>
           <head>
             <meta charset="UTF-8">
             <style>
+              @media print {
+                @page {
+                  margin: 0.5in;
+                  size: letter;
+                }
+              }
+
               body {
                 font-family: 'Arial', sans-serif;
                 line-height: 1.6;
-                padding: 40px;
-                max-width: 800px;
+                max-width: 8.5in;
                 margin: 0 auto;
+                padding: 0.5in;
+                color: #333;
               }
-              .section { margin-bottom: 24px; }
+
+              .resume {
+                max-width: 100%;
+              }
+
+              .header {
+                text-align: center;
+                margin-bottom: 1.5rem;
+              }
+
+              .header h1 {
+                font-size: 24px;
+                margin: 0 0 0.5rem 0;
+                color: #1a1a1a;
+              }
+
+              .section {
+                margin-bottom: 1.5rem;
+              }
+
               h2 {
                 font-size: 18px;
-                color: #333;
-                border-bottom: 1px solid #ddd;
-                padding-bottom: 4px;
-                margin-bottom: 12px;
+                color: #2c5282;
+                border-bottom: 1px solid #e2e8f0;
+                padding-bottom: 0.25rem;
+                margin: 1rem 0 0.75rem 0;
               }
-              h3 { 
+
+              h3 {
                 font-size: 16px;
-                color: #444;
-                margin-bottom: 6px;
+                color: #2d3748;
+                margin: 0.75rem 0 0.25rem 0;
               }
+
               .job-title {
                 font-style: italic;
-                color: #666;
-                margin-bottom: 8px;
+                color: #4a5568;
+                margin-bottom: 0.5rem;
               }
+
               ul {
-                margin: 8px 0;
-                padding-left: 20px;
+                margin: 0.5rem 0;
+                padding-left: 1.25rem;
               }
+
               li {
-                margin: 6px 0;
+                margin: 0.25rem 0;
               }
-              p { margin: 8px 0; }
+
+              p {
+                margin: 0.5rem 0;
+              }
+
+              a {
+                color: #2b6cb0;
+                text-decoration: none;
+              }
+
+              @media print {
+                body {
+                  padding: 0;
+                }
+
+                a {
+                  text-decoration: none;
+                  color: #333;
+                }
+              }
             </style>
           </head>
           <body>
@@ -406,10 +456,15 @@ Return an optimized version that matches keywords and improves ATS score while m
         </html>
       `);
 
-      // Generate PDF
+      // Generate PDF with proper settings
       const pdf = await page.pdf({
-        format: 'A4',
-        margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' },
+        format: 'Letter',
+        margin: {
+          top: '0.5in',
+          right: '0.5in',
+          bottom: '0.5in',
+          left: '0.5in'
+        },
         printBackground: true,
         displayHeaderFooter: false,
       });
@@ -418,107 +473,11 @@ Return an optimized version that matches keywords and improves ATS score while m
 
       // Send PDF with proper headers
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename=${resume.title.replace(/\s+/g, '-')}.pdf`);
+      res.setHeader('Content-Disposition', `attachment; filename=enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`);
       res.send(pdf);
     } catch (error) {
       console.error('PDF generation failed:', error);
       res.status(500).json({ message: 'Failed to generate PDF' });
-    }
-  });
-
-  // Update the analyze route with stricter JSON handling
-  app.post("/api/resumes/analyze", upload.none(), async (req, res) => {
-    try {
-      const { content, sectionType } = req.body;
-
-      if (!content || typeof content !== 'string') {
-        return res.status(400).json({ message: "Invalid resume content" });
-      }
-
-      // Validate content size
-      if (Buffer.byteLength(content) > 50 * 1024 * 1024) { // 50MB limit
-        return res.status(413).json({ message: "Resume content too large" });
-      }
-
-      if (sectionType === "skills") {
-        console.log("Analyzing resume for skills extraction...");
-
-        const relevantContent = extractRelevantSections(content);
-        const estimatedTokens = estimateTokenCount(relevantContent);
-
-        if (estimatedTokens > 2000) {
-          return res.status(400).json({
-            message: "Content too complex for analysis. Please try with a simpler resume."
-          });
-        }
-
-        const response = await openai.chat.completions.create({
-          model: "gpt-4",
-          messages: [
-            {
-              role: "system",
-              content: `You are an expert at analyzing resumes and extracting technical and professional skills.
-Format your response as a valid JSON object with a "skills" array containing strings.
-Example response format: {"skills": ["JavaScript", "Python", "Project Management"]}
-
-Extract the following types of skills:
-1. Technical skills (programming languages, tools, frameworks)
-2. Domain-specific skills (industry knowledge, methodologies)
-3. Soft skills (leadership, communication)
-4. Certifications and qualifications
-
-IMPORTANT INSTRUCTIONS:
-- You must ONLY output a JSON object with a "skills" array
-- Do not include any explanations or additional text
-- Every skill must be a string in the array
-- Return an empty array if no skills are found
-- Ensure the response is valid JSON`
-            },
-            {
-              role: "user",
-              content: `Extract all technical and professional skills from this resume content:\n${relevantContent}`
-            }
-          ],
-          temperature: 0.3, // Lower temperature for more consistent formatting
-        });
-
-        if (!response.choices[0].message.content) {
-          throw new Error("No content in OpenAI response");
-        }
-
-        const responseContent = response.choices[0].message.content.trim();
-        console.log("Raw OpenAI response:", responseContent);
-
-        try {
-          // Attempt to parse the response as JSON
-          const result = JSON.parse(responseContent);
-
-          // Validate the response structure
-          if (!result.skills || !Array.isArray(result.skills)) {
-            console.error("Invalid response structure:", result);
-            throw new Error("Invalid skills data structure");
-          }
-
-          // Filter out any non-string values and deduplicate
-          const validSkills = [...new Set(
-            result.skills
-              .filter((skill): skill is string => typeof skill === 'string')
-              .map(skill => skill.trim())
-              .filter(Boolean)
-          )];
-
-          res.json({ skills: validSkills });
-        } catch (parseError) {
-          console.error("Failed to parse OpenAI response:", parseError, "Response was:", responseContent);
-          throw new Error("Invalid response format from skills extraction");
-        }
-      } else {
-        res.status(400).json({ message: "Invalid section type" });
-      }
-    } catch (error) {
-      console.error("Resume analysis error:", error);
-      const message = error instanceof Error ? error.message : "An unknown error occurred";
-      res.status(500).json({ message });
     }
   });
 

@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { FileText, Info, Download } from "lucide-react";
+import { FileText, Info, Download, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -54,6 +54,124 @@ export default function ResumePreview({
   const [showContent, setShowContent] = React.useState(false);
   const [isDownloading, setIsDownloading] = React.useState(false);
   const { toast } = useToast();
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({
+        title: "Error",
+        description: "Could not open print window. Please check your popup settings.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const content = analysis?.enhancedContent || '';
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Enhanced Resume</title>
+          <style>
+            @media print {
+              @page {
+                margin: 0.5in;
+                size: letter;
+              }
+            }
+
+            body {
+              font-family: 'Arial', sans-serif;
+              line-height: 1.6;
+              max-width: 8.5in;
+              margin: 0 auto;
+              padding: 0.5in;
+              color: #333;
+            }
+
+            .resume {
+              max-width: 100%;
+            }
+
+            .header {
+              text-align: center;
+              margin-bottom: 1.5rem;
+            }
+
+            .header h1 {
+              font-size: 24px;
+              margin: 0 0 0.5rem 0;
+              color: #1a1a1a;
+            }
+
+            .section {
+              margin-bottom: 1.5rem;
+            }
+
+            h2 {
+              font-size: 18px;
+              color: #2c5282;
+              border-bottom: 1px solid #e2e8f0;
+              padding-bottom: 0.25rem;
+              margin: 1rem 0 0.75rem 0;
+            }
+
+            h3 {
+              font-size: 16px;
+              color: #2d3748;
+              margin: 0.75rem 0 0.25rem 0;
+            }
+
+            .job-title {
+              font-style: italic;
+              color: #4a5568;
+              margin-bottom: 0.5rem;
+            }
+
+            ul {
+              margin: 0.5rem 0;
+              padding-left: 1.25rem;
+            }
+
+            li {
+              margin: 0.25rem 0;
+            }
+
+            p {
+              margin: 0.5rem 0;
+            }
+
+            a {
+              color: #2b6cb0;
+              text-decoration: none;
+            }
+
+            @media print {
+              body {
+                padding: 0;
+              }
+
+              a {
+                text-decoration: none;
+                color: #333;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${content}
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  };
 
   const calculateOverallScore = () => {
     if (!categoryScores) return atsScore || 0;
@@ -329,7 +447,15 @@ export default function ResumePreview({
               </div>
             </Tabs>
           </div>
-          <div className="absolute bottom-4 right-4">
+          <div className="absolute bottom-4 right-4 flex gap-2">
+            <Button
+              onClick={handlePrint}
+              disabled={!analysis?.enhancedContent}
+              size="sm"
+            >
+              <Printer className="w-4 h-4 mr-2" />
+              Print
+            </Button>
             <Button
               onClick={downloadEnhancedResume}
               disabled={isDownloading || !analysis?.enhancedContent}
