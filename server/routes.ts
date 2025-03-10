@@ -361,6 +361,13 @@ Return an optimized version that matches keywords and improves ATS score while m
       try {
         const page = await browser.newPage();
 
+        // Set viewport for better rendering
+        await page.setViewport({
+          width: 850,
+          height: 1100,
+          deviceScaleFactor: 2,
+        });
+
         // Set content with enhanced styling
         await page.setContent(`
           <!DOCTYPE html>
@@ -379,7 +386,7 @@ Return an optimized version that matches keywords and improves ATS score while m
               }
 
               body {
-                background-color: white;
+                background-color: #f5f5f5;
                 color: #333;
                 line-height: 1.6;
                 padding: 20px;
@@ -390,7 +397,9 @@ Return an optimized version that matches keywords and improves ATS score while m
                 max-width: 850px;
                 margin: 0 auto;
                 background: white;
+                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
                 padding: 30px;
+                border-radius: 4px;
               }
 
               /* Resume styles */
@@ -483,6 +492,11 @@ Return an optimized version that matches keywords and improves ATS score while m
 
               /* Print specific styles */
               @media print {
+                @page {
+                  size: letter;
+                  margin: 0.5in;
+                }
+
                 body {
                   background-color: white;
                   padding: 0;
@@ -490,6 +504,7 @@ Return an optimized version that matches keywords and improves ATS score while m
 
                 .container {
                   max-width: 100%;
+                  box-shadow: none;
                   padding: 0;
                 }
 
@@ -500,13 +515,19 @@ Return an optimized version that matches keywords and improves ATS score while m
             </style>
           </head>
           <body>
-            ${resume.enhancedContent || resume.content}
+            <div class="container">
+              ${resume.enhancedContent || resume.content}
+            </div>
           </body>
           </html>
         `);
 
-        // Wait for content to load
-        await page.waitForSelector('body');
+        // Wait for content and styles to be fully loaded
+        await page.waitForSelector('.container', { timeout: 5000 });
+        await page.waitForFunction(() => {
+          const element = document.querySelector('.container');
+          return element && element.getBoundingClientRect().height > 0;
+        }, { timeout: 5000 });
 
         // Generate PDF with proper settings
         const pdf = await page.pdf({
@@ -519,9 +540,16 @@ Return an optimized version that matches keywords and improves ATS score while m
           },
           printBackground: true,
           preferCSSPageSize: true,
+          displayHeaderFooter: false,
+          timeout: 30000,
         });
 
         await browser.close();
+
+        // Validate PDF size
+        if (pdf.length < 1000) { // Less than 1KB
+          throw new Error('Generated PDF is too small, likely invalid');
+        }
 
         // Send PDF with proper headers
         res.setHeader('Content-Type', 'application/pdf');
@@ -533,7 +561,7 @@ Return an optimized version that matches keywords and improves ATS score while m
       }
     } catch (error) {
       console.error('PDF generation failed:', error);
-      res.status(500).json({ message: 'Failed to generate PDF' });
+      res.status(500).json({ message: 'Failed to generate PDF. Please try again.' });
     }
   });
 
