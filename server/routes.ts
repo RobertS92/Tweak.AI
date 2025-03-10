@@ -364,97 +364,144 @@ Return an optimized version that matches keywords and improves ATS score while m
         // Set content with enhanced styling
         await page.setContent(`
           <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="UTF-8">
-              <style>
-                @page {
-                  margin: 0.5in;
-                  size: letter;
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Professional Resume</title>
+            <style>
+              /* Reset and base styles */
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              }
+
+              body {
+                background-color: white;
+                color: #333;
+                line-height: 1.6;
+                padding: 20px;
+              }
+
+              /* Container for resume */
+              .container {
+                max-width: 850px;
+                margin: 0 auto;
+                background: white;
+                padding: 30px;
+              }
+
+              /* Resume styles */
+              .resume {
+                padding: 10px;
+              }
+
+              /* Header section */
+              .header {
+                border-bottom: 2px solid #3E7CB1;
+                padding-bottom: 15px;
+                margin-bottom: 20px;
+                text-align: center;
+              }
+
+              .header h1 {
+                font-size: 32px;
+                margin-bottom: 8px;
+                color: #2C3E50;
+                font-weight: 600;
+              }
+
+              .contact-info {
+                font-size: 16px;
+                margin-bottom: 5px;
+                color: #555;
+              }
+
+              .links {
+                font-size: 16px;
+                color: #3E7CB1;
+              }
+
+              .links a {
+                color: #3E7CB1;
+                text-decoration: none;
+              }
+
+              /* Section styling */
+              .section {
+                margin-bottom: 22px;
+              }
+
+              .section h2 {
+                font-size: 20px;
+                color: #2C3E50;
+                margin-bottom: 10px;
+                padding-bottom: 5px;
+                border-bottom: 1px solid #ddd;
+                font-weight: 600;
+              }
+
+              /* Job styling */
+              .job, .education-item {
+                margin-bottom: 18px;
+              }
+
+              .job h3, .education-item h3 {
+                font-size: 18px;
+                color: #2C3E50;
+                margin-bottom: 4px;
+                font-weight: 600;
+              }
+
+              .job-title {
+                font-size: 16px;
+                color: #333;
+                font-style: italic;
+                margin-bottom: 8px;
+              }
+
+              /* List styling */
+              ul {
+                padding-left: 20px;
+                margin-bottom: 10px;
+              }
+
+              ul li {
+                margin-bottom: 6px;
+                font-size: 15px;
+              }
+
+              .skills-list li {
+                margin-bottom: 8px;
+              }
+
+              .skills-list li strong {
+                color: #2C3E50;
+              }
+
+              /* Print specific styles */
+              @media print {
+                body {
+                  background-color: white;
+                  padding: 0;
                 }
 
-                body {
-                  font-family: 'Arial', sans-serif;
-                  line-height: 1.6;
-                  max-width: 8.5in;
-                  margin: 0 auto;
-                  padding: 0.5in;
-                  color: #333;
+                .container {
+                  max-width: 100%;
+                  padding: 0;
                 }
 
                 .resume {
-                  max-width: 100%;
+                  padding: 0;
                 }
-
-                .header {
-                  text-align: center;
-                  margin-bottom: 1.5rem;
-                }
-
-                .header h1 {
-                  font-size: 24px;
-                  margin: 0 0 0.5rem 0;
-                  color: #1a1a1a;
-                }
-
-                .header .contact-info {
-                  margin: 0.5rem 0;
-                  color: #4a5568;
-                }
-
-                .section {
-                  margin-bottom: 1.5rem;
-                }
-
-                h2 {
-                  font-size: 18px;
-                  color: #2c5282;
-                  border-bottom: 2px solid #e2e8f0;
-                  padding-bottom: 0.25rem;
-                  margin: 1rem 0 0.75rem 0;
-                }
-
-                h3 {
-                  font-size: 16px;
-                  color: #2d3748;
-                  margin: 0.75rem 0 0.25rem 0;
-                }
-
-                .job {
-                  margin-bottom: 1.25rem;
-                }
-
-                .job-title {
-                  font-style: italic;
-                  color: #4a5568;
-                  margin: 0.25rem 0 0.5rem 0;
-                }
-
-                ul {
-                  margin: 0.5rem 0;
-                  padding-left: 1.25rem;
-                  list-style-type: disc;
-                }
-
-                li {
-                  margin: 0.25rem 0;
-                  page-break-inside: avoid;
-                }
-
-                p {
-                  margin: 0.5rem 0;
-                }
-
-                @media print {
-                  body {
-                    padding: 0;
-                  }
-                }
-              </style>
-            </head>
-            <body>
-              ${resume.enhancedContent || resume.content}
-            </body>
+              }
+            </style>
+          </head>
+          <body>
+            ${resume.enhancedContent || resume.content}
+          </body>
           </html>
         `);
 

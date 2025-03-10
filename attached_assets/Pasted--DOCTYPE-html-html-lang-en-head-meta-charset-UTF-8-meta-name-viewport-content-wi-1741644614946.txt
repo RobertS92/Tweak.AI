@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Professional Resume</title>
+  <style>
+    /* Reset and base styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+    
+    body {
+      background-color: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+      padding: 20px;
+    }
+    
+    /* Container for resume */
+    .container {
+      max-width: 850px;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+      border-radius: 4px;
+    }
+    
+    /* Resume styles */
+    .resume {
+      padding: 10px;
+    }
+    
+    /* Header section */
+    .header {
+      border-bottom: 2px solid #3E7CB1;
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: 32px;
+      margin-bottom: 8px;
+      color: #2C3E50;
+      font-weight: 600;
+    }
+    
+    .contact-info {
+      font-size: 16px;
+      margin-bottom: 5px;
+      color: #555;
+    }
+    
+    .links {
+      font-size: 16px;
+      color: #3E7CB1;
+    }
+    
+    .links a {
+      color: #3E7CB1;
+      text-decoration: none;
+    }
+    
+    .links a:hover {
+      text-decoration: underline;
+    }
+    
+    /* Section styling */
+    .section {
+      margin-bottom: 22px;
+    }
+    
+    .section h2 {
+      font-size: 20px;
+      color: #2C3E50;
+      margin-bottom: 10px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #ddd;
+      font-weight: 600;
+    }
+    
+    /* Job styling */
+    .job, .education-item {
+      margin-bottom: 18px;
+    }
+    
+    .job h3, .education-item h3 {
+      font-size: 18px;
+      color: #2C3E50;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    
+    .job-title {
+      font-size: 16px;
+      color: #333;
+      font-style: italic;
+      margin-bottom: 8px;
+    }
+    
+    /* List styling */
+    ul {
+      padding-left: 20px;
+      margin-bottom: 10px;
+    }
+    
+    ul li {
+      margin-bottom: 6px;
+      font-size: 15px;
+    }
+    
+    .skills-list li {
+      margin-bottom: 8px;
+    }
+    
+    .skills-list li strong {
+      color: #2C3E50;
+    }
+    
+    /* Print specific styles */
+    @media print {
+      body {
+        background-color: white;
+        padding: 0;
+      }
+      
+      .container {
+        max-width: 100%;
+        box-shadow: none;
+        padding: 0;
+      }
+      
+      .resume {
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="resume">
+      <div class="header">
+        <h1>Full Name</h1>
+        <p class="contact-info">email@example.com | (555) 123-4567 | City, State</p>
+        <p class="links">
+          <a href="https://linkedin.com/in/yourname" target="_blank">LinkedIn: linkedin.com/in/yourname</a> | 
+          <a href="https://github.com/yourname" target="_blank">GitHub: github.com/yourname</a>
+        </p>
+      </div>
+
+      <div class="section">
+        <h2>Professional Summary</h2>
+        <p>A concise, compelling 2-3 sentence overview highlighting your years of experience, key skills, achievements, and value proposition to employers. Focus on what makes you unique and relevant for your target positions.</p>
+      </div>
+
+      <div class="section">
+        <h2>Professional Experience</h2>
+        <div class="job">
+          <h3>Company Name</h3>
+          <p class="job-title">Job Title | Month Year - Month Year</p>
+          <ul>
+            <li>Accomplished [specific achievement] by implementing [specific action], resulting in [quantifiable result, preferably with percentage or numbers].</li>
+            <li>Led cross-functional team of [size] to deliver [project/outcome], which [specific business impact].</li>
+            <li>Developed and implemented [process/solution] that improved [business metric] by [percentage].</li>
+            <li>Streamlined [process] by [action taken], reducing [time/cost] by [measurable amount].</li>
+          </ul>
+        </div>
+        
+        <div class="job">
+          <h3>Previous Company Name</h3>
+          <p class="job-title">Previous Job Title | Month Year - Month Year</p>
+          <ul>
+            <li>Spearheaded initiative to [action], which resulted in [specific outcome with metrics].</li>
+            <li>Collaborated with [stakeholders] to [accomplish task], improving [business metric] by [percentage].</li>
+            <li>Recognized for [achievement] after successfully [action taken] that [business impact].</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Education</h2>
+        <div class="education-item">
+          <h3>University Name</h3>
+          <p>Degree Title, Major | Graduation Month Year</p>
+          <ul>
+            <li>GPA: 3.X/4.0 (if above 3.0)</li>
+            <li>Relevant coursework: Course 1, Course 2, Course 3</li>
+            <li>Honors/Awards: Dean's List, Scholarship Name, etc.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>Technical Skills</h2>
+        <ul class="skills-list">
+          <li><strong>Programming Languages:</strong> JavaScript, Python, Java, SQL, etc.</li>
+          <li><strong>Frameworks/Libraries:</strong> React, Node.js, Express, Django, etc.</li>
+          <li><strong>Tools:</strong> Git, Docker, AWS, Azure, Jira, etc.</li>
+          <li><strong>Methodologies:</strong> Agile, Scrum, CI/CD, TDD, etc.</li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h2>Certifications</h2>
+        <ul>
+          <li>Certification Name - Issuing Organization (Month Year)</li>
+          <li>Certification Name - Issuing Organization (Month Year)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
