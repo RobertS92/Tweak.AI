@@ -120,17 +120,40 @@ export async function registerRoutes(app: Express) {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
+      console.log("Processing uploaded file:", {
+        filename: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size
+      });
+
       // Extract text content from the file
       let content: string;
-      if (file.mimetype === 'application/pdf') {
-        content = await extractTextFromPDF(file.buffer);
-      } else if (file.mimetype === 'text/plain') {
-        content = file.buffer.toString('utf-8');
-      } else {
-        return res.status(400).json({ message: "Only PDF and TXT files are supported at this time" });
+      try {
+        if (file.mimetype === 'application/pdf') {
+          content = await extractTextFromPDF(file.buffer);
+        } else if (file.mimetype === 'text/plain') {
+          content = file.buffer.toString('utf-8');
+        } else {
+          return res.status(400).json({
+            message: "Unsupported file type. Please upload a PDF or TXT file."
+          });
+        }
+
+        if (!content || content.trim().length === 0) {
+          return res.status(400).json({
+            message: "Could not extract any text content from the file. Please ensure the file contains readable text."
+          });
+        }
+
+        console.log("Successfully extracted text content, length:", content.length);
+      } catch (extractError) {
+        console.error("Text extraction failed:", extractError);
+        return res.status(400).json({
+          message: "Failed to read file content. Please ensure the file is not corrupted and try again."
+        });
       }
 
-      // First create the resume record
+      // Create the resume record
       const resume = await storage.createResume({
         userId: "temp-user", // TODO: Add proper user management
         title: file.originalname,
@@ -141,7 +164,7 @@ export async function registerRoutes(app: Express) {
       // Analyze the resume using OpenAI
       const analysis = await analyzeResume(content);
 
-      // Update the resume with analysis results and enhanced content
+      // Update the resume with analysis results
       const updatedResume = await storage.updateResume(resume.id, {
         atsScore: analysis.overallScore,
         enhancedContent: analysis.enhancedContent,
@@ -156,7 +179,10 @@ export async function registerRoutes(app: Express) {
     } catch (error: unknown) {
       console.error("Resume upload error:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
-      res.status(500).json({ message });
+      res.status(500).json({
+        message: "Failed to process resume. Please try again or use a different file.",
+        details: message
+      });
     }
   });
 
@@ -720,10 +746,36 @@ Return an optimized version that matches keywords and improves ATS score while m
 
 async function extractTextFromPDF(buffer: Buffer): Promise<string> {
   try {
-    const data = await PDFParser(buffer);
-    return data.text;
+    console.log("Starting PDF extraction...");
+
+    // Add more detailed PDF parsing options
+    const data = await PDFParser(buffer, {
+      max: 0, // No page limit
+      preserveLineBreaks: true,
+      preserveSpace: true,
+      verbosity: 1 // Increased logging
+    });
+
+    if (!data || !data.text) {
+      console.log("No text content found in PDF");
+      throw new Error("No text content found in PDF");
+    }
+
+    console.log("PDF extraction successful, text length:", data.text.length);
+
+    // Clean up the extracted text
+    const cleanedText = data.text
+      .replace(/\r\n/g, '\n') // Normalize line endings
+      .replace(/\n{3,}/g, '\n\n') // Remove excessive newlines
+      .replace(/\s+/g, ' ') // Normalize spaces
+      .trim();
+
+    return cleanedText;
   } catch (error) {
-    console.error('PDF parsing error:', error);
+    console.error('PDF parsing error details:', error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to parse PDF file: ${error.message}`);
+    }
     throw new Error('Failed to parse PDF file');
   }
 }
