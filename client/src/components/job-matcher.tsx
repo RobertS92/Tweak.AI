@@ -143,6 +143,7 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
 
   const tweakResumeMutation = useMutation({
     mutationFn: async () => {
+      // First get the original resume content
       const resumeResponse = await apiRequest("GET", `/api/resumes/${resumeId}`);
       if (!resumeResponse.ok) {
         throw new Error("Failed to fetch original resume");
@@ -150,6 +151,7 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
       const resume = await resumeResponse.json();
       setOriginalContent(resume.content);
 
+      // Then optimize it
       const response = await apiRequest("POST", `/api/resumes/${resumeId}/tweak`, {
         jobDescription,
       });
@@ -160,7 +162,15 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
       }
 
       const result = await response.json();
-      setEnhancedContent(result.optimizedContent); // Changed to optimizedContent
+      console.log("Received optimization result:", result); // Debug log
+
+      // Store the enhanced content from the correct field
+      const optimizedContent = result.optimizedContent || result.enhancedContent;
+      if (!optimizedContent) {
+        throw new Error("No optimized content received");
+      }
+
+      setEnhancedContent(optimizedContent);
       return result;
     },
     onSuccess: () => {
@@ -171,6 +181,7 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
       setShowEnhanced(true);
     },
     onError: (error: Error) => {
+      console.error("Tweak error:", error); // Debug log
       toast({
         title: "Tweak failed",
         description: error.message,
@@ -283,7 +294,7 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
                       <ArrowLeftRight className="w-4 h-4" />
                       Toggle Version
                     </Button>
-                    {showEnhanced && (
+                    {showEnhanced && enhancedContent && (
                       <Button
                         variant="outline"
                         size="sm"
