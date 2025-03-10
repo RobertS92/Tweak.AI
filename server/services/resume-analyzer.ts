@@ -42,37 +42,82 @@ export async function analyzeResume(content: string) {
       messages: [
         {
           role: "system",
-          content: `You are an expert resume analyzer and enhancer. Analyze the provided resume and return ONLY a valid JSON response with this exact structure (no additional text or explanation):
+          content: `You are an expert resume analyzer and enhancer. You must return your analysis in a strict JSON format.
 
+Analyze the provided resume and return a JSON object with exactly this structure:
 {
   "categoryScores": {
     "atsCompliance": {
       "score": <number 0-100>,
-      "feedback": ["improvement point 1", "improvement point 2"],
-      "description": "analysis details"
+      "feedback": ["specific improvement point", "..."],
+      "description": "detailed analysis"
     },
     "keywordDensity": {
       "score": <number 0-100>,
-      "feedback": ["suggestion 1", "suggestion 2"],
-      "identifiedKeywords": ["keyword1", "keyword2"],
-      "description": "analysis details"
+      "feedback": ["specific suggestion", "..."],
+      "identifiedKeywords": ["found keyword", "..."],
+      "description": "detailed analysis"
     },
     "recruiterFriendliness": {
       "score": <number 0-100>,
-      "feedback": ["improvement 1", "improvement 2"],
-      "description": "analysis details"
+      "feedback": ["specific improvement", "..."],
+      "description": "detailed analysis"
     },
     "conciseness": {
       "score": <number 0-100>,
-      "feedback": ["suggestion 1", "suggestion 2"],
-      "description": "analysis details"
+      "feedback": ["specific suggestion", "..."],
+      "description": "detailed analysis"
     }
   },
-  "improvements": ["improvement 1", "improvement 2"],
-  "formattingFixes": ["fix 1", "fix 2"],
-  "enhancedContent": "<HTML formatted content>",
+  "improvements": ["actionable improvement", "..."],
+  "formattingFixes": ["specific formatting fix", "..."],
+  "enhancedContent": "<enhanced resume in HTML format>",
   "overallScore": <number 0-100>
-}`
+}
+
+For the enhancedContent, use this HTML structure:
+<div class="resume">
+  <div class="header">
+    <h1>[Full Name]</h1>
+    <p class="contact-info">[Email] | [Phone] | [Location]</p>
+    <p class="links">[Professional Links]</p>
+  </div>
+
+  <div class="section">
+    <h2>Professional Summary</h2>
+    <p>[Enhanced summary]</p>
+  </div>
+
+  <div class="section">
+    <h2>Professional Experience</h2>
+    [For each position:]
+    <div class="job">
+      <h3>[Company Name]</h3>
+      <p class="job-title">[Title] | [Dates]</p>
+      <ul>
+        <li>[Enhanced achievement with metrics]</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Education</h2>
+    <div class="education-item">
+      <h3>[Institution]</h3>
+      <p>[Degree] | [Date]</p>
+      <ul>
+        <li>[Details]</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Skills</h2>
+    <ul class="skills-list">
+      <li><strong>[Category]:</strong> [Skills]</li>
+    </ul>
+  </div>
+</div>`
         },
         {
           role: "user",
@@ -81,7 +126,6 @@ export async function analyzeResume(content: string) {
       ],
       temperature: 0.3,
       max_tokens: 4000,
-      response_format: { type: "json_object" }
     });
 
     if (!response.choices[0].message.content) {
