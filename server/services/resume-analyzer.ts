@@ -22,12 +22,11 @@ const analysisResponseSchema = z.object({
   }),
   improvements: z.array(z.string()),
   formattingFixes: z.array(z.string()),
-  enhancedContent: z.string().min(1), // Ensure non-empty string
+  enhancedContent: z.string().min(1),
   overallScore: z.number(),
 });
 
 function preprocessResume(content: string): string {
-  // Only normalize line endings and remove excessive whitespace
   return content
     .replace(/\r\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
@@ -39,89 +38,78 @@ export async function analyzeResume(content: string) {
     const processedContent = preprocessResume(content);
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: `You are an expert resume analyzer and enhancer. Analyze the resume and create an enhanced version.
+          content: `You are an expert resume analyzer and enhancer. Analyze the resume in detail and provide scores and feedback.
 
-First, analyze these categories and provide scores and feedback:
-1. ATS Compliance (0-100): Check formatting, standard sections, and machine readability
-2. Keyword Density (0-100): Analyze relevant industry/role keywords and their usage
-3. Recruiter-Friendliness (0-100): Assess readability, clarity, and professional presentation
-4. Conciseness & Impact (0-100): Review brevity and effectiveness of descriptions
+Return a JSON response with exact numeric scores calculated based on these criteria:
 
-Then, create an enhanced version of the resume that:
-1. Uses stronger action verbs in bullet points
-2. Adds relevant keywords naturally
-3. Fixes formatting issues
-4. Makes achievements quantifiable
-5. Improves the professional summary
-6. Maintains the original structure
-7. Uses clear section headers
+1. ATS Compliance (Score 0-100):
+- Standard section headers present
+- Proper formatting and structure
+- Machine-readable content
+- Clear hierarchy
+- Consistent spacing
 
-IMPORTANT - Format the enhanced resume using this exact HTML structure:
-<div class="resume">
-  <div class="section">
-    <h2>PROFESSIONAL SUMMARY</h2>
-    <p>[Enhanced summary content]</p>
-  </div>
+2. Keyword Density (Score 0-100):
+- Relevant industry terms
+- Technical skills presence
+- Role-specific terminology
+- Balanced keyword distribution
+- Natural language use
 
-  <div class="section">
-    <h2>EXPERIENCE</h2>
-    <div class="job">
-      <h3>[Company Name]</h3>
-      <p class="job-title">[Title] | [Dates]</p>
-      <ul>
-        <li>[Enhanced bullet point]</li>
-        <li>[Enhanced bullet point]</li>
-      </ul>
-    </div>
-  </div>
+3. Recruiter-Friendliness (Score 0-100):
+- Clear and concise language
+- Achievement quantification
+- Professional tone
+- Logical flow
+- Visual clarity
 
-  <div class="section">
-    <h2>EDUCATION</h2>
-    <p>[Enhanced education details]</p>
-  </div>
+4. Conciseness & Impact (Score 0-100):
+- Direct and focused statements
+- Strong action verbs
+- Results-oriented descriptions
+- No redundancy
+- Efficient use of space
 
-  <div class="section">
-    <h2>SKILLS</h2>
-    <ul>
-      <li>[Enhanced skill]</li>
-    </ul>
-  </div>
-</div>
+Calculate the overall score as a weighted average:
+- ATS Compliance: 30%
+- Keyword Density: 25%
+- Recruiter-Friendliness: 25%
+- Conciseness & Impact: 20%
 
-Return a JSON object with this exact structure:
+Format the response in JSON:
 {
   "categoryScores": {
-    "atsCompliance": { 
-      "score": number, 
-      "feedback": string[], 
-      "description": string 
+    "atsCompliance": {
+      "score": <calculated-score>,
+      "feedback": ["specific improvement points"],
+      "description": "detailed analysis"
     },
-    "keywordDensity": { 
-      "score": number, 
-      "feedback": string[], 
-      "identifiedKeywords": string[], 
-      "description": string 
+    "keywordDensity": {
+      "score": <calculated-score>,
+      "feedback": ["specific suggestions"],
+      "identifiedKeywords": ["found keywords"],
+      "description": "detailed analysis"
     },
-    "recruiterFriendliness": { 
-      "score": number, 
-      "feedback": string[], 
-      "description": string 
+    "recruiterFriendliness": {
+      "score": <calculated-score>,
+      "feedback": ["specific improvements"],
+      "description": "detailed analysis"
     },
-    "conciseness": { 
-      "score": number, 
-      "feedback": string[], 
-      "description": string 
+    "conciseness": {
+      "score": <calculated-score>,
+      "feedback": ["specific suggestions"],
+      "description": "detailed analysis"
     }
   },
-  "improvements": string[],
-  "formattingFixes": string[],
-  "enhancedContent": string,
-  "overallScore": number
-}`,
+  "improvements": ["actionable improvements"],
+  "formattingFixes": ["specific formatting fixes"],
+  "enhancedContent": "optimized resume content with HTML formatting",
+  "overallScore": <weighted-average-score>
+}`
         },
         {
           role: "user",
@@ -129,29 +117,38 @@ Return a JSON object with this exact structure:
         },
       ],
       response_format: { type: "json_object" },
-      temperature: 0.7,
-      max_tokens: 4000,
+      temperature: 0.3,
     });
 
-    // Parse and validate the response
-    const result = JSON.parse(response.choices[0].message.content || "{}");
-
-    // Log the enhanced content for debugging
-    console.log(
-      "Enhanced content received:",
-      result.enhancedContent?.substring(0, 200) + "...",
-    );
-
-    // Validate the entire response
-    const validatedResult = analysisResponseSchema.parse(result);
-
-    // Ensure enhanced content exists and has HTML structure
-    if (!validatedResult.enhancedContent.includes('<div class="resume">')) {
-      console.error("Enhanced content missing required HTML structure");
-      throw new Error("Invalid enhanced content format");
+    if (!response.choices[0].message.content) {
+      throw new Error("No analysis received from OpenAI");
     }
 
-    return validatedResult;
+    console.log("Raw analysis response:", response.choices[0].message.content);
+
+    const result = JSON.parse(response.choices[0].message.content);
+    const validatedResult = analysisResponseSchema.parse(result);
+
+    // Calculate overall score from category scores using AI-provided weights
+    const weights = {
+      atsCompliance: 0.30,
+      keywordDensity: 0.25,
+      recruiterFriendliness: 0.25,
+      conciseness: 0.20
+    };
+
+    const calculatedOverallScore = Math.round(
+      weights.atsCompliance * validatedResult.categoryScores.atsCompliance.score +
+      weights.keywordDensity * validatedResult.categoryScores.keywordDensity.score +
+      weights.recruiterFriendliness * validatedResult.categoryScores.recruiterFriendliness.score +
+      weights.conciseness * validatedResult.categoryScores.conciseness.score
+    );
+
+    // Return the validated result with calculated overall score
+    return {
+      ...validatedResult,
+      overallScore: calculatedOverallScore
+    };
   } catch (error) {
     console.error("Resume analysis failed:", error);
     if (error instanceof z.ZodError) {
