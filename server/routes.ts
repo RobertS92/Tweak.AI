@@ -351,11 +351,6 @@ Return an optimized version that matches keywords and improves ATS score while m
         return res.status(404).json({ message: "Resume not found" });
       }
 
-      const content = resume.enhancedContent || resume.content;
-      if (!content) {
-        return res.status(400).json({ message: "No content available for PDF generation" });
-      }
-
       // Launch browser with specific path to chromium
       const browser = await puppeteer.launch({
         headless: 'new',
@@ -366,14 +361,7 @@ Return an optimized version that matches keywords and improves ATS score while m
       try {
         const page = await browser.newPage();
 
-        // Set viewport for consistent rendering
-        await page.setViewport({
-          width: 850,
-          height: 1100,
-          deviceScaleFactor: 1,
-        });
-
-        // Set content with styling
+        // Set content with enhanced styling
         await page.setContent(`
           <!DOCTYPE html>
           <html lang="en">
@@ -391,7 +379,7 @@ Return an optimized version that matches keywords and improves ATS score while m
               }
 
               body {
-                background-color: #f5f5f5;
+                background-color: white;
                 color: #333;
                 line-height: 1.6;
                 padding: 20px;
@@ -402,9 +390,7 @@ Return an optimized version that matches keywords and improves ATS score while m
                 max-width: 850px;
                 margin: 0 auto;
                 background: white;
-                box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
                 padding: 30px;
-                border-radius: 4px;
               }
 
               /* Resume styles */
@@ -504,7 +490,6 @@ Return an optimized version that matches keywords and improves ATS score while m
 
                 .container {
                   max-width: 100%;
-                  box-shadow: none;
                   padding: 0;
                 }
 
@@ -515,12 +500,12 @@ Return an optimized version that matches keywords and improves ATS score while m
             </style>
           </head>
           <body>
-            ${content}
+            ${resume.enhancedContent || resume.content}
           </body>
           </html>
         `);
 
-        // Wait for content to be rendered
+        // Wait for content to load
         await page.waitForSelector('body');
 
         // Generate PDF with proper settings
@@ -534,20 +519,13 @@ Return an optimized version that matches keywords and improves ATS score while m
           },
           printBackground: true,
           preferCSSPageSize: true,
-          displayHeaderFooter: false,
         });
 
         await browser.close();
 
-        // Set proper headers for PDF download
-        res.set({
-          'Content-Type': 'application/pdf',
-          'Content-Length': pdf.length,
-          'Content-Disposition': `attachment; filename="enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf"`,
-          'Cache-Control': 'no-cache'
-        });
-
-        // Send the PDF buffer directly
+        // Send PDF with proper headers
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`);
         res.send(pdf);
       } catch (error) {
         await browser.close();
