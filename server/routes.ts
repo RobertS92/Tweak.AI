@@ -380,7 +380,7 @@ Return an optimized version that matches keywords and improves ATS score while m
                 margin: 0;
                 padding: 0;
                 box-sizing: border-box;
-                font-family: 'Arial', sans-serif;
+                font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
               }
 
               body {
