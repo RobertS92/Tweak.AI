@@ -109,7 +109,7 @@ export async function matchJob(resumeContent: string, jobDescription: string) {
     const result = JSON.parse(response.choices[0].message.content);
     const validatedResult = matchResponseSchema.parse(result);
 
-    // Calculate weighted total score
+    // Calculate weighted total score using AI-provided component scores
     const totalScore = 
       (validatedResult.analysis.skillMatching.score * 0.3) +
       (validatedResult.analysis.experienceRelevance.score * 0.25) +
