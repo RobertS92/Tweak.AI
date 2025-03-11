@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Upload, Plus, Download, Send, MinusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
+/** Interface for each resume section in state */
 interface ResumeSection {
   id: string;
   title: string;
@@ -19,11 +20,6 @@ interface ResumeSection {
     description: string;
     bullets: string[];
   }>;
-}
-
-interface AIFeedback {
-  suggestions: string[];
-  explanation: string;
 }
 
 export default function ResumeBuilder() {
@@ -40,279 +36,48 @@ export default function ResumeBuilder() {
     email: "",
     phone: "",
     location: "",
-    linkedin: "",
+    linkedin: ""
   });
 
   // Sections state
   const [sections, setSections] = useState<ResumeSection[]>([
-    {
-      id: "summary",
-      title: "Professional Summary",
-      content: "",
-    },
-    {
-      id: "experience",
-      title: "Work Experience",
-      items: [],
-    },
-    {
-      id: "education",
-      title: "Education",
-      items: [],
-    },
-    {
-      id: "skills",
-      title: "Skills",
-      content: "",
-    },
-    {
-      id: "projects",
-      title: "Projects",
-      items: [],
-    },
-    {
-      id: "certifications",
-      title: "Certifications",
-      items: [],
-    },
+    { id: "summary", title: "Professional Summary", content: "" },
+    { id: "experience", title: "Work Experience", items: [] },
+    { id: "education", title: "Education", items: [] },
+    { id: "skills", title: "Skills", content: "" },
+    { id: "projects", title: "Projects", items: [] },
+    { id: "certifications", title: "Certifications", items: [] }
   ]);
 
-  // 1. Revised handleFileUpload to match your server response
-  const handleFileUpload = async (file: File) => {
-    if (!file) return;
+  // Get current section content
+  const getCurrentSectionContent = useCallback(() => {
+    if (!activeSection) return "";
 
-    setIsAnalyzing(true);
-    const formData = new FormData();
-    formData.append("file", file);
+    const section = sections.find(s => s.id === activeSection);
+    if (!section) return "";
 
-    try {
-      toast({
-        title: "Processing Resume",
-        description: "Your resume is being analyzed by AI...",
-      });
-
-      const response = await fetch("/api/ai-resume-parser", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to parse resume (${response.status})`);
-      }
-
-      const data = await response.json();
-
-      // The server returns { name, email, phone, location, linkedin, sections: [...] }
-      // 2. Update personal information from top-level fields
-      setPersonalInfo({
-        name: data.name || "",
-        email: data.email || "",
-        phone: data.phone || "",
-        location: data.location || "",
-        linkedin: data.linkedin || "",
-      });
-
-      // 3. Now map the returned data.sections[] to our front-end sections
-      const updatedSections = sections.map((section) => {
-        // Find the corresponding section in the response by matching "id"
-        const matchedServerSection = data.sections.find(
-          (serverSec: any) => serverSec.id === section.id,
-        );
-
-        // If there's no match, keep the original blank or existing data
-        if (!matchedServerSection) {
-          return section;
-        }
-
-        // Depending on the ID, fill content or items
-        if (section.id === "summary") {
-          // "content" is a simple string
-          return {
-            ...section,
-            content: matchedServerSection.content || "",
-          };
-        }
-
-        if (section.id === "experience") {
-          // "items" is an array of objects
-          return {
-            ...section,
-            items: (matchedServerSection.items || []).map((exp: any) => ({
-              title: exp.title || "",
-              subtitle: exp.company || "",
-              date: exp.dates || "",
-              description: "",
-              bullets: exp.responsibilities || [],
-            })),
-          };
-        }
-
-        if (section.id === "education") {
-          return {
-            ...section,
-            items: (matchedServerSection.items || []).map((edu: any) => ({
-              title: edu.degree || "",
-              subtitle: edu.institution || "",
-              date: edu.dates || "",
-              description: "",
-              bullets: edu.courses || [],
-            })),
-          };
-        }
-
-        if (section.id === "skills") {
-          return {
-            ...section,
-            content: matchedServerSection.content || "",
-          };
-        }
-
-        if (section.id === "projects") {
-          return {
-            ...section,
-            items: (matchedServerSection.items || []).map((proj: any) => ({
-              title: proj.name || "",
-              subtitle: proj.technologies || "",
-              date: "", // or proj.date if your server provides a date
-              description: proj.focus || "",
-              bullets: [],
-            })),
-          };
-        }
-
-        if (section.id === "certifications") {
-          return {
-            ...section,
-            items: (matchedServerSection.items || []).map((cert: any) => ({
-              title: cert.name || "",
-              subtitle: "",
-              date: "",
-              description: "",
-              bullets: [],
-            })),
-          };
-        }
-
-        // Fallback if no known id
-        return section;
-      });
-
-      setSections(updatedSections);
-
-      // 4. Provide an AI message after populating
-      setAiMessage(
-        "I've analyzed your resume and populated all sections. Select any section to make edits or request AI improvements.",
-      );
-
-      toast({
-        title: "Resume Parsed Successfully",
-        description:
-          "All sections have been populated. Review and edit as needed.",
-      });
-    } catch (error) {
-      console.error("Error parsing resume:", error);
-      toast({
-        title: "Parsing Failed",
-        description:
-          "Unable to process your resume. Please try again or enter details manually.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsAnalyzing(false);
+    if (section.content) {
+      return section.content;
+    } else if (section.items) {
+      return section.items.map(item => 
+        `${item.title}\n${item.subtitle}\n${item.date}\n${item.description}\n${item.bullets.join("\n")}`
+      ).join("\n\n");
     }
-  };
+    return "";
+  }, [activeSection, sections]);
 
-  // Creates a blank resume
-  const handleNewResume = () => {
-    setPersonalInfo({
-      name: "",
-      email: "",
-      phone: "",
-      location: "",
-      linkedin: "",
-    });
-    setSections((prevSections) =>
-      prevSections.map((section) => ({
-        ...section,
-        content: "",
-        items: section.items ? [] : undefined,
-      })),
-    );
-    setAiMessage(
-      "Start by uploading a resume or entering your information manually.",
-    );
-  };
-
-  // Helpers to modify sections on the fly
-  const addSectionItem = (sectionId: string) => {
-    setSections((prev) =>
-      prev.map((section) => {
-        if (section.id === sectionId && section.items) {
-          return {
-            ...section,
-            items: [
-              ...section.items,
-              {
-                title: "",
-                subtitle: "",
-                date: "",
-                description: "",
-                bullets: [],
-              },
-            ],
-          };
-        }
-        return section;
-      }),
-    );
-  };
-
-  const removeSectionItem = (sectionId: string, itemIndex: number) => {
-    setSections((prev) =>
-      prev.map((section) => {
-        if (section.id === sectionId && section.items) {
-          return {
-            ...section,
-            items: section.items.filter((_, idx) => idx !== itemIndex),
-          };
-        }
-        return section;
-      }),
-    );
-  };
-
-  const addBulletPoint = (sectionId: string, itemIndex: number) => {
-    setSections((prev) =>
-      prev.map((section) => {
-        if (section.id === sectionId && section.items) {
-          const newItems = [...section.items];
-          newItems[itemIndex] = {
-            ...newItems[itemIndex],
-            bullets: [...newItems[itemIndex].bullets, ""],
-          };
-          return { ...section, items: newItems };
-        }
-        return section;
-      }),
-    );
-  };
+  // Effect to get AI suggestions when section changes
+  useEffect(() => {
+    if (activeSection) {
+      getAiSuggestions(activeSection);
+    }
+  }, [activeSection, getAiSuggestions]);
 
   // Add new function to get AI suggestions when section is selected
   const getAiSuggestions = useCallback(async (sectionId: string, userQuery?: string) => {
     setIsAiLoading(true);
     try {
-      let sectionContent = "";
-      const section = sections.find(s => s.id === sectionId);
-
-      if (section) {
-        if (section.content) {
-          sectionContent = section.content;
-        } else if (section.items) {
-          sectionContent = section.items.map(item => 
-            `${item.title}\n${item.subtitle}\n${item.date}\n${item.description}\n${item.bullets.join("\n")}`
-          ).join("\n\n");
-        }
-      }
+      const sectionContent = getCurrentSectionContent();
 
       const response = await fetch("/api/resume-ai-assistant", {
         method: "POST",
@@ -341,12 +106,11 @@ export default function ResumeBuilder() {
     } finally {
       setIsAiLoading(false);
     }
-  }, [sections, toast]);
+  }, [getCurrentSectionContent, toast]);
 
-  // Update section selection to trigger AI suggestions
+  // Handle section selection
   const handleSectionSelect = (sectionId: string) => {
     setActiveSection(sectionId);
-    getAiSuggestions(sectionId);
   };
 
   // Handle AI chat input
@@ -359,6 +123,214 @@ export default function ResumeBuilder() {
     await getAiSuggestions(activeSection, userMessage);
   };
 
+  /**
+   * 1. Handle uploading + parsing resume via /api/ai-resume-parser
+   */
+  const handleFileUpload = async (file: File) => {
+    if (!file) return;
+
+    setIsAnalyzing(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      toast({
+        title: "Processing Resume",
+        description: "Your resume is being analyzed by AI..."
+      });
+
+      const response = await fetch("/api/ai-resume-parser", {
+        method: "POST",
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to parse resume (${response.status})`);
+      }
+
+      const data = await response.json();
+      // data shape: { name, email, phone, location, linkedin, sections: [...] }
+
+      // Update personal info from top-level fields
+      setPersonalInfo({
+        name: data.name || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        location: data.location || "",
+        linkedin: data.linkedin || ""
+      });
+
+      // Map the returned data.sections[] to our front-end sections
+      const updatedSections = sections.map((section) => {
+        const matchedServerSection = data.sections.find(
+          (serverSec: any) => serverSec.id === section.id
+        );
+        if (!matchedServerSection) {
+          return section;
+        }
+
+        // If it's a simple "content" section
+        if (section.id === "summary" || section.id === "skills") {
+          return {
+            ...section,
+            content: matchedServerSection.content || ""
+          };
+        }
+
+        // If it's an "experience" section with items
+        if (section.id === "experience") {
+          return {
+            ...section,
+            items: (matchedServerSection.items || []).map((exp: any) => ({
+              title: exp.title || "",
+              subtitle: exp.company || "",
+              date: exp.dates || "",
+              description: "",
+              bullets: exp.responsibilities || []
+            }))
+          };
+        }
+
+        // If it's an "education" section
+        if (section.id === "education") {
+          return {
+            ...section,
+            items: (matchedServerSection.items || []).map((edu: any) => ({
+              title: edu.degree || "",
+              subtitle: edu.institution || "",
+              date: edu.dates || "",
+              description: "",
+              bullets: edu.courses || []
+            }))
+          };
+        }
+
+        // If it's a "projects" section
+        if (section.id === "projects") {
+          return {
+            ...section,
+            items: (matchedServerSection.items || []).map((proj: any) => ({
+              title: proj.name || "",
+              subtitle: proj.technologies || "",
+              date: "", // or proj.date if provided
+              description: proj.focus || "",
+              bullets: []
+            }))
+          };
+        }
+
+        // If it's a "certifications" section
+        if (section.id === "certifications") {
+          return {
+            ...section,
+            items: (matchedServerSection.items || []).map((cert: any) => ({
+              title: cert.name || "",
+              subtitle: "",
+              date: "",
+              description: "",
+              bullets: []
+            }))
+          };
+        }
+
+        return section;
+      });
+
+      setSections(updatedSections);
+
+      // Provide an AI message after populating
+      setAiMessage(
+        "I've analyzed your resume and populated all sections. Select any section to make edits or request AI improvements."
+      );
+
+      toast({
+        title: "Resume Parsed Successfully",
+        description: "All sections have been populated. Review and edit as needed."
+      });
+    } catch (error) {
+      console.error("Error parsing resume:", error);
+      toast({
+        title: "Parsing Failed",
+        description: "Unable to process your resume. Please try again or enter details manually.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  /**
+   * 2. Start a brand-new resume
+   */
+  const handleNewResume = () => {
+    setPersonalInfo({
+      name: "",
+      email: "",
+      phone: "",
+      location: "",
+      linkedin: ""
+    });
+    setSections((prevSections) =>
+      prevSections.map((section) => ({
+        ...section,
+        content: "",
+        items: section.items ? [] : undefined
+      }))
+    );
+    setAiMessage("Start by uploading a resume or entering your information manually.");
+  };
+
+
+  /**
+   * 4. Helper functions to modify sections on the fly
+   */
+  const addSectionItem = (sectionId: string) => {
+    setSections((prev) =>
+      prev.map((section) => {
+        if (section.id === sectionId && section.items) {
+          return {
+            ...section,
+            items: [
+              ...section.items,
+              { title: "", subtitle: "", date: "", description: "", bullets: [] }
+            ]
+          };
+        }
+        return section;
+      })
+    );
+  };
+
+  const removeSectionItem = (sectionId: string, itemIndex: number) => {
+    setSections((prev) =>
+      prev.map((section) => {
+        if (section.id === sectionId && section.items) {
+          return {
+            ...section,
+            items: section.items.filter((_, idx) => idx !== itemIndex)
+          };
+        }
+        return section;
+      })
+    );
+  };
+
+  const addBulletPoint = (sectionId: string, itemIndex: number) => {
+    setSections((prev) =>
+      prev.map((section) => {
+        if (section.id === sectionId && section.items) {
+          const newItems = [...section.items];
+          newItems[itemIndex] = {
+            ...newItems[itemIndex],
+            bullets: [...newItems[itemIndex].bullets, ""]
+          };
+          return { ...section, items: newItems };
+        }
+        return section;
+      })
+    );
+  };
+
   // Update the sidebar buttons onClick
   const renderSidebarButtons = () => (
     sections.map((section) => (
@@ -366,18 +338,21 @@ export default function ResumeBuilder() {
         key={section.id}
         onClick={() => handleSectionSelect(section.id)}
         className={cn(
-          "w-full text-left px-4 py-2 rounded-md transition-colors",
+          "w-full text-left px-4 py-2 rounded-md transition-colors relative",
           activeSection === section.id
             ? "bg-primary text-primary-foreground"
-            : "hover:bg-muted",
+            : "hover:bg-muted"
         )}
       >
         {section.title}
+        {activeSection === section.id && (
+          <span className="absolute right-2 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full" />
+        )}
       </button>
     ))
   );
 
-  // Update AI Assistant card at the bottom
+  // Update AI Assistant card
   const renderAiAssistant = () => (
     <Card className="mt-6">
       <CardHeader>
@@ -397,23 +372,41 @@ export default function ResumeBuilder() {
               (Thinking...)
             </span>
           )}
+          {activeSection && (
+            <span className="text-sm text-muted-foreground ml-2">
+              - {sections.find(s => s.id === activeSection)?.title}
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-[200px] p-4">
           <div className="space-y-4">
             <div className="bg-muted rounded-lg p-4">
-              {aiMessage || "Select a section to get AI assistance and suggestions."}
+              {aiMessage || (
+                activeSection 
+                  ? "Analyzing your content..."
+                  : "Select a section to get AI assistance and suggestions."
+              )}
             </div>
           </div>
         </ScrollArea>
         <form onSubmit={handleAiChat} className="p-4 border-t flex gap-2">
           <Input
-            placeholder="Ask for suggestions or improvements..."
+            placeholder={
+              activeSection 
+                ? "Ask for suggestions or improvements..." 
+                : "Select a section first..."
+            }
             value={aiInput}
             onChange={(e) => setAiInput(e.target.value)}
+            disabled={!activeSection || isAiLoading}
           />
-          <Button type="submit" size="icon" disabled={isAiLoading || !activeSection}>
+          <Button 
+            type="submit" 
+            size="icon" 
+            disabled={isAiLoading || !activeSection || !aiInput.trim()}
+          >
             <Send className="h-4 w-4" />
           </Button>
         </form>
@@ -421,7 +414,9 @@ export default function ResumeBuilder() {
     </Card>
   );
 
-  // 2. The main return JSX
+  /**
+   * 5. Render the component
+   */
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-[1200px] mx-auto">
@@ -455,9 +450,9 @@ export default function ResumeBuilder() {
           </div>
         </div>
 
-        {/* Main content */}
+        {/* Main layout */}
         <div className="grid grid-cols-[240px_1fr] gap-6">
-          {/* Left sidebar */}
+          {/* Left sidebar: Sections list */}
           <Card className="h-fit">
             <CardContent className="p-4">
               {renderSidebarButtons()}
@@ -466,7 +461,7 @@ export default function ResumeBuilder() {
 
           {/* Right content area */}
           <div className="space-y-6">
-            {/* Personal Information */}
+            {/* Personal Info */}
             <Card>
               <CardHeader>
                 <CardTitle>Personal Information</CardTitle>
@@ -477,10 +472,7 @@ export default function ResumeBuilder() {
                     placeholder="Full Name"
                     value={personalInfo.name}
                     onChange={(e) =>
-                      setPersonalInfo((prev) => ({
-                        ...prev,
-                        name: e.target.value,
-                      }))
+                      setPersonalInfo((prev) => ({ ...prev, name: e.target.value }))
                     }
                   />
                   <Input
@@ -488,47 +480,35 @@ export default function ResumeBuilder() {
                     type="email"
                     value={personalInfo.email}
                     onChange={(e) =>
-                      setPersonalInfo((prev) => ({
-                        ...prev,
-                        email: e.target.value,
-                      }))
+                      setPersonalInfo((prev) => ({ ...prev, email: e.target.value }))
                     }
                   />
                   <Input
                     placeholder="Phone"
                     value={personalInfo.phone}
                     onChange={(e) =>
-                      setPersonalInfo((prev) => ({
-                        ...prev,
-                        phone: e.target.value,
-                      }))
+                      setPersonalInfo((prev) => ({ ...prev, phone: e.target.value }))
                     }
                   />
                   <Input
                     placeholder="Location"
                     value={personalInfo.location}
                     onChange={(e) =>
-                      setPersonalInfo((prev) => ({
-                        ...prev,
-                        location: e.target.value,
-                      }))
+                      setPersonalInfo((prev) => ({ ...prev, location: e.target.value }))
                     }
                   />
                   <Input
                     placeholder="LinkedIn URL"
                     value={personalInfo.linkedin}
                     onChange={(e) =>
-                      setPersonalInfo((prev) => ({
-                        ...prev,
-                        linkedin: e.target.value,
-                      }))
+                      setPersonalInfo((prev) => ({ ...prev, linkedin: e.target.value }))
                     }
                   />
                 </div>
               </CardContent>
             </Card>
 
-            {/* Sections */}
+            {/* Resume Sections */}
             {sections.map((section) => (
               <Card key={section.id}>
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -572,11 +552,11 @@ export default function ResumeBuilder() {
                                         items: s.items.map((i, idx) =>
                                           idx === index
                                             ? { ...i, title: e.target.value }
-                                            : i,
-                                        ),
+                                            : i
+                                        )
                                       }
-                                    : s,
-                                ),
+                                    : s
+                                )
                               )
                             }
                           />
@@ -592,11 +572,11 @@ export default function ResumeBuilder() {
                                         items: s.items.map((i, idx) =>
                                           idx === index
                                             ? { ...i, subtitle: e.target.value }
-                                            : i,
-                                        ),
+                                            : i
+                                        )
                                       }
-                                    : s,
-                                ),
+                                    : s
+                                )
                               )
                             }
                           />
@@ -612,11 +592,11 @@ export default function ResumeBuilder() {
                                         items: s.items.map((i, idx) =>
                                           idx === index
                                             ? { ...i, date: e.target.value }
-                                            : i,
-                                        ),
+                                            : i
+                                        )
                                       }
-                                    : s,
-                                ),
+                                    : s
+                                )
                               )
                             }
                           />
@@ -633,13 +613,13 @@ export default function ResumeBuilder() {
                                           idx === index
                                             ? {
                                                 ...i,
-                                                description: e.target.value,
+                                                description: e.target.value
                                               }
-                                            : i,
-                                        ),
+                                            : i
+                                        )
                                       }
-                                    : s,
-                                ),
+                                    : s
+                                )
                               )
                             }
                           />
@@ -664,14 +644,14 @@ export default function ResumeBuilder() {
                                                       (b, bidx) =>
                                                         bidx === bulletIndex
                                                           ? e.target.value
-                                                          : b,
-                                                    ),
+                                                          : b
+                                                    )
                                                   }
-                                                : i,
-                                            ),
+                                                : i
+                                            )
                                           }
-                                        : s,
-                                    ),
+                                        : s
+                                    )
                                   )
                                 }
                               />
@@ -696,8 +676,8 @@ export default function ResumeBuilder() {
                           prev.map((s) =>
                             s.id === section.id
                               ? { ...s, content: e.target.value }
-                              : s,
-                          ),
+                              : s
+                          )
                         )
                       }
                       placeholder={`Enter your ${section.title.toLowerCase()}...`}
