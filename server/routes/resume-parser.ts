@@ -7,7 +7,7 @@ import OpenAI from "openai";
 
 const router = Router();
 
-/** 1. Multer in-memory storage + 10MB file size limit */
+/** 1. Multer setup */
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
@@ -22,125 +22,122 @@ const upload = multer({
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(
-        new Error(
-          `Invalid file type: ${file.mimetype}. Only PDF, DOC, DOCX, and TXT allowed.`
-        )
-      );
+      cb(new Error("Invalid file type. Only PDF, DOC, DOCX, and TXT allowed."));
     }
   },
 });
 
-/** 2. Initialize OpenAI client */
+/** 2. Initialize OpenAI */
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY
 });
 
-/** 3. The main resume parsing route */
+/** 3. Resume parsing route */
 router.post("/api/resume-parser", upload.single("file"), async (req, res) => {
   try {
-    console.log("[DEBUG] Resume parsing route called.");
-
-    // Ensure user uploaded a file
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    console.log("[DEBUG] File info:", {
-      filename: req.file.originalname,
-      mimetype: req.file.mimetype,
+    console.log("[DEBUG] Processing file:", {
+      name: req.file.originalname,
+      type: req.file.mimetype,
       size: req.file.size
     });
 
-    /** 4. Extract text content from the uploaded file */
+    // Extract text content
     let fileContent = "";
     try {
-      const { buffer } = req.file;
+      const buffer = req.file.buffer;
       const fileType = await fileTypeFromBuffer(buffer);
-      console.log("[DEBUG] Detected file type:", fileType?.mime);
+      const mime = fileType?.mime || req.file.mimetype;
 
-      if (fileType?.mime === 'application/pdf') {
-        console.log("[DEBUG] Processing PDF file...");
+      console.log("[DEBUG] Detected file type:", mime);
+
+      if (mime === "application/pdf") {
         const pdfData = await pdfParse(buffer, {
+          // Enhanced PDF text extraction
           pagerender: function(pageData) {
             return pageData.getTextContent().then(function(textContent) {
-              return textContent.items.map(item => item.str).join(' ');
+              let lastY, text = '';
+              for (const item of textContent.items) {
+                if (lastY != item.transform[5] && text) {
+                  text += '\n';
+                }
+                text += item.str + ' ';
+                lastY = item.transform[5];
+              }
+              return text;
             });
           }
         });
         fileContent = pdfData.text;
-      } else if (
-        fileType?.mime === 'application/msword' ||
-        fileType?.mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      ) {
-        console.log("[DEBUG] Processing Word document...");
+      } else if (mime.includes("word")) {
         const result = await mammoth.extractRawText({ buffer });
         fileContent = result.value;
       } else {
-        console.log("[DEBUG] Processing as text file...");
         fileContent = buffer.toString('utf8');
       }
 
-      console.log("[DEBUG] Extracted content length:", fileContent.length);
-      console.log("[DEBUG] First 200 chars of content:", fileContent.substring(0, 200));
-
-      if (!fileContent.trim()) {
-        throw new Error("No text content could be extracted from the file");
-      }
-
-      // Clean up the extracted text
+      // Clean and normalize text
       fileContent = fileContent
-        .replace(/[\r\n]+/g, '\n')          // Normalize line endings
-        .replace(/\s+/g, ' ')               // Normalize spaces
-        .replace(/[^\x20-\x7E\n]/g, '')     // Remove non-printable characters
+        .replace(/[\r\n]+/g, '\n')
+        .replace(/\s+/g, ' ')
+        .replace(/[^\x20-\x7E\n]/g, '')
         .trim();
 
-    } catch (extractError) {
-      console.error("[DEBUG] Error extracting file content:", extractError);
-      throw new Error("Failed to extract content from file: " + extractError.message);
+      if (!fileContent.trim()) {
+        throw new Error("No text content could be extracted");
+      }
+
+      console.log("[DEBUG] Extracted content length:", fileContent.length);
+
+    } catch (error) {
+      console.error("[DEBUG] Text extraction error:", error);
+      throw new Error(`Failed to extract text: ${error.message}`);
     }
 
-    // Truncate content if too long (about 6000 tokens)
-    if (fileContent.length > 12000) {
-      fileContent = fileContent.substring(0, 12000);
-      console.log("[DEBUG] Content truncated to 12000 characters");
+    // Truncate if too long
+    const MAX_LENGTH = 6000;
+    if (fileContent.length > MAX_LENGTH) {
+      fileContent = fileContent.slice(0, MAX_LENGTH);
+      console.log("[DEBUG] Content truncated to", MAX_LENGTH, "characters");
     }
 
-    console.log("[DEBUG] Calling OpenAI API...");
-
+    // Parse with OpenAI
+    console.log("[DEBUG] Calling OpenAI...");
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",
-          content: "Extract the exact content from the resume and format it according to the form fields structure. Keep the original text intact."
+          content: "Extract resume information into the specified JSON format. Keep original text intact where possible."
         },
         {
           role: "user",
-          content: `Parse this resume and extract the content into this exact format:
-
+          content: `Parse this resume into this exact JSON structure:
 {
-  "name": "",         // Person's full name
-  "email": "",       // Email address
-  "phone": "",       // Phone number
-  "location": "",    // Location/address
-  "linkedin": "",    // LinkedIn URL if present
+  "name": "",
+  "email": "",
+  "phone": "",
+  "location": "",
+  "linkedin": "",
   "sections": [
     {
       "id": "summary",
       "title": "Professional Summary",
-      "content": ""  // Professional summary paragraph
+      "content": ""
     },
     {
       "id": "experience",
       "title": "Work Experience",
       "items": [
         {
-          "title": "",      // Job title
-          "subtitle": "",   // Company name
-          "date": "",      // Employment dates
-          "description": "", // Role description
-          "bullets": []    // Achievement bullet points
+          "title": "",
+          "subtitle": "",
+          "date": "",
+          "description": "",
+          "bullets": []
         }
       ]
     },
@@ -149,29 +146,29 @@ router.post("/api/resume-parser", upload.single("file"), async (req, res) => {
       "title": "Education",
       "items": [
         {
-          "title": "",      // Degree name
-          "subtitle": "",   // School name
-          "date": "",      // Education dates
-          "description": "", // Program description
-          "bullets": []    // Achievements/coursework
+          "title": "",
+          "subtitle": "",
+          "date": "",
+          "description": "",
+          "bullets": []
         }
       ]
     },
     {
       "id": "skills",
       "title": "Skills",
-      "content": ""  // Skills list
+      "content": ""
     },
     {
       "id": "projects",
       "title": "Projects",
       "items": [
         {
-          "title": "",      // Project name
-          "subtitle": "",   // Technologies used
-          "date": "",      // Project timeframe
-          "description": "", // Project description
-          "bullets": []    // Project highlights
+          "title": "",
+          "subtitle": "",
+          "date": "",
+          "description": "",
+          "bullets": []
         }
       ]
     },
@@ -180,43 +177,54 @@ router.post("/api/resume-parser", upload.single("file"), async (req, res) => {
       "title": "Certifications",
       "items": [
         {
-          "title": "",      // Certification name
-          "subtitle": "",   // Issuing organization
-          "date": "",      // Date obtained
-          "description": "", // Certification details
-          "bullets": []    // Additional information
+          "title": "",
+          "subtitle": "",
+          "date": "",
+          "description": "",
+          "bullets": []
         }
       ]
     }
   ]
 }
 
-Resume text to parse:
+Resume text:
 ${fileContent}`
         }
       ],
       temperature: 0.1,
-      max_tokens: 3000,
+      max_tokens: 2000,
       response_format: { type: "json_object" }
     });
 
-    let parsedData;
-    try {
-      parsedData = JSON.parse(completion.choices[0].message.content);
-      console.log("[DEBUG] Successfully parsed JSON response");
-    } catch (parseError) {
-      console.error("[DEBUG] Error parsing OpenAI response:", parseError);
-      throw new Error("Failed to parse OpenAI response into JSON");
+    // Parse and validate response
+    const responseText = completion.choices[0]?.message?.content;
+    if (!responseText) {
+      throw new Error("Empty response from OpenAI");
     }
 
-    // Validate and sanitize the data
+    console.log("[DEBUG] Parsing OpenAI response");
+    let parsedData;
+    try {
+      parsedData = JSON.parse(responseText);
+    } catch (error) {
+      console.error("[DEBUG] JSON parse error:", error);
+      throw new Error("Failed to parse OpenAI response");
+    }
+
+    // Validate structure
+    if (!parsedData.sections || !Array.isArray(parsedData.sections)) {
+      throw new Error("Invalid response structure");
+    }
+
+    // Sanitize output
     const sanitizedData = {
       name: parsedData.name || "",
       email: parsedData.email || "",
       phone: parsedData.phone || "",
       location: parsedData.location || "",
       linkedin: parsedData.linkedin || "",
-      sections: (parsedData.sections || []).map(section => ({
+      sections: parsedData.sections.map(section => ({
         id: section.id || "",
         title: section.title || "",
         content: section.content || "",
@@ -226,18 +234,18 @@ ${fileContent}`
           date: item.date || "",
           description: item.description || "",
           bullets: Array.isArray(item.bullets) ? item.bullets : []
-        })) || undefined
+        }))
       }))
     };
 
-    console.log("[DEBUG] Resume parsed successfully");
+    console.log("[DEBUG] Successfully parsed resume");
     return res.json(sanitizedData);
 
-  } catch (err: any) {
-    console.error("[DEBUG] Unexpected error in resume parsing route:", err);
+  } catch (error) {
+    console.error("[DEBUG] Resume parsing error:", error);
     return res.status(500).json({
-      error: "An unexpected error occurred during resume parsing.",
-      details: err.message || String(err),
+      error: "Failed to parse resume",
+      details: error.message
     });
   }
 });
