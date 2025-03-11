@@ -67,4 +67,4 @@ ${userQuery ? `User request: ${userQuery}` : "Please suggest improvements for th
   }
 });
 
-export default router;
+export { router as default };
