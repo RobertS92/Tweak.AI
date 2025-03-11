@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,63 +31,69 @@ export default function ResumeBuilder() {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiMessage, setAiMessage] = useState("");
+  const [aiInput, setAiInput] = useState("");
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
+  // Personal info state
   const [personalInfo, setPersonalInfo] = useState({
     name: "",
     email: "",
     phone: "",
     location: "",
-    linkedin: ""
+    linkedin: "",
   });
 
+  // Sections state
   const [sections, setSections] = useState<ResumeSection[]>([
     {
       id: "summary",
       title: "Professional Summary",
-      content: ""
+      content: "",
     },
     {
       id: "experience",
       title: "Work Experience",
-      items: []
+      items: [],
     },
     {
       id: "education",
       title: "Education",
-      items: []
+      items: [],
     },
     {
       id: "skills",
       title: "Skills",
-      content: ""
+      content: "",
     },
     {
       id: "projects",
       title: "Projects",
-      items: []
+      items: [],
     },
     {
       id: "certifications",
       title: "Certifications",
-      items: []
-    }
+      items: [],
+    },
   ]);
 
+  // 1. Revised handleFileUpload to match your server response
   const handleFileUpload = async (file: File) => {
     if (!file) return;
 
     setIsAnalyzing(true);
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     try {
       toast({
         title: "Processing Resume",
-        description: "Your resume is being analyzed by AI..."
+        description: "Your resume is being analyzed by AI...",
       });
 
-      const response = await fetch('/api/ai-resume-parser', {
-        method: 'POST',
-        body: formData
+      const response = await fetch("/api/ai-resume-parser", {
+        method: "POST",
+        body: formData,
       });
 
       if (!response.ok) {
@@ -96,165 +102,326 @@ export default function ResumeBuilder() {
 
       const data = await response.json();
 
-      // Update personal information
-      if (data.personalInfo) {
-        setPersonalInfo({
-          name: data.personalInfo.name || "",
-          email: data.personalInfo.email || "",
-          phone: data.personalInfo.phone || "",
-          location: data.personalInfo.location || "",
-          linkedin: data.personalInfo.linkedin || ""
-        });
-      }
+      // The server returns { name, email, phone, location, linkedin, sections: [...] }
+      // 2. Update personal information from top-level fields
+      setPersonalInfo({
+        name: data.name || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        location: data.location || "",
+        linkedin: data.linkedin || "",
+      });
 
-      // Update all sections with parsed data
-      const updatedSections = sections.map(section => {
-        switch (section.id) {
-          case "summary":
-            return {
-              ...section,
-              content: data.summary || ""
-            };
+      // 3. Now map the returned data.sections[] to our front-end sections
+      const updatedSections = sections.map((section) => {
+        // Find the corresponding section in the response by matching "id"
+        const matchedServerSection = data.sections.find(
+          (serverSec: any) => serverSec.id === section.id,
+        );
 
-          case "experience":
-            return {
-              ...section,
-              items: (data.experience || []).map((exp: any) => ({
-                title: exp.position || exp.title || "",
-                subtitle: exp.company || exp.organization || "",
-                date: `${exp.startDate || ""} - ${exp.endDate || "Present"}`,
-                description: exp.description || "",
-                bullets: exp.responsibilities || exp.achievements || []
-              }))
-            };
-
-          case "education":
-            return {
-              ...section,
-              items: (data.education || []).map((edu: any) => ({
-                title: edu.degree || "",
-                subtitle: edu.institution || edu.school || "",
-                date: `${edu.startDate || ""} - ${edu.endDate || ""}`,
-                description: edu.description || "",
-                bullets: edu.achievements || edu.courses || []
-              }))
-            };
-
-          case "skills":
-            return {
-              ...section,
-              content: Array.isArray(data.skills) 
-                ? data.skills.join(", ") 
-                : data.skills || ""
-            };
-
-          case "projects":
-            return {
-              ...section,
-              items: (data.projects || []).map((proj: any) => ({
-                title: proj.name || proj.title || "",
-                subtitle: proj.technologies || "",
-                date: proj.duration || "",
-                description: proj.description || "",
-                bullets: proj.highlights || []
-              }))
-            };
-
-          case "certifications":
-            return {
-              ...section,
-              items: (data.certifications || []).map((cert: any) => ({
-                title: cert.name || "",
-                subtitle: cert.issuer || "",
-                date: cert.date || "",
-                description: cert.description || "",
-                bullets: cert.details || []
-              }))
-            };
-
-          default:
-            return section;
+        // If there's no match, keep the original blank or existing data
+        if (!matchedServerSection) {
+          return section;
         }
+
+        // Depending on the ID, fill content or items
+        if (section.id === "summary") {
+          // "content" is a simple string
+          return {
+            ...section,
+            content: matchedServerSection.content || "",
+          };
+        }
+
+        if (section.id === "experience") {
+          // "items" is an array of objects
+          return {
+            ...section,
+            items: (matchedServerSection.items || []).map((exp: any) => ({
+              title: exp.title || "",
+              subtitle: exp.company || "",
+              date: exp.dates || "",
+              description: "",
+              bullets: exp.responsibilities || [],
+            })),
+          };
+        }
+
+        if (section.id === "education") {
+          return {
+            ...section,
+            items: (matchedServerSection.items || []).map((edu: any) => ({
+              title: edu.degree || "",
+              subtitle: edu.institution || "",
+              date: edu.dates || "",
+              description: "",
+              bullets: edu.courses || [],
+            })),
+          };
+        }
+
+        if (section.id === "skills") {
+          return {
+            ...section,
+            content: matchedServerSection.content || "",
+          };
+        }
+
+        if (section.id === "projects") {
+          return {
+            ...section,
+            items: (matchedServerSection.items || []).map((proj: any) => ({
+              title: proj.name || "",
+              subtitle: proj.technologies || "",
+              date: "", // or proj.date if your server provides a date
+              description: proj.focus || "",
+              bullets: [],
+            })),
+          };
+        }
+
+        if (section.id === "certifications") {
+          return {
+            ...section,
+            items: (matchedServerSection.items || []).map((cert: any) => ({
+              title: cert.name || "",
+              subtitle: "",
+              date: "",
+              description: "",
+              bullets: [],
+            })),
+          };
+        }
+
+        // Fallback if no known id
+        return section;
       });
 
       setSections(updatedSections);
 
-      // Set initial AI feedback
-      setAiMessage("I've analyzed your resume and populated all sections. Select any section for specific improvements.");
+      // 4. Provide an AI message after populating
+      setAiMessage(
+        "I've analyzed your resume and populated all sections. Select any section to make edits or request AI improvements.",
+      );
 
       toast({
         title: "Resume Parsed Successfully",
-        description: "All sections have been populated. Review and edit as needed."
+        description:
+          "All sections have been populated. Review and edit as needed.",
       });
     } catch (error) {
-      console.error('Error parsing resume:', error);
+      console.error("Error parsing resume:", error);
       toast({
         title: "Parsing Failed",
-        description: "Unable to process your resume. Please try again or enter details manually.",
-        variant: "destructive"
+        description:
+          "Unable to process your resume. Please try again or enter details manually.",
+        variant: "destructive",
       });
     } finally {
       setIsAnalyzing(false);
     }
   };
 
+  // Creates a blank resume
   const handleNewResume = () => {
     setPersonalInfo({
       name: "",
       email: "",
       phone: "",
       location: "",
-      linkedin: ""
+      linkedin: "",
     });
-    setSections(sections.map(section => ({
-      ...section,
-      content: "",
-      items: section.items ? [] : undefined
-    })));
-    setAiMessage("Start by uploading a resume or entering your information manually.");
+    setSections((prevSections) =>
+      prevSections.map((section) => ({
+        ...section,
+        content: "",
+        items: section.items ? [] : undefined,
+      })),
+    );
+    setAiMessage(
+      "Start by uploading a resume or entering your information manually.",
+    );
   };
 
+  // Helpers to modify sections on the fly
   const addSectionItem = (sectionId: string) => {
-    setSections(prev => prev.map(section => {
-      if (section.id === sectionId && section.items) {
-        return {
-          ...section,
-          items: [
-            ...section.items,
-            { title: "", subtitle: "", date: "", description: "", bullets: [] }
-          ]
-        };
-      }
-      return section;
-    }));
+    setSections((prev) =>
+      prev.map((section) => {
+        if (section.id === sectionId && section.items) {
+          return {
+            ...section,
+            items: [
+              ...section.items,
+              {
+                title: "",
+                subtitle: "",
+                date: "",
+                description: "",
+                bullets: [],
+              },
+            ],
+          };
+        }
+        return section;
+      }),
+    );
   };
 
   const removeSectionItem = (sectionId: string, itemIndex: number) => {
-    setSections(prev => prev.map(section => {
-      if (section.id === sectionId && section.items) {
-        return {
-          ...section,
-          items: section.items.filter((_, idx) => idx !== itemIndex)
-        };
-      }
-      return section;
-    }));
+    setSections((prev) =>
+      prev.map((section) => {
+        if (section.id === sectionId && section.items) {
+          return {
+            ...section,
+            items: section.items.filter((_, idx) => idx !== itemIndex),
+          };
+        }
+        return section;
+      }),
+    );
   };
 
   const addBulletPoint = (sectionId: string, itemIndex: number) => {
-    setSections(prev => prev.map(section => {
-      if (section.id === sectionId && section.items) {
-        const newItems = [...section.items];
-        newItems[itemIndex] = {
-          ...newItems[itemIndex],
-          bullets: [...newItems[itemIndex].bullets, ""]
-        };
-        return { ...section, items: newItems };
-      }
-      return section;
-    }));
+    setSections((prev) =>
+      prev.map((section) => {
+        if (section.id === sectionId && section.items) {
+          const newItems = [...section.items];
+          newItems[itemIndex] = {
+            ...newItems[itemIndex],
+            bullets: [...newItems[itemIndex].bullets, ""],
+          };
+          return { ...section, items: newItems };
+        }
+        return section;
+      }),
+    );
   };
 
+  // Add new function to get AI suggestions when section is selected
+  const getAiSuggestions = useCallback(async (sectionId: string, userQuery?: string) => {
+    setIsAiLoading(true);
+    try {
+      let sectionContent = "";
+      const section = sections.find(s => s.id === sectionId);
+
+      if (section) {
+        if (section.content) {
+          sectionContent = section.content;
+        } else if (section.items) {
+          sectionContent = section.items.map(item => 
+            `${item.title}\n${item.subtitle}\n${item.date}\n${item.description}\n${item.bullets.join("\n")}`
+          ).join("\n\n");
+        }
+      }
+
+      const response = await fetch("/api/resume-ai-assistant", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sectionId,
+          sectionContent,
+          userQuery
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to get AI suggestions");
+
+      const data = await response.json();
+      setAiMessage(data.suggestions);
+
+    } catch (error) {
+      console.error("AI suggestion error:", error);
+      toast({
+        title: "AI Assistant Error",
+        description: "Failed to get AI suggestions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
+  }, [sections, toast]);
+
+  // Update section selection to trigger AI suggestions
+  const handleSectionSelect = (sectionId: string) => {
+    setActiveSection(sectionId);
+    getAiSuggestions(sectionId);
+  };
+
+  // Handle AI chat input
+  const handleAiChat = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aiInput.trim() || !activeSection) return;
+
+    const userMessage = aiInput;
+    setAiInput("");
+    await getAiSuggestions(activeSection, userMessage);
+  };
+
+  // Update the sidebar buttons onClick
+  const renderSidebarButtons = () => (
+    sections.map((section) => (
+      <button
+        key={section.id}
+        onClick={() => handleSectionSelect(section.id)}
+        className={cn(
+          "w-full text-left px-4 py-2 rounded-md transition-colors",
+          activeSection === section.id
+            ? "bg-primary text-primary-foreground"
+            : "hover:bg-muted",
+        )}
+      >
+        {section.title}
+      </button>
+    ))
+  );
+
+  // Update AI Assistant card at the bottom
+  const renderAiAssistant = () => (
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <svg
+            className="w-5 h-5 text-blue-500"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          AI Assistant
+          {isAiLoading && (
+            <span className="text-sm text-muted-foreground ml-2">
+              (Thinking...)
+            </span>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <ScrollArea className="h-[200px] p-4">
+          <div className="space-y-4">
+            <div className="bg-muted rounded-lg p-4">
+              {aiMessage || "Select a section to get AI assistance and suggestions."}
+            </div>
+          </div>
+        </ScrollArea>
+        <form onSubmit={handleAiChat} className="p-4 border-t flex gap-2">
+          <Input
+            placeholder="Ask for suggestions or improvements..."
+            value={aiInput}
+            onChange={(e) => setAiInput(e.target.value)}
+          />
+          <Button type="submit" size="icon" disabled={isAiLoading || !activeSection}>
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+
+  // 2. The main return JSX
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-[1200px] mx-auto">
@@ -262,16 +429,18 @@ export default function ResumeBuilder() {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Resume Builder</h1>
           <div className="flex gap-3">
-            <Button onClick={() => {
-              const input = document.createElement('input');
-              input.type = 'file';
-              input.accept = '.pdf,.doc,.docx,.txt';
-              input.onchange = (e) => {
-                const file = (e.target as HTMLInputElement).files?.[0];
-                if (file) handleFileUpload(file);
-              };
-              input.click();
-            }}>
+            <Button
+              onClick={() => {
+                const input = document.createElement("input");
+                input.type = "file";
+                input.accept = ".pdf,.doc,.docx,.txt";
+                input.onchange = (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (file) handleFileUpload(file);
+                };
+                input.click();
+              }}
+            >
               <Upload className="w-4 h-4 mr-2" />
               Upload Resume
             </Button>
@@ -291,20 +460,7 @@ export default function ResumeBuilder() {
           {/* Left sidebar */}
           <Card className="h-fit">
             <CardContent className="p-4">
-              {sections.map((section) => (
-                <button
-                  key={section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  className={cn(
-                    "w-full text-left px-4 py-2 rounded-md transition-colors",
-                    activeSection === section.id
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
-                  )}
-                >
-                  {section.title}
-                </button>
-              ))}
+              {renderSidebarButtons()}
             </CardContent>
           </Card>
 
@@ -320,28 +476,53 @@ export default function ResumeBuilder() {
                   <Input
                     placeholder="Full Name"
                     value={personalInfo.name}
-                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) =>
+                      setPersonalInfo((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
                   />
                   <Input
                     placeholder="Email"
                     type="email"
                     value={personalInfo.email}
-                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) =>
+                      setPersonalInfo((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
                   />
                   <Input
                     placeholder="Phone"
                     value={personalInfo.phone}
-                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, phone: e.target.value }))}
+                    onChange={(e) =>
+                      setPersonalInfo((prev) => ({
+                        ...prev,
+                        phone: e.target.value,
+                      }))
+                    }
                   />
                   <Input
                     placeholder="Location"
                     value={personalInfo.location}
-                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, location: e.target.value }))}
+                    onChange={(e) =>
+                      setPersonalInfo((prev) => ({
+                        ...prev,
+                        location: e.target.value,
+                      }))
+                    }
                   />
                   <Input
                     placeholder="LinkedIn URL"
                     value={personalInfo.linkedin}
-                    onChange={(e) => setPersonalInfo(prev => ({ ...prev, linkedin: e.target.value }))}
+                    onChange={(e) =>
+                      setPersonalInfo((prev) => ({
+                        ...prev,
+                        linkedin: e.target.value,
+                      }))
+                    }
                   />
                 </div>
               </CardContent>
@@ -367,7 +548,10 @@ export default function ResumeBuilder() {
                   {section.items ? (
                     <div className="space-y-4">
                       {section.items.map((item, index) => (
-                        <div key={index} className="space-y-4 p-4 border rounded-lg relative">
+                        <div
+                          key={index}
+                          className="space-y-4 p-4 border rounded-lg relative"
+                        >
                           <Button
                             variant="ghost"
                             size="icon"
@@ -380,19 +564,19 @@ export default function ResumeBuilder() {
                             placeholder={`${section.title} Title`}
                             value={item.title}
                             onChange={(e) =>
-                              setSections(prev =>
-                                prev.map(s =>
+                              setSections((prev) =>
+                                prev.map((s) =>
                                   s.id === section.id && s.items
                                     ? {
                                         ...s,
                                         items: s.items.map((i, idx) =>
                                           idx === index
                                             ? { ...i, title: e.target.value }
-                                            : i
-                                        )
+                                            : i,
+                                        ),
                                       }
-                                    : s
-                                )
+                                    : s,
+                                ),
                               )
                             }
                           />
@@ -400,19 +584,19 @@ export default function ResumeBuilder() {
                             placeholder="Organization/Company"
                             value={item.subtitle}
                             onChange={(e) =>
-                              setSections(prev =>
-                                prev.map(s =>
+                              setSections((prev) =>
+                                prev.map((s) =>
                                   s.id === section.id && s.items
                                     ? {
                                         ...s,
                                         items: s.items.map((i, idx) =>
                                           idx === index
                                             ? { ...i, subtitle: e.target.value }
-                                            : i
-                                        )
+                                            : i,
+                                        ),
                                       }
-                                    : s
-                                )
+                                    : s,
+                                ),
                               )
                             }
                           />
@@ -420,19 +604,19 @@ export default function ResumeBuilder() {
                             placeholder="Date Range"
                             value={item.date}
                             onChange={(e) =>
-                              setSections(prev =>
-                                prev.map(s =>
+                              setSections((prev) =>
+                                prev.map((s) =>
                                   s.id === section.id && s.items
                                     ? {
                                         ...s,
                                         items: s.items.map((i, idx) =>
                                           idx === index
                                             ? { ...i, date: e.target.value }
-                                            : i
-                                        )
+                                            : i,
+                                        ),
                                       }
-                                    : s
-                                )
+                                    : s,
+                                ),
                               )
                             }
                           />
@@ -440,19 +624,22 @@ export default function ResumeBuilder() {
                             placeholder="Description"
                             value={item.description}
                             onChange={(e) =>
-                              setSections(prev =>
-                                prev.map(s =>
+                              setSections((prev) =>
+                                prev.map((s) =>
                                   s.id === section.id && s.items
                                     ? {
                                         ...s,
                                         items: s.items.map((i, idx) =>
                                           idx === index
-                                            ? { ...i, description: e.target.value }
-                                            : i
-                                        )
+                                            ? {
+                                                ...i,
+                                                description: e.target.value,
+                                              }
+                                            : i,
+                                        ),
                                       }
-                                    : s
-                                )
+                                    : s,
+                                ),
                               )
                             }
                           />
@@ -464,8 +651,8 @@ export default function ResumeBuilder() {
                                 value={bullet}
                                 placeholder="Bullet point"
                                 onChange={(e) =>
-                                  setSections(prev =>
-                                    prev.map(s =>
+                                  setSections((prev) =>
+                                    prev.map((s) =>
                                       s.id === section.id && s.items
                                         ? {
                                             ...s,
@@ -477,14 +664,14 @@ export default function ResumeBuilder() {
                                                       (b, bidx) =>
                                                         bidx === bulletIndex
                                                           ? e.target.value
-                                                          : b
-                                                    )
+                                                          : b,
+                                                    ),
                                                   }
-                                                : i
-                                            )
+                                                : i,
+                                            ),
                                           }
-                                        : s
-                                    )
+                                        : s,
+                                    ),
                                   )
                                 }
                               />
@@ -505,12 +692,12 @@ export default function ResumeBuilder() {
                     <Textarea
                       value={section.content}
                       onChange={(e) =>
-                        setSections(prev =>
-                          prev.map(s =>
+                        setSections((prev) =>
+                          prev.map((s) =>
                             s.id === section.id
                               ? { ...s, content: e.target.value }
-                              : s
-                          )
+                              : s,
+                          ),
                         )
                       }
                       placeholder={`Enter your ${section.title.toLowerCase()}...`}
@@ -524,45 +711,7 @@ export default function ResumeBuilder() {
         </div>
 
         {/* AI Assistant */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <svg
-                className="w-5 h-5 text-blue-500"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-              AI Assistant
-              {isAnalyzing && <span className="text-sm text-muted-foreground">(Analyzing...)</span>}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="h-[200px] p-4">
-              <div className="space-y-4">
-                <div className="bg-muted rounded-lg p-4">
-                  {aiMessage || "Select a section to get AI assistance and suggestions."}
-                </div>
-              </div>
-            </ScrollArea>
-            <div className="p-4 border-t flex gap-2">
-              <Input
-                placeholder="Ask for suggestions or improvements..."
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    // Handle AI interaction
-                  }
-                }}
-              />
-              <Button size="icon">
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {renderAiAssistant()}
       </div>
     </div>
   );

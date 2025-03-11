@@ -1,14 +1,16 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import resumeParserRouter from "./routes/resume-parser";  
+import resumeParserRouter from "./routes/resume-parser";
+import resumeAiAssistantRouter from "./routes/resume-ai-assistant";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Add the resume parser routes
+// Add the resume routes
 app.use(resumeParserRouter);
+app.use(resumeAiAssistantRouter);
 
 app.use((req, res, next) => {
   const start = Date.now();

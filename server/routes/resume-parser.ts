@@ -1,3 +1,5 @@
+// filename: routes/resume-parser.ts
+
 import { Router } from "express";
 import multer from "multer";
 import { fileTypeFromBuffer } from "file-type";
@@ -7,242 +9,221 @@ import OpenAI from "openai";
 
 const router = Router();
 
-// Configure multer for memory storage
+/** 1. Multer in-memory storage + 10MB file size limit */
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
   storage,
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain'
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "text/plain",
     ];
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error(`Invalid file type: ${file.mimetype}. Only PDF, DOC, DOCX, and TXT files are allowed.`));
+      cb(
+        new Error(
+          `Invalid file type: ${file.mimetype}. Only PDF, DOC, DOCX, and TXT allowed.`
+        )
+      );
     }
-  }
+  },
 });
 
+/** 2. Initialize OpenAI client */
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY, // Ensure this is valid in your environment
 });
 
+/** 3. The main resume parsing route */
 router.post("/api/ai-resume-parser", upload.single("file"), async (req, res) => {
   try {
-    console.log("[DEBUG] Starting resume parsing process...");
+    console.log("Resume parsing route called.");
 
+    // Ensure user uploaded a file
     if (!req.file) {
-      console.error("[DEBUG] No file uploaded");
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    console.log("[DEBUG] File info:", {
-      filename: req.file.originalname,
+    console.log("File received:", {
+      originalname: req.file.originalname,
       mimetype: req.file.mimetype,
-      size: req.file.size
+      size: req.file.size,
     });
 
-    // Extract text content based on file type
+    /** 4. Extract text content from the uploaded file */
     let fileContent = "";
     try {
-      const buffer = req.file.buffer;
-      const fileType = await fileTypeFromBuffer(buffer);
+      const { buffer } = req.file;
+      const detectedType = await fileTypeFromBuffer(buffer);
+      const mime = detectedType?.mime || req.file.mimetype;
 
-      console.log("[DEBUG] Detected file type:", fileType?.mime);
-
-      if (fileType?.mime === 'application/pdf') {
-        console.log("[DEBUG] Processing PDF file...");
-        const options = {
-          pagerender: function(pageData: any) {
-            return pageData.getTextContent().then(function(textContent: any) {
-              let text = "";
-              for (let item of textContent.items) {
-                text += item.str + " ";
-              }
-              return text;
-            });
-          }
-        };
-        const pdfData = await pdfParse(buffer, options);
-        fileContent = pdfData.text;
+      if (mime === "application/pdf") {
+        console.log("Extracting text from PDF...");
+        const pdfData = await pdfParse(buffer);
+        fileContent = pdfData.text || "";
       } else if (
-        fileType?.mime === 'application/msword' ||
-        fileType?.mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        mime === "application/msword" ||
+        mime === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
       ) {
-        console.log("[DEBUG] Processing Word document...");
-        const result = await mammoth.extractRawText({ buffer });
-        fileContent = result.value;
+        console.log("Extracting text from Word document...");
+        const mammothResult = await mammoth.extractRawText({ buffer });
+        fileContent = mammothResult.value || "";
       } else {
-        console.log("[DEBUG] Processing as text file...");
-        fileContent = buffer.toString('utf8');
+        console.log("Extracting text from plain text...");
+        fileContent = buffer.toString("utf8");
       }
 
-      if (!fileContent || fileContent.trim().length === 0) {
-        throw new Error("No text content could be extracted from the file");
+      if (!fileContent.trim()) {
+        throw new Error("No text content could be extracted from the file.");
       }
 
-      // Clean up the extracted text
-      fileContent = fileContent
-        .replace(/[\r\n]+/g, '\n')          // Normalize line endings
-        .replace(/\s+/g, ' ')               // Normalize spaces
-        .replace(/[^\x20-\x7E\n]/g, '')     // Remove non-printable characters
-        .trim();
+      console.log("Extracted text length:", fileContent.length);
+      // Debugging: log first 500 characters of extracted text
+      const preview = fileContent.slice(0, 500);
+      console.log("Extracted text sample:\n", preview);
 
-      console.log("[DEBUG] Extracted content length:", fileContent.length);
-      console.log("[DEBUG] First 200 chars of content:", fileContent.substring(0, 200));
-
-    } catch (extractError) {
-      console.error("[DEBUG] Error extracting file content:", extractError);
-      throw new Error("Failed to extract content from file: " + extractError.message);
+    } catch (err: any) {
+      console.error("Extraction error:", err);
+      return res.status(400).json({
+        error: "Could not extract file content",
+        details: err.message,
+      });
     }
 
-    // Truncate content if too long (about 6000 tokens)
-    if (fileContent.length > 12000) {
-      fileContent = fileContent.substring(0, 12000);
-      console.log("[DEBUG] Content truncated to 12000 characters");
+    /** 5. Truncate the text to ~8k characters to keep prompt smaller */
+    const MAX_LENGTH = 8000;
+    if (fileContent.length > MAX_LENGTH) {
+      fileContent = fileContent.slice(0, MAX_LENGTH);
+      console.log(`Content truncated to ${MAX_LENGTH} characters.`);
     }
 
-    console.log("[DEBUG] Calling OpenAI API...");
+    /** 6. Call OpenAI with minimal instructions to keep it fast */
+    console.log("Calling OpenAI to parse resume...");
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: "Extract the exact content from the resume and format it according to the form fields structure. Keep the original text intact."
-        },
-        {
-          role: "user",
-          content: `Parse this resume and extract the content into this exact format:
-
+    let completion;
+    try {
+      completion = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo", // typically faster + more accessible than gpt-4
+        messages: [
+          {
+            role: "system",
+            content: `You are a concise resume parsing assistant. 
+Return ONLY valid JSON, no extra text. If missing data, leave fields empty.`,
+          },
+          {
+            role: "user",
+            content: `Please extract these fields from the resume text and format as JSON with these exact keys:
 {
-  "name": "",         // Person's full name
-  "email": "",       // Email address
-  "phone": "",       // Phone number
-  "location": "",    // Location/address
-  "linkedin": "",    // LinkedIn URL if present
-  "sections": [
-    {
-      "id": "summary",
-      "title": "Professional Summary",
-      "content": ""  // Professional summary paragraph
-    },
-    {
-      "id": "experience",
-      "title": "Work Experience",
-      "items": [
-        {
-          "title": "",      // Job title
-          "subtitle": "",   // Company name
-          "date": "",      // Employment dates
-          "description": "", // Role description
-          "bullets": []    // Achievement bullet points
-        }
-      ]
-    },
-    {
-      "id": "education",
-      "title": "Education",
-      "items": [
-        {
-          "title": "",      // Degree name
-          "subtitle": "",   // School name
-          "date": "",      // Education dates
-          "description": "", // Program description
-          "bullets": []    // Achievements/coursework
-        }
-      ]
-    },
-    {
-      "id": "skills",
-      "title": "Skills",
-      "content": ""  // Skills list
-    },
-    {
-      "id": "projects",
-      "title": "Projects",
-      "items": [
-        {
-          "title": "",      // Project name
-          "subtitle": "",   // Technologies used
-          "date": "",      // Project timeframe
-          "description": "", // Project description
-          "bullets": []    // Project highlights
-        }
-      ]
-    },
-    {
-      "id": "certifications",
-      "title": "Certifications",
-      "items": [
-        {
-          "title": "",      // Certification name
-          "subtitle": "",   // Issuing organization
-          "date": "",      // Date obtained
-          "description": "", // Certification details
-          "bullets": []    // Additional information
-        }
-      ]
-    }
-  ]
+  "fullName": "",
+  "email": "",
+  "phone": "",
+  "location": "",
+  "linkedinUrl": "",
+  "professionalSummary": "",
+  "workExperience": [],
+  "education": [],
+  "skills": "",
+  "projects": [],
+  "certifications": []
 }
 
-Here's the resume text to parse:
-${fileContent}`
-        }
-      ],
-      temperature: 0.1,
-      max_tokens: 3000,
-      response_format: { type: "json_object" }
-    });
+Resume text:\n${fileContent}`,
+          },
+        ],
+        temperature: 0.0,
+        max_tokens: 2000, // Adjust if needed
+      });
+    } catch (apiErr: any) {
+      console.error("OpenAI API error:", apiErr);
+      return res.status(500).json({
+        error: "OpenAI call failed",
+        details: apiErr.message,
+      });
+    }
 
-    console.log("[DEBUG] OpenAI response received");
+    // 7. Extract the raw text from OpenAI
+    const rawContent = completion?.choices?.[0]?.message?.content;
+    if (!rawContent) {
+      return res.status(400).json({
+        error: "Empty response from OpenAI",
+      });
+    }
 
-    let parsedData;
+    console.log("OpenAI response received, attempting JSON parse...");
+
+    // 8. Clean up possible code fences, then parse
+    const cleaned = rawContent.replace(/```/g, "").trim();
+
+    let parsedData: any;
     try {
-      console.log("[DEBUG] Raw OpenAI response:", completion.choices[0].message.content);
-      parsedData = JSON.parse(completion.choices[0].message.content);
-      console.log("[DEBUG] Successfully parsed JSON response");
-    } catch (parseError) {
-      console.error("[DEBUG] Error parsing OpenAI response:", parseError);
-      throw new Error("Failed to parse OpenAI response into JSON");
+      parsedData = JSON.parse(cleaned);
+    } catch (parseErr: any) {
+      console.error("JSON parse error:", parseErr.message);
+      return res.status(400).json({
+        error: "Failed to parse JSON from OpenAI",
+        details: parseErr.message,
+        rawOpenAiText: cleaned.slice(0, 1000), // Provide partial for debugging
+      });
     }
 
-    // Validate the data structure
-    if (!parsedData.name || !parsedData.sections || !Array.isArray(parsedData.sections)) {
-      console.error("[DEBUG] Invalid data structure:", parsedData);
-      throw new Error("Invalid data structure in parsed response");
-    }
+    /** 9. Build the final output structure */
+    const formData = {
+      name: parsedData.fullName || "",
+      email: parsedData.email || "",
+      phone: parsedData.phone || "",
+      location: parsedData.location || "",
+      linkedin: parsedData.linkedinUrl || "",
+      sections: [
+        {
+          id: "summary",
+          title: "Professional Summary",
+          content: parsedData.professionalSummary || "",
+        },
+        {
+          id: "experience",
+          title: "Work Experience",
+          items: parsedData.workExperience || [],
+        },
+        {
+          id: "education",
+          title: "Education",
+          items: parsedData.education || [],
+        },
+        {
+          id: "skills",
+          title: "Skills",
+          content: parsedData.skills || "",
+        },
+        {
+          id: "projects",
+          title: "Projects",
+          items: parsedData.projects || [],
+        },
+        {
+          id: "certifications",
+          title: "Certifications",
+          items: parsedData.certifications || [],
+        },
+      ],
+    };
 
-    // Log the fields that will be populated
-    console.log("[DEBUG] Data to populate form fields:", {
-      personalInfo: {
-        name: parsedData.name,
-        email: parsedData.email,
-        phone: parsedData.phone,
-        location: parsedData.location,
-        linkedin: parsedData.linkedin
-      },
-      sections: parsedData.sections.map(s => ({
-        id: s.id,
-        title: s.title,
-        hasContent: !!s.content,
-        itemsCount: s.items?.length || 0
-      }))
-    });
+    // Debugging: Log the final JSON
+    console.log("Final JSON about to send:\n", JSON.stringify(formData, null, 2));
 
-    res.json(parsedData);
+    // 10. Return success
+    console.log("Resume parsed successfully. Sending JSON...");
+    return res.json(formData);
 
-  } catch (error) {
-    console.error("[DEBUG] Resume parsing error:", error);
-    res.status(500).json({
-      error: "Failed to parse resume",
-      details: error instanceof Error ? error.message : "Unknown error",
-      message: "Please try again or enter details manually."
+  } catch (err: any) {
+    // Final catch-all for unexpected errors
+    console.error("Unexpected error in resume parsing route:", err);
+    return res.status(500).json({
+      error: "An unexpected error occurred during resume parsing.",
+      details: err.message || String(err),
     });
   }
 });
