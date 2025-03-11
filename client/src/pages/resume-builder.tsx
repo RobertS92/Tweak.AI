@@ -360,7 +360,11 @@ export default function ResumeBuilder() {
     formData.append('file', file);
 
     try {
-      // Call the AI-powered endpoint
+      toast({
+        title: "Processing Resume",
+        description: "Your resume is being analyzed by AI...",
+      });
+
       const response = await fetch('/api/ai-resume-parser', {
         method: 'POST',
         body: formData
@@ -371,8 +375,9 @@ export default function ResumeBuilder() {
       }
 
       const parsedData = await response.json();
+      console.log('Parsed resume data:', parsedData);
 
-      // Update personal info from AI-extracted data
+      // Update personal info
       setPersonalInfo({
         name: parsedData.personalInfo?.name || "",
         email: parsedData.personalInfo?.email || "",
@@ -381,23 +386,86 @@ export default function ResumeBuilder() {
         linkedin: parsedData.personalInfo?.linkedin || ""
       });
 
-      // Update sections with AI-extracted data
-      if (Array.isArray(parsedData.sections)) {
-        const newSections = sections.map(section => {
-          const parsedSection = parsedData.sections.find((s: any) => s.id === section.id);
-          if (parsedSection) {
+      // Map the parsed sections to our section format
+      const mappedSections = sections.map(section => {
+        switch (section.id) {
+          case "summary":
             return {
               ...section,
-              content: parsedSection.content || "",
-              items: parsedSection.items || []
+              content: parsedData.summary || parsedData.professionalSummary || ""
             };
-          }
-          return section;
-        });
-        setSections(newSections);
-      }
 
-      // Create highlights for the preview
+          case "experience":
+            return {
+              ...section,
+              items: (parsedData.experience || []).map((exp: any) => ({
+                title: exp.title || exp.position || "",
+                subtitle: exp.company || exp.organization || "",
+                date: `${exp.startDate || ""} - ${exp.endDate || "Present"}`,
+                description: exp.description || "",
+                bullets: exp.responsibilities || exp.achievements || []
+              }))
+            };
+
+          case "education":
+            return {
+              ...section,
+              items: (parsedData.education || []).map((edu: any) => ({
+                title: edu.degree || edu.qualification || "",
+                subtitle: edu.school || edu.institution || "",
+                date: `${edu.startDate || ""} - ${edu.endDate || ""}`,
+                description: edu.description || "",
+                bullets: edu.courses || edu.achievements || []
+              }))
+            };
+
+          case "skills":
+            return {
+              ...section,
+              content: Array.isArray(parsedData.skills) 
+                ? parsedData.skills.join(", ")
+                : parsedData.skills || "",
+              items: Array.isArray(parsedData.skillGroups) 
+                ? parsedData.skillGroups.map((group: any) => ({
+                    title: group.category || "",
+                    subtitle: "",
+                    description: Array.isArray(group.skills) ? group.skills.join(", ") : group.skills || ""
+                  }))
+                : []
+            };
+
+          case "projects":
+            return {
+              ...section,
+              items: (parsedData.projects || []).map((proj: any) => ({
+                title: proj.name || proj.title || "",
+                subtitle: proj.technologies || "",
+                date: proj.date || proj.duration || "",
+                description: proj.description || "",
+                bullets: proj.highlights || proj.achievements || []
+              }))
+            };
+
+          case "certifications":
+            return {
+              ...section,
+              items: (parsedData.certifications || []).map((cert: any) => ({
+                title: cert.name || cert.title || "",
+                subtitle: cert.issuer || cert.organization || "",
+                date: cert.date || cert.issueDate || "",
+                description: cert.description || "",
+                bullets: cert.details || []
+              }))
+            };
+
+          default:
+            return section;
+        }
+      });
+
+      setSections(mappedSections);
+
+      // Create highlights for preview
       const highlights: HighlightSection[] = [];
 
       // Add personal info highlights
@@ -415,30 +483,35 @@ export default function ResumeBuilder() {
       }
 
       // Add section highlights
-      if (Array.isArray(parsedData.sections)) {
-        parsedData.sections.forEach((section: any) => {
-          if (section.items) {
-            section.items.forEach((item: any) => {
-              Object.entries(item).forEach(([field, value]) => {
-                if (typeof value === 'string' && value.trim() && resumeContent.includes(value)) {
-                  highlights.push({
-                    text: value,
-                    field: `${section.id}_${field}`,
-                    fieldType: section.id as any,
-                    confidence: 0.8
-                  });
-                }
+      mappedSections.forEach(section => {
+        if (section.content && resumeContent.includes(section.content)) {
+          highlights.push({
+            text: section.content,
+            field: `${section.id}_content`,
+            fieldType: section.id as any,
+            confidence: 0.8
+          });
+        }
+
+        section.items?.forEach(item => {
+          Object.entries(item).forEach(([field, value]) => {
+            if (typeof value === 'string' && value.trim() && resumeContent.includes(value)) {
+              highlights.push({
+                text: value,
+                field: `${section.id}_${field}`,
+                fieldType: section.id as any,
+                confidence: 0.8
               });
-            });
-          }
+            }
+          });
         });
-      }
+      });
 
       setResumeHighlights(highlights);
 
       toast({
         title: "Resume Parsed Successfully",
-        description: "Your resume has been analyzed by AI and all sections have been populated."
+        description: "Your resume has been analyzed and all sections have been populated."
       });
     } catch (error) {
       console.error('Error parsing resume:', error);
