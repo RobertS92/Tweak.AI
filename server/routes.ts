@@ -434,7 +434,7 @@ Return an optimized version that matches keywords and improves ATS score while m
       try {
         const page = await browser.newPage();
 
-        // Set content with resume styling
+        // Set content with consistent styling
         await page.setContent(`
           <!DOCTYPE html>
           <html lang="en">
@@ -522,19 +522,18 @@ Return an optimized version that matches keywords and improves ATS score while m
           </html>
         `, { waitUntil: 'networkidle0' });
 
-        // Generate PDF
+        // Generate PDF with consistent dimensions
         const pdf = await page.pdf({
           format: 'Letter',
           printBackground: true,
-          preferCSSPageSize: true,
+          preferCSSPageSize: true
         });
 
-        // Set response headers
+        // Set proper headers for PDF download
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`);
-
-        // Send the PDF
         res.send(pdf);
+
       } finally {
         await browser.close();
       }

@@ -24,8 +24,6 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
 
   const cleanResumeContent = (htmlContent: string) => {
     if (!htmlContent) return '';
-
-    // Only clean harmful elements while preserving the resume structure
     return htmlContent
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
       .replace(/<button\b[^<]*(?:(?!<\/button>)<[^<]*)*<\/button>/gi, '')
@@ -65,10 +63,11 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
       const link = document.createElement('a');
       link.href = url;
       link.download = `enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`;
+
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
 
       toast({
         title: "Success",
@@ -117,19 +116,23 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
       </CardContent>
 
       <Dialog open={showContent} onOpenChange={setShowContent}>
-        <DialogContent className="w-full max-w-4xl h-[90vh]">
-          <DialogHeader>
+        <DialogContent className="w-full max-w-4xl min-h-[90vh] p-0">
+          <DialogHeader className="px-6 py-4 border-b">
             <DialogTitle>Enhanced Resume</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto bg-white p-8">
+
+          <div className="flex-1 overflow-y-auto p-6">
             {analysis?.enhancedContent ? (
-              <div className="resume-preview max-w-[850px] mx-auto">
+              <div className="resume-preview">
                 <style>
                   {`
                     .resume-preview {
+                      max-width: 850px;
+                      margin: 0 auto;
                       font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                       line-height: 1.6;
                       color: #333;
+                      background: white;
                     }
                     .resume-preview h1 {
                       font-size: 28px;
@@ -175,11 +178,7 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
                     }
                   `}
                 </style>
-                <div 
-                  dangerouslySetInnerHTML={{ 
-                    __html: cleanResumeContent(analysis.enhancedContent) 
-                  }} 
-                />
+                <div dangerouslySetInnerHTML={{ __html: cleanResumeContent(analysis.enhancedContent) }} />
               </div>
             ) : (
               <div className="text-center text-muted-foreground py-8">
