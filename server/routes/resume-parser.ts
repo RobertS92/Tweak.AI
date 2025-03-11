@@ -101,28 +101,85 @@ router.post("/api/ai-resume-parser", upload.single("file"), async (req, res) => 
       messages: [
         {
           role: "system",
-          content: "Extract the resume sections exactly as they appear in the document. Keep the original text intact and format it according to the section types."
+          content: "You are a resume parser. Extract only the text content from each section of the resume. Preserve the exact text as it appears in the document, don't modify or enhance it. Return the content as a JSON object with a simple structure that matches the form fields."
         },
         {
           role: "user",
-          content: `Extract these sections from the resume, preserving the exact text content:
-1. Full Name
-2. Email
-3. Phone
-4. Location
-5. LinkedIn URL
-6. Professional Summary (entire paragraph)
-7. Work Experience (all entries with full details)
-8. Education (all entries with full details)
-9. Skills (as a comma-separated list)
-10. Projects (all entries with full details)
-11. Certifications (all entries with full details)
+          content: `Parse this resume and fill in these exact form fields with the content from the resume:
+{
+  "name": "",           // Full name from the resume
+  "email": "",         // Email address
+  "phone": "",         // Phone number
+  "location": "",      // Location/address
+  "linkedin": "",      // LinkedIn URL if present
+  "sections": [
+    {
+      "id": "summary",
+      "title": "Professional Summary",
+      "content": ""    // The exact summary text
+    },
+    {
+      "id": "experience",
+      "title": "Work Experience",
+      "items": [
+        {
+          "title": "",       // Job title
+          "subtitle": "",    // Company name
+          "date": "",        // Employment dates
+          "description": "", // Job description
+          "bullets": []      // List of achievements/responsibilities
+        }
+      ]
+    },
+    {
+      "id": "education",
+      "title": "Education",
+      "items": [
+        {
+          "title": "",       // Degree
+          "subtitle": "",    // School name
+          "date": "",        // Education dates
+          "description": "", // Program description
+          "bullets": []      // List of achievements
+        }
+      ]
+    },
+    {
+      "id": "skills",
+      "title": "Skills",
+      "content": ""    // Skills list as text
+    },
+    {
+      "id": "projects",
+      "title": "Projects",
+      "items": [
+        {
+          "title": "",       // Project name
+          "subtitle": "",    // Technologies used
+          "date": "",        // Project duration
+          "description": "", // Project description
+          "bullets": []      // List of highlights
+        }
+      ]
+    },
+    {
+      "id": "certifications",
+      "title": "Certifications",
+      "items": [
+        {
+          "title": "",       // Certification name
+          "subtitle": "",    // Issuing organization
+          "date": "",        // Date earned
+          "description": "", // Description
+          "bullets": []      // Additional details
+        }
+      ]
+    }
+  ]
+}
 
-Format as JSON matching these exact field names.`
-        },
-        {
-          role: "user",
-          content: fileContent
+Resume content to parse:
+${fileContent}`
         }
       ],
       temperature: 0.1,
@@ -134,53 +191,10 @@ Format as JSON matching these exact field names.`
       throw new Error("No content in OpenAI response");
     }
 
-    console.log("OpenAI response received");
+    console.log("OpenAI response received, parsing JSON...");
 
     const parsedData = JSON.parse(completion.choices[0].message.content);
-
-    // Map directly to the form fields
-    const formData = {
-      name: parsedData.fullName || "",
-      email: parsedData.email || "",
-      phone: parsedData.phone || "",
-      location: parsedData.location || "",
-      linkedin: parsedData.linkedinUrl || "",
-      sections: [
-        {
-          id: "summary",
-          title: "Professional Summary",
-          content: parsedData.professionalSummary || "",
-        },
-        {
-          id: "experience",
-          title: "Work Experience",
-          items: parsedData.workExperience || []
-        },
-        {
-          id: "education",
-          title: "Education",
-          items: parsedData.education || []
-        },
-        {
-          id: "skills",
-          title: "Skills",
-          content: parsedData.skills || "",
-        },
-        {
-          id: "projects",
-          title: "Projects",
-          items: parsedData.projects || []
-        },
-        {
-          id: "certifications",
-          title: "Certifications",
-          items: parsedData.certifications || []
-        }
-      ]
-    };
-
-    console.log("Successfully mapped data to form fields");
-    res.json(formData);
+    res.json(parsedData);
 
   } catch (error) {
     console.error("Resume parsing error:", error);
