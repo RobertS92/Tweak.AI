@@ -441,7 +441,7 @@ Return an optimized version that matches keywords and improves ATS score while m
           deviceScaleFactor: 1,
         });
 
-        // Set content with proper HTML structure
+        // Set content with professional resume styling
         await page.setContent(`
           <!DOCTYPE html>
           <html lang="en">
@@ -462,14 +462,14 @@ Return an optimized version that matches keywords and improves ATS score while m
                 background-color: white;
                 color: #333;
                 line-height: 1.6;
-                padding: 40px;
+                padding: 0.5in;
+                max-width: 8.5in;
+                margin: 0 auto;
               }
 
               /* Resume styles */
               .resume {
-                max-width: 850px;
-                margin: 0 auto;
-                padding: 20px;
+                max-width: 100%;
               }
 
               /* Header section */
@@ -542,24 +542,14 @@ Return an optimized version that matches keywords and improves ATS score while m
                 font-size: 15px;
               }
 
-              .skills-list li {
-                margin-bottom: 8px;
+              /* Print specific styles */
+              @page {
+                size: letter;
+                margin: 0.5in;
               }
 
-              /* Print specific styles */
               @media print {
-                @page {
-                  size: letter;
-                  margin: 0.5in;
-                }
-
                 body {
-                  background-color: white;
-                  padding: 0;
-                }
-
-                .resume {
-                  max-width: 100%;
                   padding: 0;
                 }
               }
@@ -587,12 +577,11 @@ Return an optimized version that matches keywords and improves ATS score while m
           },
           printBackground: true,
           preferCSSPageSize: true,
-          displayHeaderFooter: false,
         });
 
         await browser.close();
 
-        // Validate PDF size and content
+        // Validate PDF size
         if (pdf.length < 1000) { // Less than 1KB
           throw new Error('Generated PDF is too small, likely invalid');
         }

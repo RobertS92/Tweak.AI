@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { FileText, Info, Download, Printer } from "lucide-react";
+import { FileText, Info, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -54,181 +54,6 @@ export default function ResumePreview({
   const [showContent, setShowContent] = React.useState(false);
   const [isDownloading, setIsDownloading] = React.useState(false);
   const { toast } = useToast();
-
-const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast({
-        title: "Error",
-        description: "Could not open print window. Please check your popup settings.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const content = analysis?.enhancedContent || '';
-
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Professional Resume</title>
-        <style>
-          /* Reset and base styles */
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-          }
-
-          body {
-            background-color: #f5f5f5;
-            color: #333;
-            line-height: 1.6;
-            padding: 20px;
-          }
-
-          /* Container for resume */
-          .container {
-            max-width: 850px;
-            margin: 0 auto;
-            background: white;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-            border-radius: 4px;
-          }
-
-          /* Resume styles */
-          .resume {
-            padding: 10px;
-          }
-
-          /* Header section */
-          .header {
-            border-bottom: 2px solid #3E7CB1;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-            text-align: center;
-          }
-
-          .header h1 {
-            font-size: 32px;
-            margin-bottom: 8px;
-            color: #2C3E50;
-            font-weight: 600;
-          }
-
-          .contact-info {
-            font-size: 16px;
-            margin-bottom: 5px;
-            color: #555;
-          }
-
-          .links {
-            font-size: 16px;
-            color: #3E7CB1;
-          }
-
-          .links a {
-            color: #3E7CB1;
-            text-decoration: none;
-          }
-
-          /* Section styling */
-          .section {
-            margin-bottom: 22px;
-          }
-
-          .section h2 {
-            font-size: 20px;
-            color: #2C3E50;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #ddd;
-            font-weight: 600;
-          }
-
-          /* Job styling */
-          .job, .education-item {
-            margin-bottom: 18px;
-          }
-
-          .job h3, .education-item h3 {
-            font-size: 18px;
-            color: #2C3E50;
-            margin-bottom: 4px;
-            font-weight: 600;
-          }
-
-          .job-title {
-            font-size: 16px;
-            color: #333;
-            font-style: italic;
-            margin-bottom: 8px;
-          }
-
-          /* List styling */
-          ul {
-            padding-left: 20px;
-            margin-bottom: 10px;
-          }
-
-          ul li {
-            margin-bottom: 6px;
-            font-size: 15px;
-          }
-
-          .skills-list li {
-            margin-bottom: 8px;
-          }
-
-          .skills-list li strong {
-            color: #2C3E50;
-          }
-
-          /* Print specific styles */
-          @media print {
-            @page {
-              margin: 0.5in;
-              size: letter;
-            }
-
-            body {
-              background-color: white;
-              padding: 0;
-            }
-
-            .container {
-              max-width: 100%;
-              box-shadow: none;
-              padding: 0;
-            }
-
-            .resume {
-              padding: 0;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          ${content}
-        </div>
-      </body>
-      </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 250);
-  };
 
   // Add better error handling for file operations
   const downloadEnhancedResume = async () => {
@@ -390,14 +215,13 @@ const handlePrint = () => {
                         </span>
                       </div>
                     </div>
-                  ),
+                  )
                 )}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Enhanced Version Section */}
       <Card className="bg-white shadow-lg">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-gray-800">
@@ -444,17 +268,26 @@ const handlePrint = () => {
             </div>
           </div>
 
-          <Button
-            onClick={() => setShowContent(true)}
-            className="w-full py-3 flex items-center justify-center gap-2"
-          >
-            <FileText className="w-5 h-5" />
-            View Enhanced Resume
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setShowContent(true)}
+              className="flex-1 py-3 flex items-center justify-center gap-2"
+            >
+              <FileText className="w-5 h-5" />
+              View Enhanced Resume
+            </Button>
+            <Button
+              onClick={downloadEnhancedResume}
+              disabled={isDownloading || !analysis?.enhancedContent}
+              className="py-3 flex items-center justify-center gap-2"
+            >
+              <Download className="w-5 h-5" />
+              {isDownloading ? "Downloading..." : "Download PDF"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Enhanced Resume Dialog */}
       <Dialog open={showContent} onOpenChange={setShowContent}>
         <DialogContent className="max-w-4xl max-h-[90vh] p-6">
           <DialogHeader className="pb-4">
@@ -503,12 +336,7 @@ const handlePrint = () => {
                             [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-1 [&_h3]:text-gray-800
                             [&_p]:mb-2 [&_p]:text-gray-700
                             [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-4
-                            [&_li]:mb-2 [&_li]:text-gray-700
-                            [&_.resume]:max-w-4xl [&_.resume]:mx-auto [&_.resume]:space-y-6
-                            [&_.header]:text-center [&_.header]:mb-6
-                            [&_.section]:mb-8
-                            [&_.job]:mb-6
-                            [&_.job-title]:text-gray-600 [&_.job-title]:mb-2"
+                            [&_li]:mb-2 [&_li]:text-gray-700"
                         />
                       ) : (
                         <div className="text-center text-muted-foreground py-8">
@@ -522,14 +350,6 @@ const handlePrint = () => {
             </Tabs>
           </div>
           <div className="absolute bottom-4 right-4 flex gap-2">
-            <Button
-              onClick={handlePrint}
-              disabled={!analysis?.enhancedContent}
-              size="sm"
-            >
-              <Printer className="w-4 h-4 mr-2" />
-              Print
-            </Button>
             <Button
               onClick={downloadEnhancedResume}
               disabled={isDownloading || !analysis?.enhancedContent}
