@@ -23,17 +23,8 @@ interface ResumePreviewProps {
   atsScore?: number | null;
   categoryScores?: {
     atsCompliance?: { score: number; feedback: string[]; description: string };
-    keywordDensity?: {
-      score: number;
-      feedback: string[];
-      identifiedKeywords: string[];
-      description: string;
-    };
-    recruiterFriendliness?: {
-      score: number;
-      feedback: string[];
-      description: string;
-    };
+    keywordDensity?: { score: number; feedback: string[]; description: string };
+    recruiterFriendliness?: { score: number; feedback: string[]; description: string };
     conciseness?: { score: number; feedback: string[]; description: string };
   };
   analysis?: {
@@ -129,76 +120,73 @@ export default function ResumePreview({
 
   const overallScore = calculateOverallScore();
 
+  const ResumeContent = () => {
+    if (!analysis?.enhancedContent) {
+      return <div className="text-center text-muted-foreground py-8">No enhanced content available yet.</div>;
+    }
+
+    // Ensure content follows resume template format
+    const cleanContent = analysis.enhancedContent
+      .replace(/class="[^"]*"/g, '') // Remove any existing classes
+      .replace(/style="[^"]*"/g, ''); // Remove any inline styles
+
+    return (
+      <div className="resume-preview">
+        <style jsx global>{`
+          .resume-preview {
+            padding: 40px;
+            max-width: 850px;
+            margin: 0 auto;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+          }
+          .resume-preview h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: #2C3E50;
+            font-weight: 600;
+            text-align: center;
+          }
+          .resume-preview .contact-info {
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 5px;
+            color: #555;
+          }
+          .resume-preview .section {
+            margin-bottom: 20px;
+          }
+          .resume-preview h2 {
+            font-size: 18px;
+            color: #2C3E50;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #3E7CB1;
+            font-weight: 600;
+          }
+          .resume-preview h3 {
+            font-size: 16px;
+            color: #2C3E50;
+            margin-bottom: 4px;
+            font-weight: 600;
+          }
+          .resume-preview ul {
+            padding-left: 20px;
+            margin-bottom: 8px;
+          }
+          .resume-preview li {
+            margin-bottom: 4px;
+            font-size: 14px;
+          }
+        `}</style>
+        <div dangerouslySetInnerHTML={{ __html: cleanContent }} />
+      </div>
+    );
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
-      <Card className="bg-white shadow-lg">
-        <CardHeader className="text-center pb-2">
-          <CardTitle className="text-2xl font-bold text-gray-800">
-            Resume Quality Score
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center mb-8">
-            <div className="text-6xl font-bold text-primary mb-4">
-              {overallScore}
-            </div>
-            <Progress value={overallScore} className="w-full h-3 bg-gray-200" />
-          </div>
-
-          <div className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-700 mb-4">
-              Category Breakdown
-            </h3>
-            <div className="space-y-4">
-              {categoryScores &&
-                Object.entries(categoryScores).map(([key, category]) =>
-                  category ? (
-                    <div key={key} className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex items-center gap-2 cursor-help">
-                                <span className="text-sm font-medium text-gray-700">
-                                  {key
-                                    .replace(/([A-Z])/g, " $1")
-                                    .replace(/^./, (str) => str.toUpperCase())}
-                                </span>
-                                <Info className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs p-4">
-                              <p className="font-medium mb-2">
-                                {category.description}
-                              </p>
-                              <ul className="list-disc list-inside space-y-1">
-                                {category.feedback.map((item, i) => (
-                                  <li key={i} className="text-sm">
-                                    {item}
-                                  </li>
-                                ))}
-                              </ul>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <div className="flex items-center gap-4 flex-1">
-                        <Progress
-                          value={category.score}
-                          className="h-2 flex-1"
-                        />
-                        <span className="text-sm font-medium text-gray-600 w-12">
-                          {category.score}%
-                        </span>
-                      </div>
-                    </div>
-                  ) : null
-                )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       <Card className="bg-white shadow-lg">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-gray-800">
@@ -273,22 +261,7 @@ export default function ResumePreview({
 
           <div className="h-[calc(90vh-8rem)] bg-white rounded-lg">
             <ScrollArea className="h-full">
-              <div className="p-8">
-                <div className="max-w-[850px] mx-auto">
-                  {analysis?.enhancedContent ? (
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: analysis.enhancedContent,
-                      }}
-                      className="prose max-w-none"
-                    />
-                  ) : (
-                    <div className="text-center text-muted-foreground py-8">
-                      No enhanced content available yet.
-                    </div>
-                  )}
-                </div>
-              </div>
+              <ResumeContent />
             </ScrollArea>
           </div>
 
@@ -306,15 +279,3 @@ export default function ResumePreview({
     </div>
   );
 }
-
-const calculateOverallScore = () => {
-  if (!categoryScores) return atsScore || 0;
-
-  const scores = Object.values(categoryScores)
-    .map((category) => category?.score || 0)
-    .filter((score) => score > 0);
-
-  return scores.length > 0
-    ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
-    : 0;
-};
