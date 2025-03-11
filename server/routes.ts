@@ -425,7 +425,7 @@ Return an optimized version that matches keywords and improves ATS score while m
     try {
       const { content } = req.body;
 
-      // Launch browser with specific path to chromium
+      // Launch browser
       const browser = await puppeteer.launch({
         headless: 'new',
         executablePath: '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
@@ -435,7 +435,7 @@ Return an optimized version that matches keywords and improves ATS score while m
       try {
         const page = await browser.newPage();
 
-        // Set the page content with proper styling
+        // Set content with proper styling
         await page.setContent(`
           <!DOCTYPE html>
           <html lang="en">
@@ -487,6 +487,10 @@ Return an optimized version that matches keywords and improves ATS score while m
                 margin-bottom: 4px;
                 font-size: 14px;
               }
+              @page {
+                size: letter;
+                margin: 0;
+              }
             </style>
           </head>
           <body>
@@ -509,8 +513,8 @@ Return an optimized version that matches keywords and improves ATS score while m
 
         // Set proper headers for PDF download
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`);
         res.setHeader('Content-Length', pdf.length);
+        res.setHeader('Content-Disposition', `attachment; filename=enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`);
 
         // Send the PDF
         res.send(pdf);

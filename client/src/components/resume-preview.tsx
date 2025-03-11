@@ -23,10 +23,13 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
   const { toast } = useToast();
 
   const cleanResumeContent = (htmlContent: string) => {
+    if (!htmlContent) return '';
     return htmlContent
-      .replace(/<div[^>]*>/g, '<div>')
-      .replace(/class="[^"]*"/g, '')
-      .replace(/style="[^"]*"/g, '')
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
+      .replace(/<button\b[^<]*(?:(?!<\/button>)<[^<]*)*<\/button>/gi, '') // Remove buttons
+      .replace(/<div[^>]*>/g, '<div>') // Clean div tags
+      .replace(/class="[^"]*"/g, '') // Remove classes
+      .replace(/style="[^"]*"/g, '') // Remove inline styles
       .trim();
   };
 
@@ -48,24 +51,26 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/pdf",
         },
         body: JSON.stringify({ content: cleanContent }),
+        // Important: Set responseType to blob
+        responseType: 'blob'
       });
 
       if (!response.ok) {
         throw new Error("Failed to generate PDF");
       }
 
-      // Verify content type
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/pdf")) {
-        throw new Error("Invalid response format - expected PDF");
+      // Get the blob from response
+      const blob = await response.blob();
+
+      // Verify blob type
+      if (blob.type !== 'application/pdf') {
+        throw new Error("Invalid file format received");
       }
 
-      // Create blob and download
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`;
@@ -121,18 +126,15 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
       </CardContent>
 
       <Dialog open={showContent} onOpenChange={setShowContent}>
-        <DialogContent className="max-w-4xl h-[90vh]">
+        <DialogContent className="max-w-4xl h-[90vh] overflow-auto">
           <DialogHeader>
-            <DialogTitle>Enhanced Resume Preview</DialogTitle>
+            <DialogTitle>Enhanced Resume</DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-auto p-8 bg-white">
+          <div className="resume-preview p-8 bg-white">
             {analysis?.enhancedContent ? (
-              <div
-                id="resume-preview"
-                className="mx-auto"
+              <div 
+                className="mx-auto max-w-[850px]"
                 style={{
-                  maxWidth: '850px',
-                  margin: '0 auto',
                   fontFamily: "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
                   lineHeight: 1.6,
                   color: '#333',
@@ -140,20 +142,20 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
               >
                 <style>
                   {`
-                    #resume-preview h1 {
+                    .resume-preview h1 {
                       font-size: 28px;
                       margin-bottom: 8px;
                       color: #2C3E50;
                       font-weight: 600;
                       text-align: center;
                     }
-                    #resume-preview .contact-info {
+                    .resume-preview .contact-info {
                       text-align: center;
                       font-size: 14px;
                       margin-bottom: 5px;
                       color: #555;
                     }
-                    #resume-preview h2 {
+                    .resume-preview h2 {
                       font-size: 18px;
                       color: #2C3E50;
                       margin-bottom: 10px;
@@ -161,17 +163,17 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
                       border-bottom: 2px solid #3E7CB1;
                       font-weight: 600;
                     }
-                    #resume-preview h3 {
+                    .resume-preview h3 {
                       font-size: 16px;
                       color: #2C3E50;
                       margin-bottom: 4px;
                       font-weight: 600;
                     }
-                    #resume-preview ul {
+                    .resume-preview ul {
                       padding-left: 20px;
                       margin-bottom: 8px;
                     }
-                    #resume-preview li {
+                    .resume-preview li {
                       margin-bottom: 4px;
                       font-size: 14px;
                     }
