@@ -101,63 +101,33 @@ router.post("/api/ai-resume-parser", upload.single("file"), async (req, res) => 
       messages: [
         {
           role: "system",
-          content: `You are a resume parser. Extract information from the resume text and format it as JSON. Follow these rules:
-1. All fields must be present in the output, use empty strings or arrays for missing data
-2. Dates should be in YYYY-MM format or "Present"
-3. The output must be strictly valid JSON with no additional text
-4. Make sure to extract full text content for each section
-5. Include all achievements and bullet points`
+          content: "Extract the resume sections exactly as they appear in the document. Keep the original text intact and format it according to the section types."
         },
         {
           role: "user",
-          content: `Parse this resume text and return a JSON object in this exact format:
-{
-  "personalInfo": {
-    "name": "Full name",
-    "email": "Email",
-    "phone": "Phone",
-    "location": "Location",
-    "linkedin": "LinkedIn URL"
-  },
-  "summary": "Full professional summary text",
-  "experience": [{
-    "title": "Job title",
-    "company": "Company name",
-    "startDate": "YYYY-MM",
-    "endDate": "YYYY-MM or Present",
-    "description": "Full role description",
-    "responsibilities": ["Detailed achievement 1", "Detailed achievement 2"]
-  }],
-  "education": [{
-    "degree": "Degree name",
-    "institution": "School name",
-    "startDate": "YYYY-MM",
-    "endDate": "YYYY-MM",
-    "description": "Program description",
-    "achievements": ["Achievement or detail 1", "Achievement or detail 2"]
-  }],
-  "skills": ["Skill 1", "Skill 2"],
-  "projects": [{
-    "name": "Project name",
-    "technologies": "Tech stack used",
-    "duration": "Time period",
-    "description": "Project details",
-    "highlights": ["Key achievement 1", "Key achievement 2"]
-  }],
-  "certifications": [{
-    "name": "Certification name",
-    "issuer": "Issuing organization",
-    "date": "YYYY-MM",
-    "description": "Certification details",
-    "details": ["Additional detail 1", "Additional detail 2"]
-  }]
-}
+          content: `Extract these sections from the resume, preserving the exact text content:
+1. Full Name
+2. Email
+3. Phone
+4. Location
+5. LinkedIn URL
+6. Professional Summary (entire paragraph)
+7. Work Experience (all entries with full details)
+8. Education (all entries with full details)
+9. Skills (as a comma-separated list)
+10. Projects (all entries with full details)
+11. Certifications (all entries with full details)
 
-Here's the resume text to parse:\n\n${fileContent}`
+Format as JSON matching these exact field names.`
+        },
+        {
+          role: "user",
+          content: fileContent
         }
       ],
       temperature: 0.1,
-      max_tokens: 2048
+      max_tokens: 2048,
+      response_format: { type: "json_object" }
     });
 
     if (!completion.choices[0].message.content) {
@@ -166,86 +136,51 @@ Here's the resume text to parse:\n\n${fileContent}`
 
     console.log("OpenAI response received");
 
-    let parsedData;
-    try {
-      console.log("Raw OpenAI response:", completion.choices[0].message.content);
-      parsedData = JSON.parse(completion.choices[0].message.content);
-      console.log("Successfully parsed response into JSON");
-    } catch (parseError) {
-      console.error("Error parsing OpenAI response:", parseError);
-      throw new Error("Failed to parse OpenAI response");
-    }
+    const parsedData = JSON.parse(completion.choices[0].message.content);
 
-    // Verify the data structure
-    if (!parsedData.personalInfo || !parsedData.experience || !parsedData.education) {
-      throw new Error("Invalid data structure in parsed response");
-    }
-
-    // Transform the data to match the frontend's exact expected format
-    const transformedData = {
-      ...parsedData.personalInfo,
+    // Map directly to the form fields
+    const formData = {
+      name: parsedData.fullName || "",
+      email: parsedData.email || "",
+      phone: parsedData.phone || "",
+      location: parsedData.location || "",
+      linkedin: parsedData.linkedinUrl || "",
       sections: [
         {
           id: "summary",
           title: "Professional Summary",
-          content: parsedData.summary || "",
-          items: undefined
+          content: parsedData.professionalSummary || "",
         },
         {
           id: "experience",
           title: "Work Experience",
-          items: (parsedData.experience || []).map(exp => ({
-            title: exp.title || "",
-            subtitle: exp.company || "",
-            date: `${exp.startDate || ""} - ${exp.endDate || "Present"}`,
-            description: exp.description || "",
-            bullets: exp.responsibilities || []
-          }))
+          items: parsedData.workExperience || []
         },
         {
           id: "education",
           title: "Education",
-          items: (parsedData.education || []).map(edu => ({
-            title: edu.degree || "",
-            subtitle: edu.institution || "",
-            date: `${edu.startDate || ""} - ${edu.endDate || ""}`,
-            description: edu.description || "",
-            bullets: edu.achievements || []
-          }))
+          items: parsedData.education || []
         },
         {
           id: "skills",
           title: "Skills",
-          content: Array.isArray(parsedData.skills) ? parsedData.skills.join(", ") : "",
-          items: undefined
+          content: parsedData.skills || "",
         },
         {
           id: "projects",
           title: "Projects",
-          items: (parsedData.projects || []).map(proj => ({
-            title: proj.name || "",
-            subtitle: proj.technologies || "",
-            date: proj.duration || "",
-            description: proj.description || "",
-            bullets: proj.highlights || []
-          }))
+          items: parsedData.projects || []
         },
         {
           id: "certifications",
           title: "Certifications",
-          items: (parsedData.certifications || []).map(cert => ({
-            title: cert.name || "",
-            subtitle: cert.issuer || "",
-            date: cert.date || "",
-            description: cert.description || "",
-            bullets: cert.details || []
-          }))
+          items: parsedData.certifications || []
         }
       ]
     };
 
-    console.log("Successfully transformed data for frontend");
-    res.json(transformedData);
+    console.log("Successfully mapped data to form fields");
+    res.json(formData);
 
   } catch (error) {
     console.error("Resume parsing error:", error);
