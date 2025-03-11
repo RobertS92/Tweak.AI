@@ -64,11 +64,17 @@ export default function ResumeBuilder() {
 
     if (section.content !== undefined) {
       return section.content;
-    } else if (section.items) {
+    } else if (section.items && section.items.length > 0) {
       return section.items.map(item => {
-        const bullets = item.bullets || [];
-        return `${item.title}\n${item.subtitle}\n${item.date}\n${item.description}\n${bullets.join("\n")}`;
-      }).join("\n\n");
+        const bulletPoints = (item.bullets || []).map(bullet => `• ${bullet}`).join('\n');
+        return `
+Title: ${item.title}
+Organization: ${item.subtitle}
+Date: ${item.date}
+Description: ${item.description}
+${bulletPoints ? `\nKey Points:\n${bulletPoints}` : ''}
+`.trim();
+      }).join('\n\n---\n\n');
     }
     return "";
   }, [activeSection, sections]);
@@ -80,6 +86,7 @@ export default function ResumeBuilder() {
     setIsAiLoading(true);
     try {
       const sectionContent = getCurrentSectionContent();
+      console.log('[DEBUG] Sending section content:', sectionContent); // Debug log
 
       const response = await fetch("/api/resume-ai-assistant", {
         method: "POST",

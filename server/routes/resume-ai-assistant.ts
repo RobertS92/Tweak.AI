@@ -22,30 +22,39 @@ router.post("/api/resume-ai-assistant", async (req, res) => {
       userQuery,
     });
 
-    // Compose conversation messages
+    // Enhanced system prompt for better section analysis
     const messages = [
       {
         role: "system",
-        content:
-          "You are an AI resume assistant helping improve or rewrite resume sections. " +
-          "Provide specific, actionable suggestions or rewrites. Be constructive and professional.",
+        content: `You are a professional resume writing assistant. Analyze resume sections and provide specific, actionable feedback.
+For work experience entries:
+- Suggest stronger action verbs
+- Recommend quantifiable achievements
+- Point out missing important details
+For education entries:
+- Suggest relevant coursework to highlight
+- Recommend academic achievements to include
+For all sections:
+- Be specific about what to improve
+- Provide example improvements
+- Keep suggestions concise and actionable`,
       },
       {
         role: "user",
-        content: `I'm working on the "${sectionId}" section of my resume. Here is the current content:
+        content: `I'm working on the "${sectionId}" section of my resume. Here's the current content:
 
 ${sectionContent}
 
-${userQuery ? `User request: ${userQuery}` : "Please suggest improvements for this section."}`,
-      },
+${userQuery || "Please analyze this section and suggest specific improvements."}`
+      }
     ];
 
-    // Call OpenAI
+    // Call OpenAI with more tokens for detailed analysis
     const completion = await openai.chat.completions.create({
-      model: "gpt-4", // or "gpt-3.5-turbo" if preferred
-      messages,
+      model: "gpt-4", // Using GPT-4 for better analysis
+      messages: messages as any, // Type assertion to fix TypeScript error
       temperature: 0.7,
-      max_tokens: 500,
+      max_tokens: 800,
     });
 
     // Extract AI's suggestions
@@ -56,7 +65,7 @@ ${userQuery ? `User request: ${userQuery}` : "Please suggest improvements for th
     // Send suggestions back as JSON
     return res.json({
       suggestions,
-      improvements: [], // you can add more structured data here
+      improvements: [], // For future structured improvements
     });
   } catch (error) {
     console.error("[DEBUG] AI Assistant error:", error);
