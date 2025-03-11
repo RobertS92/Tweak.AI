@@ -93,19 +93,19 @@ export default function ResumePreview({
         throw new Error("Generated PDF is too small, likely invalid");
       }
 
+      // Create download link
       const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`;
 
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `optimized_resume_${new Date()
-        .toISOString()
-        .split("T")[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
 
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
+      // Cleanup
       window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
 
       toast({
         title: "Success",
@@ -115,10 +115,7 @@ export default function ResumePreview({
       console.error("Failed to download PDF:", error);
       toast({
         title: "Download failed",
-        description:
-          error instanceof Error
-            ? error.message
-            : "There was an error downloading your resume. Please try again.",
+        description: error instanceof Error ? error.message : "There was an error downloading your resume. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -151,7 +148,7 @@ export default function ResumePreview({
             <div className="space-y-4">
               {categoryScores &&
                 Object.entries(categoryScores).map(([key, category]) =>
-                  category && (
+                  category ? (
                     <div key={key} className="flex items-center justify-between">
                       <div className="flex-1">
                         <TooltipProvider>
@@ -176,26 +173,6 @@ export default function ResumePreview({
                                     {item}
                                   </li>
                                 ))}
-                                {key === "keywordDensity" &&
-                                  category.identifiedKeywords && (
-                                    <div className="mt-2">
-                                      <p className="text-sm font-medium">
-                                        Identified Keywords:
-                                      </p>
-                                      <div className="flex flex-wrap gap-1 mt-1">
-                                        {category.identifiedKeywords.map(
-                                          (keyword, i) => (
-                                            <span
-                                              key={i}
-                                              className="text-xs bg-primary/10 text-primary px-2 py-1 rounded"
-                                            >
-                                              {keyword}
-                                            </span>
-                                          ),
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
                               </ul>
                             </TooltipContent>
                           </Tooltip>
@@ -211,7 +188,7 @@ export default function ResumePreview({
                         </span>
                       </div>
                     </div>
-                  )
+                  ) : null
                 )}
             </div>
           </div>
