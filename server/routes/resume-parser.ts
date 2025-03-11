@@ -57,8 +57,14 @@ router.post("/api/ai-resume-parser", upload.single("file"), async (req, res) => 
       if (fileType?.mime === 'application/pdf') {
         console.log("[DEBUG] Processing PDF file...");
         const options = {
-          pagerender: function(pageData) {
-            return pageData.getTextContent();
+          pagerender: function(pageData: any) {
+            return pageData.getTextContent().then(function(textContent: any) {
+              let text = "";
+              for (let item of textContent.items) {
+                text += item.str + " ";
+              }
+              return text;
+            });
           }
         };
         const pdfData = await pdfParse(buffer, options);
@@ -79,6 +85,13 @@ router.post("/api/ai-resume-parser", upload.single("file"), async (req, res) => 
         throw new Error("No text content could be extracted from the file");
       }
 
+      // Clean up the extracted text
+      fileContent = fileContent
+        .replace(/[\r\n]+/g, '\n')          // Normalize line endings
+        .replace(/\s+/g, ' ')               // Normalize spaces
+        .replace(/[^\x20-\x7E\n]/g, '')     // Remove non-printable characters
+        .trim();
+
       console.log("[DEBUG] Extracted content length:", fileContent.length);
       console.log("[DEBUG] First 200 chars of content:", fileContent.substring(0, 200));
 
@@ -86,13 +99,6 @@ router.post("/api/ai-resume-parser", upload.single("file"), async (req, res) => 
       console.error("[DEBUG] Error extracting file content:", extractError);
       throw new Error("Failed to extract content from file: " + extractError.message);
     }
-
-    // Clean up the extracted text
-    fileContent = fileContent
-      .replace(/[\r\n]+/g, '\n')          // Normalize line endings
-      .replace(/\s+/g, ' ')               // Normalize spaces
-      .replace(/[^\x20-\x7E\n]/g, '')     // Remove non-printable characters
-      .trim();
 
     // Truncate content if too long (about 6000 tokens)
     if (fileContent.length > 12000) {
@@ -107,74 +113,34 @@ router.post("/api/ai-resume-parser", upload.single("file"), async (req, res) => 
       messages: [
         {
           role: "system",
-          content: "You are a resume parser. Extract the exact content from the resume and format it according to the specified structure."
+          content: "Extract the exact content from the resume and format it according to the form fields structure. Keep the original text intact."
         },
         {
           role: "user",
-          content: `Parse this resume and extract exactly these fields, preserving the original text:
+          content: `Parse this resume and extract the content into this exact format:
 
-1. Basic Information:
-- Name (look for the name at the top of the resume)
-- Email (look for email address)
-- Phone (look for phone number)
-- Location (look for city/state)
-- LinkedIn (look for LinkedIn URL)
-
-2. Professional Summary (the paragraph describing overall experience)
-
-3. Work Experience (each position should have):
-- Job title
-- Company name
-- Dates
-- Description
-- Bullet points of achievements
-
-4. Education (each entry should have):
-- Degree name
-- Institution
-- Dates
-- Description if any
-- Notable achievements
-
-5. Skills (all technical and professional skills)
-
-6. Projects (each project should have):
-- Project name
-- Technologies used
-- Timeframe
-- Description
-- Key achievements
-
-7. Certifications (each certification should have):
-- Name
-- Issuing organization
-- Date
-- Description
-- Additional details
-
-Return the data in this exact JSON structure:
 {
-  "name": "",
-  "email": "",
-  "phone": "",
-  "location": "",
-  "linkedin": "",
+  "name": "",         // Person's full name
+  "email": "",       // Email address
+  "phone": "",       // Phone number
+  "location": "",    // Location/address
+  "linkedin": "",    // LinkedIn URL if present
   "sections": [
     {
       "id": "summary",
       "title": "Professional Summary",
-      "content": ""
+      "content": ""  // Professional summary paragraph
     },
     {
       "id": "experience",
       "title": "Work Experience",
       "items": [
         {
-          "title": "",
-          "subtitle": "",
-          "date": "",
-          "description": "",
-          "bullets": []
+          "title": "",      // Job title
+          "subtitle": "",   // Company name
+          "date": "",      // Employment dates
+          "description": "", // Role description
+          "bullets": []    // Achievement bullet points
         }
       ]
     },
@@ -183,29 +149,29 @@ Return the data in this exact JSON structure:
       "title": "Education",
       "items": [
         {
-          "title": "",
-          "subtitle": "",
-          "date": "",
-          "description": "",
-          "bullets": []
+          "title": "",      // Degree name
+          "subtitle": "",   // School name
+          "date": "",      // Education dates
+          "description": "", // Program description
+          "bullets": []    // Achievements/coursework
         }
       ]
     },
     {
       "id": "skills",
       "title": "Skills",
-      "content": ""
+      "content": ""  // Skills list
     },
     {
       "id": "projects",
       "title": "Projects",
       "items": [
         {
-          "title": "",
-          "subtitle": "",
-          "date": "",
-          "description": "",
-          "bullets": []
+          "title": "",      // Project name
+          "subtitle": "",   // Technologies used
+          "date": "",      // Project timeframe
+          "description": "", // Project description
+          "bullets": []    // Project highlights
         }
       ]
     },
@@ -214,33 +180,31 @@ Return the data in this exact JSON structure:
       "title": "Certifications",
       "items": [
         {
-          "title": "",
-          "subtitle": "",
-          "date": "",
-          "description": "",
-          "bullets": []
+          "title": "",      // Certification name
+          "subtitle": "",   // Issuing organization
+          "date": "",      // Date obtained
+          "description": "", // Certification details
+          "bullets": []    // Additional information
         }
       ]
     }
   ]
 }
 
-Resume text to parse:
+Here's the resume text to parse:
 ${fileContent}`
         }
       ],
       temperature: 0.1,
-      max_tokens: 3000
+      max_tokens: 3000,
+      response_format: { type: "json_object" }
     });
-
-    if (!completion.choices[0].message.content) {
-      throw new Error("No content in OpenAI response");
-    }
 
     console.log("[DEBUG] OpenAI response received");
 
     let parsedData;
     try {
+      console.log("[DEBUG] Raw OpenAI response:", completion.choices[0].message.content);
       parsedData = JSON.parse(completion.choices[0].message.content);
       console.log("[DEBUG] Successfully parsed JSON response");
     } catch (parseError) {
@@ -248,14 +212,14 @@ ${fileContent}`
       throw new Error("Failed to parse OpenAI response into JSON");
     }
 
-    // Validate the parsed data structure
+    // Validate the data structure
     if (!parsedData.name || !parsedData.sections || !Array.isArray(parsedData.sections)) {
       console.error("[DEBUG] Invalid data structure:", parsedData);
       throw new Error("Invalid data structure in parsed response");
     }
 
-    // Log the final data structure being sent to frontend
-    console.log("[DEBUG] Sending parsed data to frontend:", {
+    // Log the fields that will be populated
+    console.log("[DEBUG] Data to populate form fields:", {
       personalInfo: {
         name: parsedData.name,
         email: parsedData.email,
@@ -263,7 +227,6 @@ ${fileContent}`
         location: parsedData.location,
         linkedin: parsedData.linkedin
       },
-      sectionsCount: parsedData.sections.length,
       sections: parsedData.sections.map(s => ({
         id: s.id,
         title: s.title,
