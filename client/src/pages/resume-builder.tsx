@@ -11,7 +11,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
-//import JobSearchAgent from "@/components/job-search-agent"; // Removed import
 
 interface Section {
   id: string;
@@ -102,14 +101,33 @@ export default function ResumeBuilder() {
       const resumeData = await response.json();
 
       if (resumeData.content) {
-        // Parse the resume content and populate the sections
         try {
           const parsed = JSON.parse(resumeData.content);
+
+          // Populate personal info
           if (parsed.personalInfo) {
-            setPersonalInfo(parsed.personalInfo);
+            setPersonalInfo({
+              name: parsed.personalInfo.name || "",
+              email: parsed.personalInfo.email || "",
+              phone: parsed.personalInfo.phone || "",
+              location: parsed.personalInfo.location || "",
+              linkedin: parsed.personalInfo.linkedin || ""
+            });
           }
+
+          // Populate sections with their items
           if (parsed.sections) {
-            setSections(parsed.sections);
+            setSections(prev => prev.map(section => {
+              const matchingSection = parsed.sections.find((s: Section) => s.id === section.id);
+              if (matchingSection) {
+                return {
+                  ...section,
+                  content: matchingSection.content || "",
+                  items: matchingSection.items || []
+                };
+              }
+              return section;
+            }));
           }
 
           toast({
@@ -117,12 +135,18 @@ export default function ResumeBuilder() {
             description: "Your existing resume has been loaded into the builder"
           });
         } catch (e) {
+          console.error("Error parsing resume content:", e);
           // If not JSON, use the content as is for the summary
           setSections(prev => prev.map(section =>
             section.id === "summary"
               ? { ...section, content: resumeData.content }
               : section
           ));
+
+          toast({
+            title: "Resume Loaded",
+            description: "Basic resume content has been loaded into the summary section"
+          });
         }
       }
     });
