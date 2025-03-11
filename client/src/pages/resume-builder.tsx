@@ -11,6 +11,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
+//import JobSearchAgent from "@/components/job-search-agent"; // Removed import
 
 interface Section {
   id: string;
@@ -23,6 +24,12 @@ interface Section {
     description?: string;
     bullets?: string[];
   }>;
+}
+
+interface AIEnhancement {
+  enhancedContent: string;
+  suggestions: string[];
+  explanation: string;
 }
 
 export default function ResumeBuilder() {
@@ -77,84 +84,48 @@ export default function ResumeBuilder() {
     }
   ]);
 
+  const [messages, setMessages] = useState<Array<{ type: 'assistant' | 'user'; content: string }>>([
+    {
+      type: 'assistant',
+      content: 'I can help you build a professional resume. Select any section to get started, or ask me for suggestions.'
+    }
+  ]);
+
   // Fetch existing resumes
   const { data: existingResumes } = useQuery({
     queryKey: ['/api/resumes'],
   });
 
-  // Enhanced populateFromResume function
-  const populateFromResume = async (resumeId: number) => {
-    try {
-      const response = await apiRequest("GET", `/api/resumes/${resumeId}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch resume");
-      }
-
+  // Populate data from selected resume
+  const populateFromResume = (resumeId: number) => {
+    apiRequest("GET", `/api/resumes/${resumeId}`).then(async (response) => {
       const resumeData = await response.json();
 
-      if (!resumeData.content) {
-        throw new Error("No content found in resume");
-      }
-
-      let parsedContent;
-      try {
-        parsedContent = JSON.parse(resumeData.content);
-      } catch (e) {
-        console.warn("Resume content is not in JSON format, treating as plain text");
-        parsedContent = { content: resumeData.content };
-      }
-
-      // Handle personal information
-      if (parsedContent.personalInfo) {
-        setPersonalInfo({
-          name: parsedContent.personalInfo.name || "",
-          email: parsedContent.personalInfo.email || "",
-          phone: parsedContent.personalInfo.phone || "",
-          location: parsedContent.personalInfo.location || "",
-          linkedin: parsedContent.personalInfo.linkedin || ""
-        });
-      }
-
-      // Handle sections
-      if (parsedContent.sections) {
-        setSections(prev => prev.map(section => {
-          const matchingSection = parsedContent.sections.find((s: Section) => s.id === section.id);
-          if (matchingSection) {
-            return {
-              ...section,
-              content: matchingSection.content || "",
-              items: Array.isArray(matchingSection.items) ? matchingSection.items.map(item => ({
-                title: item.title || "",
-                subtitle: item.subtitle || "",
-                date: item.date || "",
-                description: item.description || "",
-                bullets: Array.isArray(item.bullets) ? item.bullets : []
-              })) : []
-            };
+      if (resumeData.content) {
+        // Parse the resume content and populate the sections
+        try {
+          const parsed = JSON.parse(resumeData.content);
+          if (parsed.personalInfo) {
+            setPersonalInfo(parsed.personalInfo);
           }
-          return section;
-        }));
-      } else if (parsedContent.content) {
-        // If we have plain text content, put it in the summary section
-        setSections(prev => prev.map(section =>
-          section.id === "summary"
-            ? { ...section, content: parsedContent.content }
-            : section
-        ));
-      }
+          if (parsed.sections) {
+            setSections(parsed.sections);
+          }
 
-      toast({
-        title: "Resume Loaded",
-        description: "Your existing resume has been loaded into the builder"
-      });
-    } catch (error) {
-      console.error("Error loading resume:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load resume. Please try again.",
-        variant: "destructive"
-      });
-    }
+          toast({
+            title: "Resume Loaded",
+            description: "Your existing resume has been loaded into the builder"
+          });
+        } catch (e) {
+          // If not JSON, use the content as is for the summary
+          setSections(prev => prev.map(section =>
+            section.id === "summary"
+              ? { ...section, content: resumeData.content }
+              : section
+          ));
+        }
+      }
+    });
   };
 
   const enhanceMutation = useMutation({
@@ -180,7 +151,7 @@ export default function ResumeBuilder() {
     mutationFn: async (data: { content: string; sectionType: string }) => {
       return apiRequest("POST", "/api/resumes/analyze", data).then(r => r.json());
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: AIEnhancement) => {
       setMessages(prev => [
         ...prev,
         {
