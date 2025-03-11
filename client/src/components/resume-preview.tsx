@@ -116,12 +116,12 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
       </CardContent>
 
       <Dialog open={showContent} onOpenChange={setShowContent}>
-        <DialogContent className="w-full max-w-4xl min-h-[90vh] p-0">
-          <DialogHeader className="px-6 py-4 border-b">
+        <DialogContent className="max-w-4xl h-[85vh] p-0 overflow-hidden">
+          <DialogHeader className="px-6 py-4 border-b sticky top-0 bg-white z-10">
             <DialogTitle>Enhanced Resume</DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="overflow-y-auto h-[calc(85vh-4rem)] p-6">
             {analysis?.enhancedContent ? (
               <div className="resume-preview">
                 <style>
@@ -133,6 +133,7 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
                       line-height: 1.6;
                       color: #333;
                       background: white;
+                      padding-bottom: 2rem;
                     }
                     .resume-preview h1 {
                       font-size: 28px;
@@ -150,7 +151,7 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
                     .resume-preview h2 {
                       font-size: 18px;
                       color: #2C3E50;
-                      margin-bottom: 10px;
+                      margin: 20px 0 10px;
                       padding-bottom: 5px;
                       border-bottom: 2px solid #3E7CB1;
                       font-weight: 600;
@@ -158,12 +159,12 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
                     .resume-preview h3 {
                       font-size: 16px;
                       color: #2C3E50;
-                      margin-bottom: 4px;
+                      margin: 15px 0 4px;
                       font-weight: 600;
                     }
                     .resume-preview ul {
                       padding-left: 20px;
-                      margin-bottom: 8px;
+                      margin: 8px 0;
                       list-style-type: disc;
                     }
                     .resume-preview li {
@@ -171,10 +172,11 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
                       font-size: 14px;
                     }
                     .resume-preview p {
-                      margin-bottom: 8px;
+                      margin: 8px 0;
+                      font-size: 14px;
                     }
                     .resume-preview section {
-                      margin-bottom: 20px;
+                      margin: 20px 0;
                     }
                   `}
                 </style>
