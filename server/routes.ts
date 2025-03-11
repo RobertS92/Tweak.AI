@@ -450,103 +450,60 @@ Return an optimized version that matches keywords and improves ATS score while m
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Professional Resume</title>
             <style>
-              /* Reset and base styles */
-              * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-                font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-              }
-
               body {
-                background-color: white;
+                margin: 0;
                 padding: 0.75in;
-                max-width: 8.5in;
-                margin: 0 auto;
+                font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                 line-height: 1.6;
                 color: #333;
+                max-width: 8.5in;
+                margin: 0 auto;
               }
 
-              /* Header section */
-              .header {
-                border-bottom: 2px solid #3E7CB1;
-                padding-bottom: 15px;
-                margin-bottom: 20px;
-                text-align: center;
-              }
-
-              .header h1 {
+              h1 {
                 font-size: 28px;
                 margin-bottom: 8px;
                 color: #2C3E50;
                 font-weight: 600;
+                text-align: center;
               }
 
               .contact-info {
+                text-align: center;
                 font-size: 14px;
                 margin-bottom: 5px;
                 color: #555;
               }
 
-              .links {
-                font-size: 14px;
-                color: #3E7CB1;
-              }
-
-              /* Section styling */
-              .section {
-                margin-bottom: 20px;
-              }
-
-              .section h2 {
+              h2 {
                 font-size: 18px;
                 color: #2C3E50;
                 margin-bottom: 10px;
                 padding-bottom: 5px;
-                border-bottom: 1px solid #ddd;
+                border-bottom: 2px solid #3E7CB1;
                 font-weight: 600;
               }
 
-              /* Job styling */
-              .job, .education-item {
-                margin-bottom: 16px;
-              }
-
-              .job h3, .education-item h3 {
+              h3 {
                 font-size: 16px;
                 color: #2C3E50;
                 margin-bottom: 4px;
                 font-weight: 600;
               }
 
-              .job-title {
-                font-size: 14px;
-                color: #333;
-                font-style: italic;
-                margin-bottom: 6px;
-              }
-
-              /* List styling */
               ul {
                 padding-left: 20px;
                 margin-bottom: 8px;
               }
 
-              ul li {
+              li {
                 margin-bottom: 4px;
                 font-size: 14px;
               }
 
-              /* Print specific styles */
               @page {
-                size: letter;
                 margin: 0.5in;
-              }
-
-              @media print {
-                body {
-                  padding: 0;
-                }
+                size: letter;
               }
             </style>
           </head>
@@ -554,7 +511,7 @@ Return an optimized version that matches keywords and improves ATS score while m
             ${content}
           </body>
           </html>
-        `, { waitUntil: 'networkidle0' });
+        `);
 
         // Wait for content to be fully rendered
         await page.waitForSelector('body', { timeout: 5000 });
@@ -562,27 +519,21 @@ Return an optimized version that matches keywords and improves ATS score while m
         // Generate PDF with proper settings
         const pdf = await page.pdf({
           format: 'Letter',
+          printBackground: true,
           margin: {
             top: '0.5in',
             right: '0.5in',
             bottom: '0.5in',
             left: '0.5in'
           },
-          printBackground: true,
-          preferCSSPageSize: true,
         });
 
         await browser.close();
 
-        // Validate PDF size
-        if (pdf.length < 1000) { // Less than 1KB
-          throw new Error('Generated PDF is too small, likely invalid');
-        }
-
         // Set proper headers for PDF download
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Length', pdf.length);
-        res.setHeader('Content-Disposition', `attachment; filename=optimized_resume_${new Date().toISOString().split('T')[0]}.pdf`);
+        res.setHeader('Content-Disposition', `attachment; filename=enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`);
         res.send(pdf);
 
       } catch (error) {
