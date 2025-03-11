@@ -1,0 +1,437 @@
+[DEBUG] Detected file type: undefined
+[DEBUG] Processing as text file...
+[DEBUG] Extracted content length: 960102
+[DEBUG] First 200 chars of content: {"0":37,"1":80,"2":68,"3":70,"4":45,"5":49,"6":46,"7":52,"8":10,"9":37,"10":211,"11":235,"12":233,"13":225,"14":10,"15":49,"16":32,"17":48,"18":32,"19":111,"20":98,"21":106,"22":10,"23":60,"24":60,"25
+[DEBUG] Content truncated to 20000 characters
+[DEBUG] Calling OpenAI API...
+[DEBUG] Resume parsing error: BadRequestError: 400 This model's maximum context length is 8192 tokens. However, your messages resulted in 9523 tokens. Please reduce the length of the messages.
+    at Function.generate (/home/runner/workspace/node_modules/openai/src/error.ts:72:14)
+    at OpenAI.makeStatusError (/home/runner/workspace/node_modules/openai/src/core.ts:443:21)
+    at OpenAI.makeRequest (/home/runner/workspace/node_modules/openai/src/core.ts:507:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/home/runner/workspace/server/routes/resume-parser.ts:93:24) {
+  status: 400,
+  headers: {
+    'access-control-expose-headers': 'X-Request-ID',
+    'alt-svc': 'h3=":443"; ma=86400',
+    'cf-cache-status': 'DYNAMIC',
+    'cf-ray': '91ec29babaae681a-SEA',
+    connection: 'keep-alive',
+    'content-length': '280',
+    'content-type': 'application/json',
+    date: 'Tue, 11 Mar 2025 15:42:39 GMT',
+    'openai-organization': 'user-84emsomucedptm9djwfsd3rs',
+    'openai-processing-ms': '44',
+    'openai-version': '2020-10-01',
+    server: 'cloudflare',
+    'set-cookie': '__cf_bm=rRDOP9avfE41Xp2pP3.JDG3.I4K472ZwXwwWhn1q1.8-1741707759-1.0.1.1-bkPxPJFY1CV2ULe7is.vxiSHCTAhnsFdh8PIVvZnNCIfLQUk3ot8XeeuH5wZRUKVP_ksc_vLJz2KdxskqKEZEWO2jbIiFIK.d47laGSm8_8; path=/; expires=Tue, 11-Mar-25 16:12:39 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None, _cfuvid=TeW1wrtSfXat_lNPdS5V5U6GjymETtxYjzaE22GwERM-1741707759921-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None',
+    'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+    'x-content-type-options': 'nosniff',
+    'x-ratelimit-limit-requests': '5000',
+    'x-ratelimit-limit-tokens': '80000',
+    'x-ratelimit-remaining-requests': '4999',
+    'x-ratelimit-remaining-tokens': '71828',
+    'x-ratelimit-reset-requests': '12ms',
+    'x-ratelimit-reset-tokens': '6.129s',
+    'x-request-id': 'req_67456df7d34a7d7391acd9571000a3f2'
+  },
+  request_id: 'req_67456df7d34a7d7391acd9571000a3f2',
+  error: {
+    message: "This model's maximum context length is 8192 tokens. However, your messages resulted in 9523 tokens. Please reduce the length of the messages.",
+    type: 'invalid_request_error',
+    param: 'messages',
+    code: 'context_length_exceeded'
+  },
+  code: 'context_length_exceeded',
+  param: 'messages',
+  type: 'invalid_request_error'
+}
+[DEBUG] Starting resume parsing process...
+[DEBUG] File info: {
+  filename: ' Robert FA.docx.pdf',
+  mimetype: 'application/pdf',
+  size: 121943
+}
+[DEBUG] Detected file type: application/pdf
+[DEBUG] Processing PDF file...
+[DEBUG] Extracted content length: 6118
+[DEBUG] First 200 chars of content: 
+
+ 
+Rob Seals 
+AI / ML Engineer & Financial Data Analyst 
+Email: rseals13@gmail.com | Phone: 832-517-0329 | Location: Houston, TX 
+GitHub: github.com/RobertS92 
+ 
+Professional Summary 
+Detail-oriented
+[DEBUG] Calling OpenAI API...
+[DEBUG] OpenAI response received
+[DEBUG] Raw response: {
+  "name": "Rob Seals",
+  "email": "rseals13@gmail.com",
+  "phone": "832-517-0329",
+  "location": "Houston, TX",
+  "linkedin": "",
+  "sections": [
+    {
+      "id": "summary",
+      "title": "Professional Summary",
+      "content": "Detail-oriented AI/ML Engineer and Data Analyst with 5+ years of combined experience in AI development, machine learning, financial modeling, and fundamental investment research. Skilled at normalizing and sanitizing, analyzing data, and financial research. Leverages Python, statistical techniques, machine learning and NLP for insights and predictions. Studied MBA in Finance complemented by postgraduate AI/ML studies, bridging quantitative finance and modern data science to drive systematic investment decisions."
+    },
+    {
+      "id": "experience",
+      "title": "Work Experience",
+      "items": [
+        {
+          "title": "Financial Data Analyst",
+          "subtitle": "Hudson Way Capital",
+          "date": "Oct 2020 – Jun 2021",
+          "description": "",
+          "bullets": [
+            "Normalized structured and unstructured alternative data from multiple sources.",
+            "Tracked securities, behavioral, and credit data contributing to internal models and supporting investment decisions.",
+            "Performed anomaly detection on financial statements and alternative data identifying irregular trends that informed deeper investigative analysis.",
+            "Developed sentiment analysis tools to detect market trends, generating signals for trading and portfolio risk management.",
+            "Scraped public sources for alternative data, augmenting traditional financial metrics for more robust decision-making."
+          ]
+        },
+        {
+          "title": "Intent Analyst",
+          "subtitle": "Socorro Asset Management",
+          "date": "Jun 2020 – Sep 2020",
+          "description": "",
+          "bullets": [
+            "Conducted research on publicly traded, income-producing securities (equities, preferred shares, corporate bonds) across various sectors.",
+            "Performed risk assessments and helped monitor a diversified portfolio, ensuring stability and alignment with bottom-up, fundamental strategies.",
+            "Utilized quantitative methods and empirical data to identify market trends supporting strategic investment decisions.",
+            "Prepared detailed reports on capital structure changes and other corporate events (e.g., share repurchases, bond offerings)."
+          ]
+        },
+        {
+          "title": "AI / ML Engineer",
+          "subtitle": "Tata Consultancy Services (TCS)",
+          "date": "Jun 2024 – Oct 2024",
+          "description": "",
+          "bullets": [
+            "Integrated NLP models to parse and classify unstructured text, including financial documents and product data.",
+            "Deployed LLM-based solutions on AWS Lambda for scalable model management and performance tracking.",
+            "Engineered prompt workflows (RAG systems) to improve generative text outputs, ensuring higher accuracy in client-facing dialogues."
+          ]
+        },
+        {
+          "title": "NLP / Conversational AI Scientist",
+          "subtitle": "Charter Communications (Spectrum)",
+          "date": "Jun 2023 – Jun 2024",
+          "description": "",
+          "bullets": [
+            "Built NLU systems and conversational AI bots to improve customer interaction and routing, achieving a 95% F1 score.",
+            "Analyzed large volumes of user intent data, refining prompt strategies and conversational flows with cross-functional teams.",
+            "Developed pipelines for data preprocessing and semantic search, optimizing information retrieval for user queries."
+          ]
+        },
+        {
+          "title": "Machine Learning Engineer",
+          "subtitle": "Vision R&D",
+          "date": "Aug 2021 – Jun 2023",
+          "description": "",
+          "bullets": [
+            "Developed advanced AI solutions, including NLP, computer vision, and reinforcement learning for various client use cases.",
+            "Architected retrieval systems and microservices, integrating Faiss and Rust to accelerate model performance.",
+            "Led data operations, ensuring data security, proper versioning, and alignment with business objectives."
+          ]
+        },
+        {
+          "title": "Co-Founder",
+          "subtitle": "Vuzag App",
+          "date": "Jan 2016 – Jun 2020",
+          "description": "",
+          "bullets": [
+            "Developed MVP of a location-based visual search iOS app, raising $800,000 in seed funding.",
+            "Managed technical teams to enhance app features, reaching over 30,000 downloads with a 5-star rating.",
+            "Executed sales and marketing strategies, building partnerships to enrich real-time app content."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "education",
+      "title": "Education",
+      "items": [
+        {
+          "title": "Post Graduate Degree (AI & ML)",
+          "subtitle": "University of Texas",
+          "date": "Jan 2022 – Dec 2023",
+          "description": "",
+          "bullets": [
+            "Relevant Coursework: EDA, Advanced Machine Learning, Data Engineering, MLOps, NLP, Computer Vision, Deep Learning, Reinforcement Learning"
+          ]
+        },
+        {
+          "title": "Master of Business Administration (Finance)",
+          "subtitle": "Southern Methodist University",
+          "date": "Jan 2020 – Feb 2021",
+          "description": "",
+          "bullets": []
+        },
+        {
+          "title": "Bachelor of Arts (Sociology & Computer Science)",
+          "subtitle": "Southern Methodist University",
+          "date": "Jul 2011 – Dec 2015",
+          "description": "",
+          "bullets": []
+        }
+      ]
+    },
+    {
+      "id": "skills",
+      "title": "Skills",
+      "content": "Financial Data Analysis: SEC filings (10K/10Q), corporate bond issuance tracking, capital structure changes, anomaly detection\nPython & Data Engineering: Pandas, NumPy, scikit-learn, TensorFlow, PyTorch, SQL, Docker/Kubernetes\nNLP & ML: Language modeling (GPT/BERT), sentiment analysis, entity extraction, data cleaning, model deployment\nAlternative Data & Quantitative Research: Web scraping, fundamental + unstructured data integration, time-series modeling\nStatistical Analysis & Econometrics: Regression, hypothesis testing, asset pricing, risk assessment (MBA & postgrad AI/ML background)\nSoft Skills: Cross-functional collaboration, communication, detail-oriented research, strong problem-solving"
+    },
+    {
+      "id": "projects",
+      "title": "Projects",
+      "items": [
+        {
+          "title": "Interactive Chatbot for 10-K Filings",
+          "subtitle": "Python, Huggingface Transformers, Faiss, Flask, Docker, AWS",
+          "date": "",
+          "description": "Built an LLM-based chatbot that ingests 10-K / 10-Q filings and internal corporate data to provide on-demand insights and Q&A functionality with RAG.",
+          "bullets": []
+        },
+        {
+          "title": "AutoML System for Financial Signal Data",
+          "subtitle": "Python, scikit-learn, TensorFlow, Optuna, Docker, AWS",
+          "date": "",
+          "description": "Automated data pipelines for stock and financial data, improving model selection and hyperparameter tuning for enhanced price prediction.",
+          "bullets": []
+        },
+        {
+          "title": "NLP Pipeline for Financial Data Analysis",
+          "subtitle": "Python, spaCy, TensorFlow, Huggingface, Azure",
+          "date": "",
+          "description": "Analyzed SEC filings, earnings call transcripts, and news articles via NLP for entity recognition, sentiment analysis, and topic modeling.",
+          "bullets": []
+        },
+        {
+          "title": "Reinforcement Learning-based Cryptocurrency Trading Agent",
+          "subtitle": "Python, TensorFlow, Graph Neural Networks, AWS EC2",
+          "date": "",
+          "description": "Explored RL strategies integrating market data and social sentiment, applying risk management for crypto asset trading.",
+          "bullets": []
+        }
+      ]
+    },
+    {
+      "id": "certifications",
+      "title": "Certifications",
+      "items": []
+    }
+  ]
+}
+[DEBUG] Successfully parsed JSON response
+[DEBUG] Parsed data structure: {
+  "name": "Rob Seals",
+  "email": "rseals13@gmail.com",
+  "phone": "832-517-0329",
+  "location": "Houston, TX",
+  "linkedin": "",
+  "sections": [
+    {
+      "id": "summary",
+      "title": "Professional Summary",
+      "content": "Detail-oriented AI/ML Engineer and Data Analyst with 5+ years of combined experience in AI development, machine learning, financial modeling, and fundamental investment research. Skilled at normalizing and sanitizing, analyzing data, and financial research. Leverages Python, statistical techniques, machine learning and NLP for insights and predictions. Studied MBA in Finance complemented by postgraduate AI/ML studies, bridging quantitative finance and modern data science to drive systematic investment decisions."
+    },
+    {
+      "id": "experience",
+      "title": "Work Experience",
+      "items": [
+        {
+          "title": "Financial Data Analyst",
+          "subtitle": "Hudson Way Capital",
+          "date": "Oct 2020 – Jun 2021",
+          "description": "",
+          "bullets": [
+            "Normalized structured and unstructured alternative data from multiple sources.",
+            "Tracked securities, behavioral, and credit data contributing to internal models and supporting investment decisions.",
+            "Performed anomaly detection on financial statements and alternative data identifying irregular trends that informed deeper investigative analysis.",
+            "Developed sentiment analysis tools to detect market trends, generating signals for trading and portfolio risk management.",
+            "Scraped public sources for alternative data, augmenting traditional financial metrics for more robust decision-making."
+          ]
+        },
+        {
+          "title": "Intent Analyst",
+          "subtitle": "Socorro Asset Management",
+          "date": "Jun 2020 – Sep 2020",
+          "description": "",
+          "bullets": [
+            "Conducted research on publicly traded, income-producing securities (equities, preferred shares, corporate bonds) across various sectors.",
+            "Performed risk assessments and helped monitor a diversified portfolio, ensuring stability and alignment with bottom-up, fundamental strategies.",
+            "Utilized quantitative methods and empirical data to identify market trends supporting strategic investment decisions.",
+            "Prepared detailed reports on capital structure changes and other corporate events (e.g., share repurchases, bond offerings)."
+          ]
+        },
+        {
+          "title": "AI / ML Engineer",
+          "subtitle": "Tata Consultancy Services (TCS)",
+          "date": "Jun 2024 – Oct 2024",
+          "description": "",
+          "bullets": [
+            "Integrated NLP models to parse and classify unstructured text, including financial documents and product data.",
+            "Deployed LLM-based solutions on AWS Lambda for scalable model management and performance tracking.",
+            "Engineered prompt workflows (RAG systems) to improve generative text outputs, ensuring higher accuracy in client-facing dialogues."
+          ]
+        },
+        {
+          "title": "NLP / Conversational AI Scientist",
+          "subtitle": "Charter Communications (Spectrum)",
+          "date": "Jun 2023 – Jun 2024",
+          "description": "",
+          "bullets": [
+            "Built NLU systems and conversational AI bots to improve customer interaction and routing, achieving a 95% F1 score.",
+            "Analyzed large volumes of user intent data, refining prompt strategies and conversational flows with cross-functional teams.",
+            "Developed pipelines for data preprocessing and semantic search, optimizing information retrieval for user queries."
+          ]
+        },
+        {
+          "title": "Machine Learning Engineer",
+          "subtitle": "Vision R&D",
+          "date": "Aug 2021 – Jun 2023",
+          "description": "",
+          "bullets": [
+            "Developed advanced AI solutions, including NLP, computer vision, and reinforcement learning for various client use cases.",
+            "Architected retrieval systems and microservices, integrating Faiss and Rust to accelerate model performance.",
+            "Led data operations, ensuring data security, proper versioning, and alignment with business objectives."
+          ]
+        },
+        {
+          "title": "Co-Founder",
+          "subtitle": "Vuzag App",
+          "date": "Jan 2016 – Jun 2020",
+          "description": "",
+          "bullets": [
+            "Developed MVP of a location-based visual search iOS app, raising $800,000 in seed funding.",
+            "Managed technical teams to enhance app features, reaching over 30,000 downloads with a 5-star rating.",
+            "Executed sales and marketing strategies, building partnerships to enrich real-time app content."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "education",
+      "title": "Education",
+      "items": [
+        {
+          "title": "Post Graduate Degree (AI & ML)",
+          "subtitle": "University of Texas",
+          "date": "Jan 2022 – Dec 2023",
+          "description": "",
+          "bullets": [
+            "Relevant Coursework: EDA, Advanced Machine Learning, Data Engineering, MLOps, NLP, Computer Vision, Deep Learning, Reinforcement Learning"
+          ]
+        },
+        {
+          "title": "Master of Business Administration (Finance)",
+          "subtitle": "Southern Methodist University",
+          "date": "Jan 2020 – Feb 2021",
+          "description": "",
+          "bullets": []
+        },
+        {
+          "title": "Bachelor of Arts (Sociology & Computer Science)",
+          "subtitle": "Southern Methodist University",
+          "date": "Jul 2011 – Dec 2015",
+          "description": "",
+          "bullets": []
+        }
+      ]
+    },
+    {
+      "id": "skills",
+      "title": "Skills",
+      "content": "Financial Data Analysis: SEC filings (10K/10Q), corporate bond issuance tracking, capital structure changes, anomaly detection\nPython & Data Engineering: Pandas, NumPy, scikit-learn, TensorFlow, PyTorch, SQL, Docker/Kubernetes\nNLP & ML: Language modeling (GPT/BERT), sentiment analysis, entity extraction, data cleaning, model deployment\nAlternative Data & Quantitative Research: Web scraping, fundamental + unstructured data integration, time-series modeling\nStatistical Analysis & Econometrics: Regression, hypothesis testing, asset pricing, risk assessment (MBA & postgrad AI/ML background)\nSoft Skills: Cross-functional collaboration, communication, detail-oriented research, strong problem-solving"
+    },
+    {
+      "id": "projects",
+      "title": "Projects",
+      "items": [
+        {
+          "title": "Interactive Chatbot for 10-K Filings",
+          "subtitle": "Python, Huggingface Transformers, Faiss, Flask, Docker, AWS",
+          "date": "",
+          "description": "Built an LLM-based chatbot that ingests 10-K / 10-Q filings and internal corporate data to provide on-demand insights and Q&A functionality with RAG.",
+          "bullets": []
+        },
+        {
+          "title": "AutoML System for Financial Signal Data",
+          "subtitle": "Python, scikit-learn, TensorFlow, Optuna, Docker, AWS",
+          "date": "",
+          "description": "Automated data pipelines for stock and financial data, improving model selection and hyperparameter tuning for enhanced price prediction.",
+          "bullets": []
+        },
+        {
+          "title": "NLP Pipeline for Financial Data Analysis",
+          "subtitle": "Python, spaCy, TensorFlow, Huggingface, Azure",
+          "date": "",
+          "description": "Analyzed SEC filings, earnings call transcripts, and news articles via NLP for entity recognition, sentiment analysis, and topic modeling.",
+          "bullets": []
+        },
+        {
+          "title": "Reinforcement Learning-based Cryptocurrency Trading Agent",
+          "subtitle": "Python, TensorFlow, Graph Neural Networks, AWS EC2",
+          "date": "",
+          "description": "Explored RL strategies integrating market data and social sentiment, applying risk management for crypto asset trading.",
+          "bullets": []
+        }
+      ]
+    },
+    {
+      "id": "certifications",
+      "title": "Certifications",
+      "items": []
+    }
+  ]
+}
+[DEBUG] Sending parsed data to frontend: {
+  personalInfo: {
+    name: 'Rob Seals',
+    email: 'rseals13@gmail.com',
+    phone: '832-517-0329',
+    location: 'Houston, TX',
+    linkedin: ''
+  },
+  sectionsCount: 6,
+  sections: [
+    {
+      id: 'summary',
+      title: 'Professional Summary',
+      hasContent: true,
+      itemsCount: 0
+    },
+    {
+      id: 'experience',
+      title: 'Work Experience',
+      hasContent: false,
+      itemsCount: 6
+    },
+    {
+      id: 'education',
+      title: 'Education',
+      hasContent: false,
+      itemsCount: 3
+    },
+    { id: 'skills', title: 'Skills', hasContent: true, itemsCount: 0 },
+    {
+      id: 'projects',
+      title: 'Projects',
+      hasContent: false,
+      itemsCount: 4
+    },
+    {
+      id: 'certifications',
+      title: 'Certifications',
+      hasContent: false,
+      itemsCount: 0
+    }
+  ]
+}
