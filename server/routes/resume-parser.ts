@@ -79,29 +79,18 @@ router.post("/api/resume-parser", upload.single("file"), async (req, res) => {
         fileContent = buffer.toString('utf8');
       }
 
-      // Clean and normalize text
+      // Clean and normalize text while preserving section breaks
       fileContent = fileContent
-        .replace(/[\r\n]+/g, '\n')
-        .replace(/\s+/g, ' ')
-        .replace(/[^\x20-\x7E\n]/g, '')
+        .replace(/[\r\n]{3,}/g, '\n\n') // Normalize multiple line breaks
+        .replace(/[^\x20-\x7E\n]/g, '') // Remove non-printable characters
+        .replace(/\s+/g, ' ') // Normalize spaces
         .trim();
-
-      if (!fileContent.trim()) {
-        throw new Error("No text content could be extracted");
-      }
 
       console.log("[DEBUG] Extracted content length:", fileContent.length);
 
     } catch (error) {
       console.error("[DEBUG] Text extraction error:", error);
       throw new Error(`Failed to extract text: ${error.message}`);
-    }
-
-    // Truncate if too long
-    const MAX_LENGTH = 6000;
-    if (fileContent.length > MAX_LENGTH) {
-      fileContent = fileContent.slice(0, MAX_LENGTH);
-      console.log("[DEBUG] Content truncated to", MAX_LENGTH, "characters");
     }
 
     // Parse with OpenAI
@@ -111,11 +100,16 @@ router.post("/api/resume-parser", upload.single("file"), async (req, res) => {
       messages: [
         {
           role: "system",
-          content: "Extract resume information into the specified JSON format. Keep original text intact where possible."
+          content: `You are a resume parser that excels at identifying and extracting structured information from resumes.
+- Extract ALL information you can find, even if sections are incomplete
+- For education, work experience, and projects, create entries even with partial information
+- Preserve original text formatting and bullet points
+- If a field is truly empty, use an empty string instead of omitting it`
         },
         {
           role: "user",
-          content: `Parse this resume into this exact JSON structure:
+          content: `Parse this resume into JSON, preserving ALL information you can find, even if incomplete:
+
 {
   "name": "",
   "email": "",
@@ -133,11 +127,11 @@ router.post("/api/resume-parser", upload.single("file"), async (req, res) => {
       "title": "Work Experience",
       "items": [
         {
-          "title": "",
-          "subtitle": "",
-          "date": "",
-          "description": "",
-          "bullets": []
+          "title": "",      // Job title, if found
+          "subtitle": "",   // Company/organization name
+          "date": "",      // Any date or date range found
+          "description": "", // Any role description found
+          "bullets": []    // Any bullet points or achievements
         }
       ]
     },
@@ -146,11 +140,11 @@ router.post("/api/resume-parser", upload.single("file"), async (req, res) => {
       "title": "Education",
       "items": [
         {
-          "title": "",
-          "subtitle": "",
-          "date": "",
-          "description": "",
-          "bullets": []
+          "title": "",      // Degree or program name
+          "subtitle": "",   // School/institution name
+          "date": "",      // Dates if available
+          "description": "", // Any additional details
+          "bullets": []    // Relevant courses, achievements
         }
       ]
     },
@@ -164,11 +158,11 @@ router.post("/api/resume-parser", upload.single("file"), async (req, res) => {
       "title": "Projects",
       "items": [
         {
-          "title": "",
-          "subtitle": "",
-          "date": "",
-          "description": "",
-          "bullets": []
+          "title": "",      // Project name
+          "subtitle": "",   // Technologies/tools used
+          "date": "",      // Timeline if available
+          "description": "", // Project description
+          "bullets": []    // Key features or achievements
         }
       ]
     },
@@ -177,23 +171,23 @@ router.post("/api/resume-parser", upload.single("file"), async (req, res) => {
       "title": "Certifications",
       "items": [
         {
-          "title": "",
-          "subtitle": "",
-          "date": "",
-          "description": "",
-          "bullets": []
+          "title": "",      // Certification name
+          "subtitle": "",   // Issuing organization
+          "date": "",      // Date if available
+          "description": "", // Additional details
+          "bullets": []    // Related achievements
         }
       ]
     }
   ]
 }
 
-Resume text:
+Resume text to parse:
 ${fileContent}`
         }
       ],
       temperature: 0.1,
-      max_tokens: 2000,
+      max_tokens: 2500,
       response_format: { type: "json_object" }
     });
 
@@ -217,25 +211,41 @@ ${fileContent}`
       throw new Error("Invalid response structure");
     }
 
-    // Sanitize output
+    // Sanitize output while preserving partial data
     const sanitizedData = {
       name: parsedData.name || "",
       email: parsedData.email || "",
       phone: parsedData.phone || "",
       location: parsedData.location || "",
       linkedin: parsedData.linkedin || "",
-      sections: parsedData.sections.map(section => ({
-        id: section.id || "",
-        title: section.title || "",
-        content: section.content || "",
-        items: section.items?.map(item => ({
-          title: item.title || "",
-          subtitle: item.subtitle || "",
-          date: item.date || "",
-          description: item.description || "",
-          bullets: Array.isArray(item.bullets) ? item.bullets : []
-        }))
-      }))
+      sections: parsedData.sections.map(section => {
+        // Base section data
+        const sectionData = {
+          id: section.id || "",
+          title: section.title || "",
+          content: section.content || ""
+        };
+
+        // Handle items if present
+        if (section.items && Array.isArray(section.items)) {
+          return {
+            ...sectionData,
+            items: section.items.map(item => ({
+              title: item.title || "",
+              subtitle: item.subtitle || "",
+              date: item.date || "",
+              description: item.description || "",
+              bullets: Array.isArray(item.bullets) ? 
+                item.bullets.filter(bullet => bullet && bullet.trim()) : []
+            })).filter(item => 
+              // Keep items that have at least some content
+              item.title || item.subtitle || item.description || item.bullets.length > 0
+            )
+          };
+        }
+
+        return sectionData;
+      })
     };
 
     console.log("[DEBUG] Successfully parsed resume");
@@ -250,4 +260,4 @@ ${fileContent}`
   }
 });
 
-export default router;
+export { router as default };
