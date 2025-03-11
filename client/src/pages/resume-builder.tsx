@@ -66,14 +66,7 @@ export default function ResumeBuilder() {
     return "";
   }, [activeSection, sections]);
 
-  // Effect to get AI suggestions when section changes
-  useEffect(() => {
-    if (activeSection) {
-      getAiSuggestions(activeSection);
-    }
-  }, [activeSection, getAiSuggestions]);
-
-  // Add new function to get AI suggestions when section is selected
+  // Add function to get AI suggestions
   const getAiSuggestions = useCallback(async (sectionId: string, userQuery?: string) => {
     setIsAiLoading(true);
     try {
@@ -108,10 +101,17 @@ export default function ResumeBuilder() {
     }
   }, [getCurrentSectionContent, toast]);
 
+  // Effect to get AI suggestions when section changes
+  useEffect(() => {
+    if (activeSection) {
+      getAiSuggestions(activeSection);
+    }
+  }, [activeSection, getAiSuggestions]);
+
   // Handle section selection
-  const handleSectionSelect = (sectionId: string) => {
+  const handleSectionSelect = useCallback((sectionId: string) => {
     setActiveSection(sectionId);
-  };
+  }, []);
 
   // Handle AI chat input
   const handleAiChat = async (e: React.FormEvent) => {
@@ -124,7 +124,7 @@ export default function ResumeBuilder() {
   };
 
   /**
-   * 1. Handle uploading + parsing resume via /api/ai-resume-parser
+   * Handle resume upload
    */
   const handleFileUpload = async (file: File) => {
     if (!file) return;
@@ -149,9 +149,8 @@ export default function ResumeBuilder() {
       }
 
       const data = await response.json();
-      // data shape: { name, email, phone, location, linkedin, sections: [...] }
 
-      // Update personal info from top-level fields
+      // Update personal info
       setPersonalInfo({
         name: data.name || "",
         email: data.email || "",
@@ -160,88 +159,10 @@ export default function ResumeBuilder() {
         linkedin: data.linkedin || ""
       });
 
-      // Map the returned data.sections[] to our front-end sections
-      const updatedSections = sections.map((section) => {
-        const matchedServerSection = data.sections.find(
-          (serverSec: any) => serverSec.id === section.id
-        );
-        if (!matchedServerSection) {
-          return section;
-        }
+      // Update sections
+      setSections(data.sections);
 
-        // If it's a simple "content" section
-        if (section.id === "summary" || section.id === "skills") {
-          return {
-            ...section,
-            content: matchedServerSection.content || ""
-          };
-        }
-
-        // If it's an "experience" section with items
-        if (section.id === "experience") {
-          return {
-            ...section,
-            items: (matchedServerSection.items || []).map((exp: any) => ({
-              title: exp.title || "",
-              subtitle: exp.company || "",
-              date: exp.dates || "",
-              description: "",
-              bullets: exp.responsibilities || []
-            }))
-          };
-        }
-
-        // If it's an "education" section
-        if (section.id === "education") {
-          return {
-            ...section,
-            items: (matchedServerSection.items || []).map((edu: any) => ({
-              title: edu.degree || "",
-              subtitle: edu.institution || "",
-              date: edu.dates || "",
-              description: "",
-              bullets: edu.courses || []
-            }))
-          };
-        }
-
-        // If it's a "projects" section
-        if (section.id === "projects") {
-          return {
-            ...section,
-            items: (matchedServerSection.items || []).map((proj: any) => ({
-              title: proj.name || "",
-              subtitle: proj.technologies || "",
-              date: "", // or proj.date if provided
-              description: proj.focus || "",
-              bullets: []
-            }))
-          };
-        }
-
-        // If it's a "certifications" section
-        if (section.id === "certifications") {
-          return {
-            ...section,
-            items: (matchedServerSection.items || []).map((cert: any) => ({
-              title: cert.name || "",
-              subtitle: "",
-              date: "",
-              description: "",
-              bullets: []
-            }))
-          };
-        }
-
-        return section;
-      });
-
-      setSections(updatedSections);
-
-      // Provide an AI message after populating
-      setAiMessage(
-        "I've analyzed your resume and populated all sections. Select any section to make edits or request AI improvements."
-      );
+      setAiMessage("Resume parsed successfully. Select any section to get AI suggestions for improvements.");
 
       toast({
         title: "Resume Parsed Successfully",
@@ -259,9 +180,7 @@ export default function ResumeBuilder() {
     }
   };
 
-  /**
-   * 2. Start a brand-new resume
-   */
+  // Start new resume
   const handleNewResume = () => {
     setPersonalInfo({
       name: "",
@@ -278,12 +197,10 @@ export default function ResumeBuilder() {
       }))
     );
     setAiMessage("Start by uploading a resume or entering your information manually.");
+    setActiveSection(null);
   };
 
-
-  /**
-   * 4. Helper functions to modify sections on the fly
-   */
+  // Add new item to a section
   const addSectionItem = (sectionId: string) => {
     setSections((prev) =>
       prev.map((section) => {
@@ -301,6 +218,7 @@ export default function ResumeBuilder() {
     );
   };
 
+  // Remove item from a section
   const removeSectionItem = (sectionId: string, itemIndex: number) => {
     setSections((prev) =>
       prev.map((section) => {
@@ -315,6 +233,7 @@ export default function ResumeBuilder() {
     );
   };
 
+  // Add bullet point to an item
   const addBulletPoint = (sectionId: string, itemIndex: number) => {
     setSections((prev) =>
       prev.map((section) => {
@@ -331,7 +250,7 @@ export default function ResumeBuilder() {
     );
   };
 
-  // Update the sidebar buttons onClick
+  // Render sidebar buttons
   const renderSidebarButtons = () => (
     sections.map((section) => (
       <button
@@ -352,7 +271,7 @@ export default function ResumeBuilder() {
     ))
   );
 
-  // Update AI Assistant card
+  // Render AI Assistant
   const renderAiAssistant = () => (
     <Card className="mt-6">
       <CardHeader>
@@ -414,9 +333,6 @@ export default function ResumeBuilder() {
     </Card>
   );
 
-  /**
-   * 5. Render the component
-   */
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-[1200px] mx-auto">
