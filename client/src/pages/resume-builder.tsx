@@ -11,7 +11,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
-//import JobSearchAgent from "@/components/job-search-agent"; // Removed import
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@radix-ui/react-select'
+
 
 interface Section {
   id: string;
@@ -92,24 +93,45 @@ export default function ResumeBuilder() {
   ]);
 
   // Fetch existing resumes
-  const { data: existingResumes } = useQuery({
+  const { data: existingResumes } = useQuery<{ id: number; title: string }[]>({
     queryKey: ['/api/resumes'],
   });
 
   // Populate data from selected resume
-  const populateFromResume = (resumeId: number) => {
-    apiRequest("GET", `/api/resumes/${resumeId}`).then(async (response) => {
+  const populateFromResume = async (resumeId: number) => {
+    try {
+      const response = await apiRequest("GET", `/api/resumes/${resumeId}`);
       const resumeData = await response.json();
 
       if (resumeData.content) {
-        // Parse the resume content and populate the sections
         try {
           const parsed = JSON.parse(resumeData.content);
+
+          // Populate personal info if available
           if (parsed.personalInfo) {
-            setPersonalInfo(parsed.personalInfo);
+            setPersonalInfo({
+              name: parsed.personalInfo.name || "",
+              email: parsed.personalInfo.email || "",
+              phone: parsed.personalInfo.phone || "",
+              location: parsed.personalInfo.location || "",
+              linkedin: parsed.personalInfo.linkedin || ""
+            });
           }
-          if (parsed.sections) {
-            setSections(parsed.sections);
+
+          // Populate sections if available
+          if (parsed.sections && Array.isArray(parsed.sections)) {
+            const newSections = sections.map(section => {
+              const matchingSection = parsed.sections.find((s: Section) => s.id === section.id);
+              if (matchingSection) {
+                return {
+                  ...section,
+                  content: matchingSection.content || "",
+                  items: matchingSection.items || []
+                };
+              }
+              return section;
+            });
+            setSections(newSections);
           }
 
           toast({
@@ -117,7 +139,7 @@ export default function ResumeBuilder() {
             description: "Your existing resume has been loaded into the builder"
           });
         } catch (e) {
-          // If not JSON, use the content as is for the summary
+          // If parsing fails, try to use content as summary
           setSections(prev => prev.map(section =>
             section.id === "summary"
               ? { ...section, content: resumeData.content }
@@ -125,7 +147,13 @@ export default function ResumeBuilder() {
           ));
         }
       }
-    });
+    } catch (error) {
+      toast({
+        title: "Error Loading Resume",
+        description: "Failed to load the selected resume",
+        variant: "destructive"
+      });
+    }
   };
 
   const enhanceMutation = useMutation({
@@ -302,13 +330,20 @@ export default function ResumeBuilder() {
           <h1 className="text-2xl font-bold">Resume Builder</h1>
           <div className="flex gap-3">
             {existingResumes && existingResumes.length > 0 && (
-              <Button
-                variant="outline"
-                onClick={() => populateFromResume(existingResumes[0].id)}
+              <Select
+                onValueChange={(value) => populateFromResume(parseInt(value))}
               >
-                <Upload className="w-4 h-4 mr-2" />
-                Use Existing Resume
-              </Button>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Use Existing Resume" />
+                </SelectTrigger>
+                <SelectContent>
+                  {existingResumes.map((resume) => (
+                    <SelectItem key={resume.id} value={resume.id.toString()}>
+                      {resume.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
             <Button variant="outline" onClick={() => {
               setSections(sections.map(s => ({ ...s, content: "", items: [] })));
