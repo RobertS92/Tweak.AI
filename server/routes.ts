@@ -418,11 +418,83 @@ Return an optimized version that matches keywords and improves ATS score while m
 
   // Update the PDF download route
   app.post("/api/resumes/download-pdf", async (req, res) => {
+    if (!req.body.content) {
+      return res.status(400).json({ message: "Resume content is required" });
+    }
+
     try {
       const { content } = req.body;
-      if (!content) {
-        return res.status(400).json({ message: "No content provided" });
-      }
+
+      // Create base HTML template
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Enhanced Resume</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 40px;
+              font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              background: white;
+            }
+            .resume {
+              max-width: 850px;
+              margin: 0 auto;
+            }
+            h1 {
+              font-size: 28px;
+              margin-bottom: 8px;
+              color: #2C3E50;
+              font-weight: 600;
+              text-align: center;
+            }
+            h2 {
+              font-size: 18px;
+              color: #2C3E50;
+              margin-bottom: 10px;
+              padding-bottom: 5px;
+              border-bottom: 2px solid #3E7CB1;
+              font-weight: 600;
+            }
+            h3 {
+              font-size: 16px;
+              color: #2C3E50;
+              margin-bottom: 4px;
+              font-weight: 600;
+            }
+            .contact-info {
+              text-align: center;
+              font-size: 14px;
+              margin-bottom: 5px;
+              color: #555;
+            }
+            ul {
+              padding-left: 20px;
+              margin-bottom: 8px;
+              list-style-type: disc;
+            }
+            li {
+              margin-bottom: 4px;
+              font-size: 14px;
+            }
+            @page {
+              margin: 20px;
+              size: A4;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="resume">
+            ${content}
+          </div>
+        </body>
+        </html>
+      `;
 
       // Launch browser with specific path to chromium
       const browser = await puppeteer.launch({
@@ -434,146 +506,38 @@ Return an optimized version that matches keywords and improves ATS score while m
       try {
         const page = await browser.newPage();
 
-        // Set viewport for better rendering
-        await page.setViewport({
-          width: 850,
-          height: 1100,
-          deviceScaleFactor: 1,
+        // Set the HTML content and wait for it to load
+        await page.setContent(htmlContent, {
+          waitUntil: 'networkidle0'
         });
 
-        // Create a minimal HTML document with only resume styles
-        await page.setContent(`
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Professional Resume</title>
-            <style>
-              /* Reset */
-              * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-              }
-
-              /* Base styles */
-              body {
-                font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                padding: 0.75in;
-                width: 8.5in;
-                margin: 0 auto;
-                background: white;
-              }
-
-              /* Resume container */
-              .resume {
-                max-width: 100%;
-              }
-
-              /* Typography */
-              h1 {
-                font-size: 28px;
-                margin-bottom: 8px;
-                color: #2C3E50;
-                font-weight: 600;
-                text-align: center;
-              }
-
-              h2 {
-                font-size: 18px;
-                color: #2C3E50;
-                margin-bottom: 10px;
-                padding-bottom: 5px;
-                border-bottom: 2px solid #3E7CB1;
-                font-weight: 600;
-              }
-
-              h3 {
-                font-size: 16px;
-                color: #2C3E50;
-                margin-bottom: 4px;
-                font-weight: 600;
-              }
-
-              /* Contact info */
-              .contact-info {
-                text-align: center;
-                font-size: 14px;
-                margin-bottom: 5px;
-                color: #555;
-              }
-
-              /* Lists */
-              ul {
-                padding-left: 20px;
-                margin-bottom: 8px;
-              }
-
-              li {
-                margin-bottom: 4px;
-                font-size: 14px;
-              }
-
-              /* Sections */
-              section {
-                margin-bottom: 20px;
-              }
-
-              /* Print settings */
-              @page {
-                size: letter;
-                margin: 0;
-              }
-
-              @media print {
-                body {
-                  width: 100%;
-                  height: 100%;
-                  margin: 0;
-                  padding: 0.75in;
-                  -webkit-print-color-adjust: exact;
-                  print-color-adjust: exact;
-                }
-              }
-            </style>
-          </head>
-          <body>
-            ${content}
-          </body>
-          </html>
-        `);
-
-        // Generate PDF with proper settings
+        // Generate PDF
         const pdf = await page.pdf({
-          format: 'Letter',
+          format: 'A4',
           printBackground: true,
-          preferCSSPageSize: true,
-          displayHeaderFooter: false,
           margin: {
-            top: 0,
-            right: 0,
-            bottom: 0,
-            left: 0
+            top: '20px',
+            right: '20px',
+            bottom: '20px',
+            left: '20px'
           }
         });
 
-        await browser.close();
-
-        // Set proper headers for PDF download
+        // Set headers for PDF download
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`);
-        res.send(pdf);
 
-      } catch (error) {
+        // Send the PDF
+        res.send(pdf);
+      } finally {
         await browser.close();
-        throw error;
       }
     } catch (error) {
       console.error('PDF generation failed:', error);
-      res.status(500).json({ message: 'Failed to generate PDF. Please try again.' });
+      res.status(500).json({ 
+        message: 'Failed to generate PDF', 
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
