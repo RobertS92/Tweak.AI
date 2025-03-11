@@ -292,8 +292,8 @@ export default function ResumeBuilder() {
 
   // Render AI Assistant
   const renderAiAssistant = () => (
-    <Card className="sticky top-6 h-[calc(100vh-8rem)]">
-      <CardHeader>
+    <Card className="h-[30vh] mt-6">
+      <CardHeader className="py-3">
         <CardTitle className="flex items-center gap-2">
           <svg
             className="w-5 h-5 text-blue-500"
@@ -317,12 +317,12 @@ export default function ResumeBuilder() {
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-0 h-full flex flex-col">
+      <CardContent className="p-0 h-[calc(30vh-4rem)] flex flex-col">
         <ScrollArea className="flex-grow p-4">
           <div className="space-y-4">
             <div className="bg-muted rounded-lg p-4">
               {aiMessage || (
-                activeSection 
+                activeSection
                   ? "Analyzing your content..."
                   : "Select a section to get AI assistance and suggestions."
               )}
@@ -332,17 +332,17 @@ export default function ResumeBuilder() {
         <form onSubmit={handleAiChat} className="p-4 border-t flex gap-2">
           <Input
             placeholder={
-              activeSection 
-                ? "Ask for suggestions or improvements..." 
+              activeSection
+                ? "Ask for suggestions or improvements..."
                 : "Select a section first..."
             }
             value={aiInput}
             onChange={(e) => setAiInput(e.target.value)}
             disabled={!activeSection || isAiLoading}
           />
-          <Button 
-            type="submit" 
-            size="icon" 
+          <Button
+            type="submit"
+            size="icon"
             disabled={isAiLoading || !activeSection || !aiInput.trim()}
           >
             <Send className="h-4 w-4" />
@@ -354,7 +354,7 @@ export default function ResumeBuilder() {
 
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-[1800px] mx-auto">
+      <div className="max-w-[1800px] mx-auto flex flex-col h-[calc(100vh-3rem)]">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Resume Builder</h1>
@@ -385,18 +385,18 @@ export default function ResumeBuilder() {
           </div>
         </div>
 
-        {/* Main layout with split view */}
-        <div className="grid grid-cols-[240px_1fr_600px] gap-6">
+        {/* Main content area - 70% height */}
+        <div className="flex-1 flex gap-6 overflow-hidden">
           {/* Left sidebar */}
-          <Card className="h-fit sticky top-6">
+          <Card className="w-60 shrink-0 sticky top-6 h-fit">
             <CardContent className="p-4">
               {renderSidebarButtons()}
             </CardContent>
           </Card>
 
           {/* Center content area - Scrollable */}
-          <ScrollArea className="h-[calc(100vh-8rem)]" ref={contentRef}>
-            <div className="space-y-6 pr-4">
+          <ScrollArea className="flex-1 h-full pr-4" ref={contentRef}>
+            <div className="space-y-6">
               {/* Personal Info */}
               <Card>
                 <CardHeader>
@@ -640,10 +640,10 @@ export default function ResumeBuilder() {
               ))}
             </div>
           </ScrollArea>
-
-          {/* Right side - AI Assistant */}
-          {renderAiAssistant()}
         </div>
+
+        {/* AI Assistant - 30% height at bottom */}
+        {renderAiAssistant()}
       </div>
     </div>
   );
