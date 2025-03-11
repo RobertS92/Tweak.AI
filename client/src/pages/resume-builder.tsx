@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Download, Plus, Upload } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 interface Section {
@@ -23,7 +21,7 @@ interface Section {
 
 export default function ResumeBuilder() {
   const { toast } = useToast();
-  const [activeSection, setActiveSection] = useState<string>("");
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   const [personalInfo, setPersonalInfo] = useState({
     name: "",
     email: "",
@@ -36,7 +34,7 @@ export default function ResumeBuilder() {
     {
       id: "summary",
       title: "Professional Summary",
-      content: "",
+      content: ""
     },
     {
       id: "experience",
@@ -53,7 +51,7 @@ export default function ResumeBuilder() {
     {
       id: "skills",
       title: "Skills",
-      content: "",
+      content: ""
     },
     {
       id: "projects",
@@ -70,8 +68,6 @@ export default function ResumeBuilder() {
   ]);
 
   const handleFileUpload = async (file: File) => {
-    if (!file) return;
-
     const formData = new FormData();
     formData.append('file', file);
 
@@ -90,36 +86,100 @@ export default function ResumeBuilder() {
         throw new Error('Failed to parse resume');
       }
 
-      const parsedData = await response.json();
+      const data = await response.json();
 
       // Update personal information
-      setPersonalInfo({
-        name: parsedData.personalInfo?.name || "",
-        email: parsedData.personalInfo?.email || "",
-        phone: parsedData.personalInfo?.phone || "",
-        location: parsedData.personalInfo?.location || "",
-        linkedin: parsedData.personalInfo?.linkedin || ""
-      });
+      if (data.personalInfo) {
+        setPersonalInfo({
+          name: data.personalInfo.name || "",
+          email: data.personalInfo.email || "",
+          phone: data.personalInfo.phone || "",
+          location: data.personalInfo.location || "",
+          linkedin: data.personalInfo.linkedin || ""
+        });
+      }
 
-      // Update sections with parsed content
-      setSections(sections.map(section => {
-        const sectionData = parsedData[section.id];
+      // Update sections with parsed data
+      const updatedSections = sections.map(section => {
+        const sectionData = data[section.id];
         if (!sectionData) return section;
 
-        return {
-          ...section,
-          content: sectionData.content || "",
-          items: sectionData.items || section.items
-        };
-      }));
+        switch (section.id) {
+          case "summary":
+            return {
+              ...section,
+              content: data.summary || ""
+            };
+
+          case "experience":
+            return {
+              ...section,
+              items: (data.experience || []).map((exp: any) => ({
+                title: exp.position || "",
+                subtitle: exp.company || "",
+                date: `${exp.startDate || ""} - ${exp.endDate || "Present"}`,
+                description: exp.description || "",
+                bullets: exp.responsibilities || []
+              }))
+            };
+
+          case "education":
+            return {
+              ...section,
+              items: (data.education || []).map((edu: any) => ({
+                title: edu.degree || "",
+                subtitle: edu.institution || "",
+                date: `${edu.startDate || ""} - ${edu.endDate || ""}`,
+                description: edu.description || "",
+                bullets: edu.highlights || []
+              }))
+            };
+
+          case "skills":
+            return {
+              ...section,
+              content: Array.isArray(data.skills) ? data.skills.join(", ") : data.skills || ""
+            };
+
+          case "projects":
+            return {
+              ...section,
+              items: (data.projects || []).map((proj: any) => ({
+                title: proj.name || "",
+                subtitle: proj.technologies || "",
+                date: proj.duration || "",
+                description: proj.description || "",
+                bullets: proj.highlights || []
+              }))
+            };
+
+          case "certifications":
+            return {
+              ...section,
+              items: (data.certifications || []).map((cert: any) => ({
+                title: cert.name || "",
+                subtitle: cert.issuer || "",
+                date: cert.date || "",
+                description: cert.description || "",
+                bullets: cert.details || []
+              }))
+            };
+
+          default:
+            return section;
+        }
+      });
+
+      setSections(updatedSections);
 
       toast({
-        title: "Resume Parsed",
-        description: "Your resume has been analyzed and loaded into the builder"
+        title: "Resume Parsed Successfully",
+        description: "All sections have been populated. Please review and edit as needed."
       });
     } catch (error) {
+      console.error('Error parsing resume:', error);
       toast({
-        title: "Error",
+        title: "Parsing Failed",
         description: "Failed to parse resume. Please try again or enter details manually.",
         variant: "destructive"
       });
@@ -128,11 +188,11 @@ export default function ResumeBuilder() {
 
   const addSectionItem = (sectionId: string) => {
     setSections(prev => prev.map(section => {
-      if (section.id === sectionId) {
+      if (section.id === sectionId && section.items) {
         return {
           ...section,
           items: [
-            ...(section.items || []),
+            ...section.items,
             { title: "", subtitle: "", date: "", description: "", bullets: [] }
           ]
         };
@@ -149,7 +209,6 @@ export default function ResumeBuilder() {
       location: "",
       linkedin: ""
     });
-
     setSections(sections.map(section => ({
       ...section,
       content: "",
@@ -159,21 +218,23 @@ export default function ResumeBuilder() {
 
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="max-w-[1400px] mx-auto">
+      <div className="max-w-[1200px] mx-auto">
         {/* Header with buttons */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Resume Builder</h1>
           <div className="flex gap-3">
-            <Button onClick={() => {
-              const input = document.createElement('input');
-              input.type = 'file';
-              input.accept = '.pdf,.doc,.docx,.txt';
-              input.onchange = (e) => {
-                const file = (e.target as HTMLInputElement).files?.[0];
-                if (file) handleFileUpload(file);
-              };
-              input.click();
-            }}>
+            <Button 
+              onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.pdf,.doc,.docx,.txt';
+                input.onchange = (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (file) handleFileUpload(file);
+                };
+                input.click();
+              }}
+            >
               <Upload className="w-4 h-4 mr-2" />
               Upload Resume
             </Button>
@@ -197,12 +258,11 @@ export default function ResumeBuilder() {
                 <button
                   key={section.id}
                   onClick={() => setActiveSection(section.id)}
-                  className={cn(
-                    "w-full text-left px-4 py-2 rounded-md transition-colors",
+                  className={`w-full text-left px-4 py-2 rounded-md transition-colors ${
                     activeSection === section.id
                       ? "bg-primary text-primary-foreground"
                       : "hover:bg-muted"
-                  )}
+                  }`}
                 >
                   {section.title}
                 </button>
@@ -251,7 +311,7 @@ export default function ResumeBuilder() {
 
             {/* Sections */}
             {sections.map((section) => (
-              <Card key={section.id} id={section.id}>
+              <Card key={section.id}>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>{section.title}</CardTitle>
                   {section.items && (
@@ -261,7 +321,7 @@ export default function ResumeBuilder() {
                       onClick={() => addSectionItem(section.id)}
                     >
                       <Plus className="w-4 h-4 mr-2" />
-                      Add {section.title} Entry
+                      Add Entry
                     </Button>
                   )}
                 </CardHeader>
@@ -350,6 +410,66 @@ export default function ResumeBuilder() {
                               )
                             }
                           />
+                          {/* Bullet points */}
+                          <div className="space-y-2">
+                            {item.bullets.map((bullet, bulletIndex) => (
+                              <Input
+                                key={bulletIndex}
+                                value={bullet}
+                                placeholder="Bullet point"
+                                onChange={(e) =>
+                                  setSections(prev =>
+                                    prev.map(s =>
+                                      s.id === section.id
+                                        ? {
+                                            ...s,
+                                            items: s.items?.map((i, idx) =>
+                                              idx === index
+                                                ? {
+                                                    ...i,
+                                                    bullets: i.bullets.map(
+                                                      (b, bidx) =>
+                                                        bidx === bulletIndex
+                                                          ? e.target.value
+                                                          : b
+                                                    )
+                                                  }
+                                                : i
+                                            )
+                                          }
+                                        : s
+                                    )
+                                  )
+                                }
+                              />
+                            ))}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                setSections(prev =>
+                                  prev.map(s =>
+                                    s.id === section.id
+                                      ? {
+                                          ...s,
+                                          items: s.items?.map((i, idx) =>
+                                            idx === index
+                                              ? {
+                                                  ...i,
+                                                  bullets: [...i.bullets, ""]
+                                                }
+                                              : i
+                                          )
+                                        }
+                                      : s
+                                  )
+                                )
+                              }
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add Bullet Point
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>
