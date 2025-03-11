@@ -11,7 +11,7 @@ const router = Router();
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { fileSize: 20 * 1024 * 1024 }, // Increased to 20MB
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
       'application/pdf',
@@ -87,114 +87,98 @@ router.post("/api/ai-resume-parser", upload.single("file"), async (req, res) => 
       });
     }
 
-    // Truncate content if too long
-    if (fileContent.length > 14000) { // Approximate token limit for GPT-4
-      fileContent = fileContent.substring(0, 14000);
-      console.log("Content truncated to 14000 characters due to token limit");
+    // Truncate content if too long (increased limit)
+    if (fileContent.length > 20000) {
+      fileContent = fileContent.substring(0, 20000);
+      console.log("Content truncated to 20000 characters");
     }
 
     console.log("Calling OpenAI API...");
 
-    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: "You are a resume parser. Extract only the text content from each section of the resume. Preserve the exact text as it appears in the document, don't modify or enhance it. Return the content as a JSON object with a simple structure that matches the form fields."
+          content: "You are a resume content extractor. Extract the exact text content from the resume into specified fields. Keep original text, don't modify content."
         },
         {
           role: "user",
-          content: `Parse this resume and fill in these exact form fields with the content from the resume:
-{
-  "name": "",           // Full name from the resume
-  "email": "",         // Email address
-  "phone": "",         // Phone number
-  "location": "",      // Location/address
-  "linkedin": "",      // LinkedIn URL if present
-  "sections": [
-    {
-      "id": "summary",
-      "title": "Professional Summary",
-      "content": ""    // The exact summary text
-    },
-    {
-      "id": "experience",
-      "title": "Work Experience",
-      "items": [
-        {
-          "title": "",       // Job title
-          "subtitle": "",    // Company name
-          "date": "",        // Employment dates
-          "description": "", // Job description
-          "bullets": []      // List of achievements/responsibilities
-        }
-      ]
-    },
-    {
-      "id": "education",
-      "title": "Education",
-      "items": [
-        {
-          "title": "",       // Degree
-          "subtitle": "",    // School name
-          "date": "",        // Education dates
-          "description": "", // Program description
-          "bullets": []      // List of achievements
-        }
-      ]
-    },
-    {
-      "id": "skills",
-      "title": "Skills",
-      "content": ""    // Skills list as text
-    },
-    {
-      "id": "projects",
-      "title": "Projects",
-      "items": [
-        {
-          "title": "",       // Project name
-          "subtitle": "",    // Technologies used
-          "date": "",        // Project duration
-          "description": "", // Project description
-          "bullets": []      // List of highlights
-        }
-      ]
-    },
-    {
-      "id": "certifications",
-      "title": "Certifications",
-      "items": [
-        {
-          "title": "",       // Certification name
-          "subtitle": "",    // Issuing organization
-          "date": "",        // Date earned
-          "description": "", // Description
-          "bullets": []      // Additional details
-        }
-      ]
-    }
-  ]
-}
+          content: `Extract resume content into these fields, preserving exact text:
 
-Resume content to parse:
+1. Basic Info:
+- Full name
+- Email address
+- Phone number
+- Location
+- LinkedIn URL
+
+2. Sections:
+- Professional Summary (full paragraph)
+- Work Experience (each position with title, company, dates, and bullet points)
+- Education (each entry with degree, school, dates)
+- Skills (complete list)
+- Projects (each with name, technologies, dates, description)
+- Certifications (each with name, issuer, date)
+
+Resume text:
 ${fileContent}`
         }
       ],
       temperature: 0.1,
-      max_tokens: 2048,
-      response_format: { type: "json_object" }
+      max_tokens: 4000
     });
 
     if (!completion.choices[0].message.content) {
       throw new Error("No content in OpenAI response");
     }
 
-    console.log("OpenAI response received, parsing JSON...");
+    console.log("OpenAI response received, parsing response...");
+    const response = completion.choices[0].message.content;
 
-    const parsedData = JSON.parse(completion.choices[0].message.content);
-    res.json(parsedData);
+    // Structure the form data
+    const formData = {
+      name: extractField(response, "Full name:"),
+      email: extractField(response, "Email:"),
+      phone: extractField(response, "Phone:"),
+      location: extractField(response, "Location:"),
+      linkedin: extractField(response, "LinkedIn:"),
+      sections: [
+        {
+          id: "summary",
+          title: "Professional Summary",
+          content: extractSection(response, "Professional Summary"),
+        },
+        {
+          id: "experience",
+          title: "Work Experience",
+          items: extractWorkExperience(response),
+        },
+        {
+          id: "education",
+          title: "Education",
+          items: extractEducation(response),
+        },
+        {
+          id: "skills",
+          title: "Skills",
+          content: extractSection(response, "Skills"),
+        },
+        {
+          id: "projects",
+          title: "Projects",
+          items: extractProjects(response),
+        },
+        {
+          id: "certifications",
+          title: "Certifications",
+          items: extractCertifications(response),
+        }
+      ]
+    };
+
+    console.log("Successfully structured resume data");
+    res.json(formData);
 
   } catch (error) {
     console.error("Resume parsing error:", error);
@@ -205,5 +189,82 @@ ${fileContent}`
     });
   }
 });
+
+// Helper functions to extract content
+function extractField(text: string, field: string): string {
+  const regex = new RegExp(`${field}\\s*(.+)`, 'i');
+  const match = text.match(regex);
+  return match ? match[1].trim() : "";
+}
+
+function extractSection(text: string, section: string): string {
+  const regex = new RegExp(`${section}:?\\s*([\\s\\S]*?)(?=\\n\\s*[A-Z][A-Za-z\\s]+:|$)`, 'i');
+  const match = text.match(regex);
+  return match ? match[1].trim() : "";
+}
+
+function extractWorkExperience(text: string): any[] {
+  const experienceSection = extractSection(text, "Work Experience");
+  const experiences = experienceSection.split(/\n(?=[A-Z][^a-z]*\n|$)/);
+
+  return experiences.map(exp => {
+    const lines = exp.split('\n').filter(line => line.trim());
+    return {
+      title: lines[0] || "",
+      subtitle: lines[1] || "",
+      date: lines[2] || "",
+      description: lines[3] || "",
+      bullets: lines.slice(4).map(line => line.trim()).filter(line => line)
+    };
+  }).filter(exp => exp.title || exp.subtitle);
+}
+
+function extractEducation(text: string): any[] {
+  const educationSection = extractSection(text, "Education");
+  const education = educationSection.split(/\n(?=[A-Z][^a-z]*\n|$)/);
+
+  return education.map(edu => {
+    const lines = edu.split('\n').filter(line => line.trim());
+    return {
+      title: lines[0] || "",
+      subtitle: lines[1] || "",
+      date: lines[2] || "",
+      description: lines[3] || "",
+      bullets: lines.slice(4).map(line => line.trim()).filter(line => line)
+    };
+  }).filter(edu => edu.title || edu.subtitle);
+}
+
+function extractProjects(text: string): any[] {
+  const projectsSection = extractSection(text, "Projects");
+  const projects = projectsSection.split(/\n(?=[A-Z][^a-z]*\n|$)/);
+
+  return projects.map(proj => {
+    const lines = proj.split('\n').filter(line => line.trim());
+    return {
+      title: lines[0] || "",
+      subtitle: lines[1] || "",
+      date: lines[2] || "",
+      description: lines[3] || "",
+      bullets: lines.slice(4).map(line => line.trim()).filter(line => line)
+    };
+  }).filter(proj => proj.title || proj.subtitle);
+}
+
+function extractCertifications(text: string): any[] {
+  const certificationsSection = extractSection(text, "Certifications");
+  const certifications = certificationsSection.split(/\n(?=[A-Z][^a-z]*\n|$)/);
+
+  return certifications.map(cert => {
+    const lines = cert.split('\n').filter(line => line.trim());
+    return {
+      title: lines[0] || "",
+      subtitle: lines[1] || "",
+      date: lines[2] || "",
+      description: lines[3] || "",
+      bullets: lines.slice(4).map(line => line.trim()).filter(line => line)
+    };
+  }).filter(cert => cert.title || cert.subtitle);
+}
 
 export default router;
