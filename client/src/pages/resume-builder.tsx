@@ -63,18 +63,28 @@ export default function ResumeBuilder() {
     if (!section) return "";
 
     if (section.content !== undefined) {
-      return section.content;
+      return section.content || "";
     } else if (section.items && section.items.length > 0) {
-      return section.items.map(item => {
-        const bulletPoints = (item.bullets || []).map(bullet => `• ${bullet}`).join('\n');
-        return `
-Title: ${item.title}
-Organization: ${item.subtitle}
+      const formattedItems = section.items.map(item => {
+        const bulletPoints = (item.bullets || [])
+          .filter(bullet => bullet.trim()) // Filter out empty bullets
+          .map(bullet => `• ${bullet}`)
+          .join('\n');
+
+        let formattedItem = `
+[Entry]
+Position/Title: ${item.title}
+Company/Organization: ${item.subtitle}
 Date: ${item.date}
-Description: ${item.description}
-${bulletPoints ? `\nKey Points:\n${bulletPoints}` : ''}
+${item.description ? `Description: ${item.description}` : ''}
+${bulletPoints ? `\nAchievements/Details:\n${bulletPoints}` : ''}
 `.trim();
-      }).join('\n\n---\n\n');
+
+        return formattedItem;
+      });
+
+      // Add section header and join all items
+      return `=== ${section.title} ===\n\n${formattedItems.join('\n\n---\n\n')}`;
     }
     return "";
   }, [activeSection, sections]);
@@ -86,7 +96,8 @@ ${bulletPoints ? `\nKey Points:\n${bulletPoints}` : ''}
     setIsAiLoading(true);
     try {
       const sectionContent = getCurrentSectionContent();
-      console.log('[DEBUG] Sending section content:', sectionContent); // Debug log
+      console.log('[DEBUG] Section ID:', sectionId);
+      console.log('[DEBUG] Section Content:', sectionContent);
 
       const response = await fetch("/api/resume-ai-assistant", {
         method: "POST",

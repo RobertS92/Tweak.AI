@@ -22,28 +22,32 @@ router.post("/api/resume-ai-assistant", async (req, res) => {
       userQuery,
     });
 
+    console.log("[DEBUG] Full section content:", sectionContent);
+
     // Enhanced system prompt for better section analysis
     const messages = [
       {
         role: "system",
-        content: `You are a professional resume writing assistant. Analyze resume sections and provide specific, actionable feedback.
-For work experience entries:
-- Suggest stronger action verbs
-- Recommend quantifiable achievements
+        content: `You are a professional resume writing assistant helping to improve resume sections.
+For sections with entries (like Work Experience, Education, Projects):
+- Analyze each entry separately
+- Suggest stronger action verbs and quantifiable achievements
 - Point out missing important details
-For education entries:
-- Suggest relevant coursework to highlight
-- Recommend academic achievements to include
-For all sections:
-- Be specific about what to improve
-- Provide example improvements
-- Keep suggestions concise and actionable`,
+- Provide specific examples of improvements
+
+For summary and skills sections:
+- Suggest ways to make the content more impactful
+- Recommend better organization and presentation
+- Point out any missing key elements
+
+Keep your feedback specific, actionable, and focused on the current section.
+If no content is provided, ask for the information needed to provide feedback.`
       },
       {
         role: "user",
         content: `I'm working on the "${sectionId}" section of my resume. Here's the current content:
 
-${sectionContent}
+${sectionContent || "[No content provided]"}
 
 ${userQuery || "Please analyze this section and suggest specific improvements."}`
       }
@@ -52,15 +56,15 @@ ${userQuery || "Please analyze this section and suggest specific improvements."}
     // Call OpenAI with more tokens for detailed analysis
     const completion = await openai.chat.completions.create({
       model: "gpt-4", // Using GPT-4 for better analysis
-      messages: messages as any, // Type assertion to fix TypeScript error
+      messages: messages as any,
       temperature: 0.7,
-      max_tokens: 800,
+      max_tokens: 1000,
     });
 
     // Extract AI's suggestions
     const suggestions = completion.choices[0]?.message?.content || "";
 
-    console.log("[DEBUG] AI suggestions generated");
+    console.log("[DEBUG] AI suggestions generated:", suggestions.substring(0, 100) + "...");
 
     // Send suggestions back as JSON
     return res.json({
