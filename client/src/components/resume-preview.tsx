@@ -9,7 +9,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Tooltip,
@@ -88,12 +87,6 @@ export default function ResumePreview({
       }
 
       const blob = await response.blob();
-
-      if (blob.size < 1000) {
-        throw new Error("Generated PDF is too small, likely invalid");
-      }
-
-      // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
@@ -103,7 +96,6 @@ export default function ResumePreview({
       document.body.appendChild(a);
       a.click();
 
-      // Cleanup
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
@@ -121,6 +113,18 @@ export default function ResumePreview({
     } finally {
       setIsDownloading(false);
     }
+  };
+
+  const calculateOverallScore = () => {
+    if (!categoryScores) return atsScore || 0;
+
+    const scores = Object.values(categoryScores)
+      .map((category) => category?.score || 0)
+      .filter((score) => score > 0);
+
+    return scores.length > 0
+      ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+      : 0;
   };
 
   const overallScore = calculateOverallScore();
@@ -198,10 +202,10 @@ export default function ResumePreview({
       <Card className="bg-white shadow-lg">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-gray-800">
-            Enhanced Version
+            Enhanced Resume
           </CardTitle>
           <p className="text-sm text-gray-600">
-            AI-enhanced version of your resume
+            AI-optimized version with all improvements and formatting fixes applied
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -262,30 +266,21 @@ export default function ResumePreview({
       </Card>
 
       <Dialog open={showContent} onOpenChange={setShowContent}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-6">
           <DialogHeader className="pb-4">
             <DialogTitle>Enhanced Resume</DialogTitle>
-            <DialogDescription>
-              Preview your enhanced resume before downloading
-            </DialogDescription>
           </DialogHeader>
 
-          <div className="h-[calc(90vh-8rem)] bg-white rounded-lg border">
+          <div className="h-[calc(90vh-8rem)] bg-white rounded-lg">
             <ScrollArea className="h-full">
               <div className="p-8">
-                <div className="max-w-[850px] mx-auto bg-white">
+                <div className="max-w-[850px] mx-auto">
                   {analysis?.enhancedContent ? (
                     <div
                       dangerouslySetInnerHTML={{
                         __html: analysis.enhancedContent,
                       }}
-                      className="prose max-w-none 
-                        [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-2 [&_h1]:text-gray-900
-                        [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:text-gray-900
-                        [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-1 [&_h3]:text-gray-800
-                        [&_p]:mb-2 [&_p]:text-gray-700
-                        [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-4
-                        [&_li]:mb-2 [&_li]:text-gray-700"
+                      className="prose max-w-none"
                     />
                   ) : (
                     <div className="text-center text-muted-foreground py-8">
