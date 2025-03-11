@@ -22,12 +22,22 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
   const [isDownloading, setIsDownloading] = React.useState(false);
   const { toast } = useToast();
 
+  // Clean the resume content of any unwanted HTML or styling
   const cleanResumeContent = (htmlContent: string) => {
-    // Remove any existing styling or classes
-    return htmlContent
-      .replace(/<div[^>]*>/g, '<div>')
-      .replace(/class="[^"]*"/g, '')
-      .replace(/style="[^"]*"/g, '');
+    const cleanedContent = htmlContent
+      .replace(/<\/?div[^>]*>/g, '') // Remove div tags
+      .replace(/class="[^"]*"/g, '') // Remove classes
+      .replace(/style="[^"]*"/g, '') // Remove inline styles
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
+      .replace(/<button\b[^<]*(?:(?!<\/button>)<[^<]*)*<\/button>/gi, '') // Remove buttons
+      .trim();
+
+    // Wrap content in proper resume structure
+    return `
+      <div class="resume">
+        ${cleanedContent}
+      </div>
+    `;
   };
 
   const downloadEnhancedResume = async () => {
@@ -42,25 +52,19 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
 
     try {
       setIsDownloading(true);
+      const cleanContent = cleanResumeContent(analysis.enhancedContent);
 
       const response = await fetch("/api/resumes/download-pdf", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          content: cleanResumeContent(analysis.enhancedContent),
-        }),
+        body: JSON.stringify({ content: cleanContent }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to generate PDF");
-      }
-
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/pdf")) {
-        throw new Error("Invalid response format");
       }
 
       const blob = await response.blob();
@@ -130,70 +134,16 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
             {analysis?.enhancedContent ? (
               <div
                 id="resume-preview"
-                className="mx-auto"
-                style={{
-                  maxWidth: '850px',
-                  margin: '0 auto',
-                  fontFamily: "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-                  lineHeight: 1.6,
-                  color: '#333',
+                className="resume-container"
+                dangerouslySetInnerHTML={{
+                  __html: cleanResumeContent(analysis.enhancedContent)
                 }}
-              >
-                <style>
-                  {`
-                    #resume-preview h1 {
-                      font-size: 28px;
-                      margin-bottom: 8px;
-                      color: #2C3E50;
-                      font-weight: 600;
-                      text-align: center;
-                    }
-                    #resume-preview .contact-info {
-                      text-align: center;
-                      font-size: 14px;
-                      margin-bottom: 5px;
-                      color: #555;
-                    }
-                    #resume-preview h2 {
-                      font-size: 18px;
-                      color: #2C3E50;
-                      margin-bottom: 10px;
-                      padding-bottom: 5px;
-                      border-bottom: 2px solid #3E7CB1;
-                      font-weight: 600;
-                    }
-                    #resume-preview h3 {
-                      font-size: 16px;
-                      color: #2C3E50;
-                      margin-bottom: 4px;
-                      font-weight: 600;
-                    }
-                    #resume-preview ul {
-                      padding-left: 20px;
-                      margin-bottom: 8px;
-                    }
-                    #resume-preview li {
-                      margin-bottom: 4px;
-                      font-size: 14px;
-                    }
-                  `}
-                </style>
-                <div dangerouslySetInnerHTML={{ __html: cleanResumeContent(analysis.enhancedContent) }} />
-              </div>
+              />
             ) : (
               <div className="text-center text-muted-foreground py-8">
                 No enhanced content available yet.
               </div>
             )}
-          </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button
-              onClick={downloadEnhancedResume}
-              disabled={isDownloading}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              {isDownloading ? "Downloading..." : "Download PDF"}
-            </Button>
           </div>
         </DialogContent>
       </Dialog>

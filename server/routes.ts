@@ -441,7 +441,7 @@ Return an optimized version that matches keywords and improves ATS score while m
           deviceScaleFactor: 1,
         });
 
-        // Set content with professional resume styling
+        // Create a minimal HTML document with only resume styles
         await page.setContent(`
           <!DOCTYPE html>
           <html lang="en">
@@ -450,29 +450,36 @@ Return an optimized version that matches keywords and improves ATS score while m
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Professional Resume</title>
             <style>
-              body {
+              /* Reset */
+              * {
                 margin: 0;
-                padding: 0.75in;
+                padding: 0;
+                box-sizing: border-box;
+              }
+
+              /* Base styles */
+              body {
                 font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                 line-height: 1.6;
                 color: #333;
-                max-width: 8.5in;
+                padding: 0.75in;
+                width: 8.5in;
                 margin: 0 auto;
+                background: white;
               }
 
+              /* Resume container */
+              .resume {
+                max-width: 100%;
+              }
+
+              /* Typography */
               h1 {
                 font-size: 28px;
                 margin-bottom: 8px;
                 color: #2C3E50;
                 font-weight: 600;
                 text-align: center;
-              }
-
-              .contact-info {
-                text-align: center;
-                font-size: 14px;
-                margin-bottom: 5px;
-                color: #555;
               }
 
               h2 {
@@ -491,6 +498,15 @@ Return an optimized version that matches keywords and improves ATS score while m
                 font-weight: 600;
               }
 
+              /* Contact info */
+              .contact-info {
+                text-align: center;
+                font-size: 14px;
+                margin-bottom: 5px;
+                color: #555;
+              }
+
+              /* Lists */
               ul {
                 padding-left: 20px;
                 margin-bottom: 8px;
@@ -501,9 +517,26 @@ Return an optimized version that matches keywords and improves ATS score while m
                 font-size: 14px;
               }
 
+              /* Sections */
+              section {
+                margin-bottom: 20px;
+              }
+
+              /* Print settings */
               @page {
-                margin: 0.5in;
                 size: letter;
+                margin: 0;
+              }
+
+              @media print {
+                body {
+                  width: 100%;
+                  height: 100%;
+                  margin: 0;
+                  padding: 0.75in;
+                  -webkit-print-color-adjust: exact;
+                  print-color-adjust: exact;
+                }
               }
             </style>
           </head>
@@ -513,26 +546,24 @@ Return an optimized version that matches keywords and improves ATS score while m
           </html>
         `);
 
-        // Wait for content to be fully rendered
-        await page.waitForSelector('body', { timeout: 5000 });
-
         // Generate PDF with proper settings
         const pdf = await page.pdf({
           format: 'Letter',
           printBackground: true,
+          preferCSSPageSize: true,
+          displayHeaderFooter: false,
           margin: {
-            top: '0.5in',
-            right: '0.5in',
-            bottom: '0.5in',
-            left: '0.5in'
-          },
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0
+          }
         });
 
         await browser.close();
 
         // Set proper headers for PDF download
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Length', pdf.length);
         res.setHeader('Content-Disposition', `attachment; filename=enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`);
         res.send(pdf);
 
