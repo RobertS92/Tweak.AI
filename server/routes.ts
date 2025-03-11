@@ -460,16 +460,11 @@ Return an optimized version that matches keywords and improves ATS score while m
 
               body {
                 background-color: white;
-                color: #333;
-                line-height: 1.6;
-                padding: 0.5in;
+                padding: 0.75in;
                 max-width: 8.5in;
                 margin: 0 auto;
-              }
-
-              /* Resume styles */
-              .resume {
-                max-width: 100%;
+                line-height: 1.6;
+                color: #333;
               }
 
               /* Header section */
@@ -481,30 +476,30 @@ Return an optimized version that matches keywords and improves ATS score while m
               }
 
               .header h1 {
-                font-size: 32px;
+                font-size: 28px;
                 margin-bottom: 8px;
                 color: #2C3E50;
                 font-weight: 600;
               }
 
               .contact-info {
-                font-size: 16px;
+                font-size: 14px;
                 margin-bottom: 5px;
                 color: #555;
               }
 
               .links {
-                font-size: 16px;
+                font-size: 14px;
                 color: #3E7CB1;
               }
 
               /* Section styling */
               .section {
-                margin-bottom: 22px;
+                margin-bottom: 20px;
               }
 
               .section h2 {
-                font-size: 20px;
+                font-size: 18px;
                 color: #2C3E50;
                 margin-bottom: 10px;
                 padding-bottom: 5px;
@@ -514,32 +509,32 @@ Return an optimized version that matches keywords and improves ATS score while m
 
               /* Job styling */
               .job, .education-item {
-                margin-bottom: 18px;
+                margin-bottom: 16px;
               }
 
               .job h3, .education-item h3 {
-                font-size: 18px;
+                font-size: 16px;
                 color: #2C3E50;
                 margin-bottom: 4px;
                 font-weight: 600;
               }
 
               .job-title {
-                font-size: 16px;
+                font-size: 14px;
                 color: #333;
                 font-style: italic;
-                margin-bottom: 8px;
+                margin-bottom: 6px;
               }
 
               /* List styling */
               ul {
                 padding-left: 20px;
-                margin-bottom: 10px;
+                margin-bottom: 8px;
               }
 
               ul li {
-                margin-bottom: 6px;
-                font-size: 15px;
+                margin-bottom: 4px;
+                font-size: 14px;
               }
 
               /* Print specific styles */
@@ -556,15 +551,13 @@ Return an optimized version that matches keywords and improves ATS score while m
             </style>
           </head>
           <body>
-            <div class="resume">
-              ${content}
-            </div>
+            ${content}
           </body>
           </html>
         `, { waitUntil: 'networkidle0' });
 
         // Wait for content to be fully rendered
-        await page.waitForSelector('.resume', { timeout: 5000 });
+        await page.waitForSelector('body', { timeout: 5000 });
 
         // Generate PDF with proper settings
         const pdf = await page.pdf({
@@ -591,6 +584,7 @@ Return an optimized version that matches keywords and improves ATS score while m
         res.setHeader('Content-Length', pdf.length);
         res.setHeader('Content-Disposition', `attachment; filename=optimized_resume_${new Date().toISOString().split('T')[0]}.pdf`);
         res.send(pdf);
+
       } catch (error) {
         await browser.close();
         throw error;

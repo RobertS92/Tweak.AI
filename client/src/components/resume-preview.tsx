@@ -18,7 +18,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ResumePreviewProps {
   content: string;
@@ -55,7 +54,6 @@ export default function ResumePreview({
   const [isDownloading, setIsDownloading] = React.useState(false);
   const { toast } = useToast();
 
-  // Add better error handling for file operations
   const downloadEnhancedResume = async () => {
     if (!analysis?.enhancedContent) {
       toast({
@@ -74,8 +72,8 @@ export default function ResumePreview({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
-          content: analysis.enhancedContent 
+        body: JSON.stringify({
+          content: analysis.enhancedContent,
         }),
       });
 
@@ -84,34 +82,29 @@ export default function ResumePreview({
         throw new Error(errorData.message || "Failed to generate PDF");
       }
 
-      // Verify content type
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/pdf")) {
         throw new Error("Invalid response format");
       }
 
-      // Create a blob from the PDF Stream
       const blob = await response.blob();
 
-      // Verify blob size
-      if (blob.size < 1000) { // Less than 1KB
+      if (blob.size < 1000) {
         throw new Error("Generated PDF is too small, likely invalid");
       }
 
-      // Create a temporary URL for the blob
       const url = window.URL.createObjectURL(blob);
 
-      // Create a temporary link element
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.download = `optimized_resume_${new Date().toISOString().split('T')[0]}.pdf`;
+      link.download = `optimized_resume_${new Date()
+        .toISOString()
+        .split("T")[0]}.pdf`;
 
-      // Append to body, click and remove
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
-      // Clean up the URL
       window.URL.revokeObjectURL(url);
 
       toast({
@@ -122,7 +115,10 @@ export default function ResumePreview({
       console.error("Failed to download PDF:", error);
       toast({
         title: "Download failed",
-        description: error instanceof Error ? error.message : "There was an error downloading your resume. Please try again.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "There was an error downloading your resume. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -289,71 +285,45 @@ export default function ResumePreview({
       </Card>
 
       <Dialog open={showContent} onOpenChange={setShowContent}>
-        <DialogContent className="max-w-4xl max-h-[90vh] p-6">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
           <DialogHeader className="pb-4">
             <DialogTitle>Enhanced Resume</DialogTitle>
             <DialogDescription>
-              AI-optimized version with all improvements and formatting fixes
-              applied
+              Preview your enhanced resume before downloading
             </DialogDescription>
           </DialogHeader>
 
-          <div className="h-[calc(90vh-8rem)]">
-            <Tabs defaultValue="enhanced" className="h-full flex flex-col">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="original">Original Resume</TabsTrigger>
-                <TabsTrigger value="enhanced">Enhanced Version</TabsTrigger>
-              </TabsList>
-
-              <div className="flex-1 mt-4 relative">
-                <TabsContent
-                  value="original"
-                  className="absolute inset-0 h-full"
-                >
-                  <ScrollArea className="h-full border rounded-lg">
-                    <div className="p-6">
-                      <pre className="whitespace-pre-wrap font-sans text-sm">
-                        {content}
-                      </pre>
+          <div className="h-[calc(90vh-8rem)] bg-white rounded-lg border">
+            <ScrollArea className="h-full">
+              <div className="p-8">
+                <div className="max-w-[850px] mx-auto bg-white">
+                  {analysis?.enhancedContent ? (
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: analysis.enhancedContent,
+                      }}
+                      className="prose max-w-none 
+                        [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-2 [&_h1]:text-gray-900
+                        [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:text-gray-900
+                        [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-1 [&_h3]:text-gray-800
+                        [&_p]:mb-2 [&_p]:text-gray-700
+                        [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-4
+                        [&_li]:mb-2 [&_li]:text-gray-700"
+                    />
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8">
+                      No enhanced content available yet.
                     </div>
-                  </ScrollArea>
-                </TabsContent>
-
-                <TabsContent
-                  value="enhanced"
-                  className="absolute inset-0 h-full"
-                >
-                  <ScrollArea className="h-full border rounded-lg">
-                    <div className="p-6">
-                      {analysis?.enhancedContent ? (
-                        <div
-                          dangerouslySetInnerHTML={{
-                            __html: analysis.enhancedContent,
-                          }}
-                          className="prose max-w-none 
-                            [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-2 [&_h1]:text-gray-900
-                            [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-3 [&_h2]:text-gray-900
-                            [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-1 [&_h3]:text-gray-800
-                            [&_p]:mb-2 [&_p]:text-gray-700
-                            [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-4
-                            [&_li]:mb-2 [&_li]:text-gray-700"
-                        />
-                      ) : (
-                        <div className="text-center text-muted-foreground py-8">
-                          No enhanced content available yet.
-                        </div>
-                      )}
-                    </div>
-                  </ScrollArea>
-                </TabsContent>
+                  )}
+                </div>
               </div>
-            </Tabs>
+            </ScrollArea>
           </div>
-          <div className="absolute bottom-4 right-4 flex gap-2">
+
+          <div className="flex justify-end gap-2 mt-4">
             <Button
               onClick={downloadEnhancedResume}
               disabled={isDownloading || !analysis?.enhancedContent}
-              size="sm"
             >
               <Download className="w-4 h-4 mr-2" />
               {isDownloading ? "Downloading..." : "Download PDF"}
