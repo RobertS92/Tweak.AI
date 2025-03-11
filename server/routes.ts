@@ -425,7 +425,6 @@ Return an optimized version that matches keywords and improves ATS score while m
     try {
       const { content } = req.body;
 
-      // Launch browser
       const browser = await puppeteer.launch({
         headless: 'new',
         executablePath: '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
@@ -435,7 +434,7 @@ Return an optimized version that matches keywords and improves ATS score while m
       try {
         const page = await browser.newPage();
 
-        // Set content with proper styling
+        // Set content with resume styling
         await page.setContent(`
           <!DOCTYPE html>
           <html lang="en">
@@ -444,14 +443,25 @@ Return an optimized version that matches keywords and improves ATS score while m
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Enhanced Resume</title>
             <style>
+              @page {
+                size: letter;
+                margin: 0.75in;
+              }
+
               body {
                 margin: 0;
-                padding: 0.75in;
+                padding: 0;
                 font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                 line-height: 1.6;
                 color: #333;
                 background: white;
               }
+
+              .resume-content {
+                max-width: 100%;
+                margin: 0 auto;
+              }
+
               h1 {
                 font-size: 28px;
                 margin-bottom: 8px;
@@ -459,6 +469,7 @@ Return an optimized version that matches keywords and improves ATS score while m
                 font-weight: 600;
                 text-align: center;
               }
+
               h2 {
                 font-size: 18px;
                 color: #2C3E50;
@@ -467,53 +478,59 @@ Return an optimized version that matches keywords and improves ATS score while m
                 border-bottom: 2px solid #3E7CB1;
                 font-weight: 600;
               }
+
               h3 {
                 font-size: 16px;
                 color: #2C3E50;
                 margin-bottom: 4px;
                 font-weight: 600;
               }
+
               .contact-info {
                 text-align: center;
                 font-size: 14px;
                 margin-bottom: 5px;
                 color: #555;
               }
+
               ul {
                 padding-left: 20px;
                 margin-bottom: 8px;
+                list-style-type: disc;
               }
+
               li {
                 margin-bottom: 4px;
                 font-size: 14px;
               }
-              @page {
-                size: letter;
-                margin: 0;
+
+              p {
+                margin-bottom: 8px;
+                font-size: 14px;
+              }
+
+              section {
+                margin-bottom: 20px;
               }
             </style>
           </head>
           <body>
-            ${content}
+            <div class="resume-content">
+              ${content}
+            </div>
           </body>
           </html>
         `, { waitUntil: 'networkidle0' });
 
-        // Generate PDF with specific dimensions and margins
+        // Generate PDF
         const pdf = await page.pdf({
           format: 'Letter',
           printBackground: true,
-          margin: {
-            top: '0.75in',
-            right: '0.75in',
-            bottom: '0.75in',
-            left: '0.75in'
-          }
+          preferCSSPageSize: true,
         });
 
-        // Set proper headers for PDF download
+        // Set response headers
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Length', pdf.length);
         res.setHeader('Content-Disposition', `attachment; filename=enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`);
 
         // Send the PDF

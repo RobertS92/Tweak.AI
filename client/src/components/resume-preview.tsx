@@ -24,12 +24,13 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
 
   const cleanResumeContent = (htmlContent: string) => {
     if (!htmlContent) return '';
+
+    // Only clean harmful elements while preserving the resume structure
     return htmlContent
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
-      .replace(/<button\b[^<]*(?:(?!<\/button>)<[^<]*)*<\/button>/gi, '') // Remove buttons
-      .replace(/<div[^>]*>/g, '<div>') // Clean div tags
-      .replace(/class="[^"]*"/g, '') // Remove classes
-      .replace(/style="[^"]*"/g, '') // Remove inline styles
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<button\b[^<]*(?:(?!<\/button>)<[^<]*)*<\/button>/gi, '')
+      .replace(/class="[^"]*"/g, '')
+      .replace(/style="[^"]*"/g, '')
       .trim();
   };
 
@@ -53,23 +54,13 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ content: cleanContent }),
-        // Important: Set responseType to blob
-        responseType: 'blob'
       });
 
       if (!response.ok) {
         throw new Error("Failed to generate PDF");
       }
 
-      // Get the blob from response
       const blob = await response.blob();
-
-      // Verify blob type
-      if (blob.type !== 'application/pdf') {
-        throw new Error("Invalid file format received");
-      }
-
-      // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -126,22 +117,20 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
       </CardContent>
 
       <Dialog open={showContent} onOpenChange={setShowContent}>
-        <DialogContent className="max-w-4xl h-[90vh] overflow-auto">
+        <DialogContent className="w-full max-w-4xl h-[90vh]">
           <DialogHeader>
             <DialogTitle>Enhanced Resume</DialogTitle>
           </DialogHeader>
-          <div className="resume-preview p-8 bg-white">
+          <div className="flex-1 overflow-y-auto bg-white p-8">
             {analysis?.enhancedContent ? (
-              <div 
-                className="mx-auto max-w-[850px]"
-                style={{
-                  fontFamily: "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-                  lineHeight: 1.6,
-                  color: '#333',
-                }}
-              >
+              <div className="resume-preview max-w-[850px] mx-auto">
                 <style>
                   {`
+                    .resume-preview {
+                      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                      line-height: 1.6;
+                      color: #333;
+                    }
                     .resume-preview h1 {
                       font-size: 28px;
                       margin-bottom: 8px;
@@ -172,14 +161,25 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
                     .resume-preview ul {
                       padding-left: 20px;
                       margin-bottom: 8px;
+                      list-style-type: disc;
                     }
                     .resume-preview li {
                       margin-bottom: 4px;
                       font-size: 14px;
                     }
+                    .resume-preview p {
+                      margin-bottom: 8px;
+                    }
+                    .resume-preview section {
+                      margin-bottom: 20px;
+                    }
                   `}
                 </style>
-                <div dangerouslySetInnerHTML={{ __html: cleanResumeContent(analysis.enhancedContent) }} />
+                <div 
+                  dangerouslySetInnerHTML={{ 
+                    __html: cleanResumeContent(analysis.enhancedContent) 
+                  }} 
+                />
               </div>
             ) : (
               <div className="text-center text-muted-foreground py-8">
