@@ -8,18 +8,21 @@ import { Upload, Plus, Download, Send, MinusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-/** Interface for each resume section in state */
+/** Interface for section items */
+interface SectionItem {
+  title: string;
+  subtitle: string;
+  date: string;
+  description: string;
+  bullets: string[];
+}
+
+/** Interface for each resume section */
 interface ResumeSection {
   id: string;
   title: string;
   content?: string;
-  items?: Array<{
-    title: string;
-    subtitle: string;
-    date: string;
-    description: string;
-    bullets: string[];
-  }>;
+  items?: SectionItem[];
 }
 
 export default function ResumeBuilder() {
@@ -39,7 +42,7 @@ export default function ResumeBuilder() {
     linkedin: ""
   });
 
-  // Sections state
+  // Resume sections state with proper initialization
   const [sections, setSections] = useState<ResumeSection[]>([
     { id: "summary", title: "Professional Summary", content: "" },
     { id: "experience", title: "Work Experience", items: [] },
@@ -56,17 +59,18 @@ export default function ResumeBuilder() {
     const section = sections.find(s => s.id === activeSection);
     if (!section) return "";
 
-    if (section.content) {
+    if (section.content !== undefined) {
       return section.content;
     } else if (section.items) {
-      return section.items.map(item => 
-        `${item.title}\n${item.subtitle}\n${item.date}\n${item.description}\n${item.bullets.join("\n")}`
-      ).join("\n\n");
+      return section.items.map(item => {
+        const bullets = item.bullets || [];
+        return `${item.title}\n${item.subtitle}\n${item.date}\n${item.description}\n${bullets.join("\n")}`;
+      }).join("\n\n");
     }
     return "";
   }, [activeSection, sections]);
 
-  // Add function to get AI suggestions
+  // Get AI suggestions
   const getAiSuggestions = useCallback(async (sectionId: string, userQuery?: string) => {
     setIsAiLoading(true);
     try {
@@ -123,9 +127,7 @@ export default function ResumeBuilder() {
     await getAiSuggestions(activeSection, userMessage);
   };
 
-  /**
-   * Handle resume upload
-   */
+  // Handle file upload
   const handleFileUpload = async (file: File) => {
     if (!file) return;
 
@@ -159,8 +161,14 @@ export default function ResumeBuilder() {
         linkedin: data.linkedin || ""
       });
 
-      // Update sections
-      setSections(data.sections);
+      // Update sections with proper item initialization
+      setSections(data.sections.map((section: ResumeSection) => ({
+        ...section,
+        items: section.items?.map(item => ({
+          ...item,
+          bullets: item.bullets || []
+        }))
+      })));
 
       setAiMessage("Resume parsed successfully. Select any section to get AI suggestions for improvements.");
 
@@ -189,8 +197,8 @@ export default function ResumeBuilder() {
       location: "",
       linkedin: ""
     });
-    setSections((prevSections) =>
-      prevSections.map((section) => ({
+    setSections(prevSections =>
+      prevSections.map(section => ({
         ...section,
         content: "",
         items: section.items ? [] : undefined
@@ -200,16 +208,22 @@ export default function ResumeBuilder() {
     setActiveSection(null);
   };
 
-  // Add new item to a section
+  // Add new item to a section with proper bullet initialization
   const addSectionItem = (sectionId: string) => {
-    setSections((prev) =>
-      prev.map((section) => {
+    setSections(prev =>
+      prev.map(section => {
         if (section.id === sectionId && section.items) {
           return {
             ...section,
             items: [
               ...section.items,
-              { title: "", subtitle: "", date: "", description: "", bullets: [] }
+              {
+                title: "",
+                subtitle: "",
+                date: "",
+                description: "",
+                bullets: [] // Ensure bullets array is initialized
+              }
             ]
           };
         }
@@ -220,8 +234,8 @@ export default function ResumeBuilder() {
 
   // Remove item from a section
   const removeSectionItem = (sectionId: string, itemIndex: number) => {
-    setSections((prev) =>
-      prev.map((section) => {
+    setSections(prev =>
+      prev.map(section => {
         if (section.id === sectionId && section.items) {
           return {
             ...section,
@@ -233,16 +247,18 @@ export default function ResumeBuilder() {
     );
   };
 
-  // Add bullet point to an item
+  // Add bullet point to an item with proper array check
   const addBulletPoint = (sectionId: string, itemIndex: number) => {
-    setSections((prev) =>
-      prev.map((section) => {
+    setSections(prev =>
+      prev.map(section => {
         if (section.id === sectionId && section.items) {
           const newItems = [...section.items];
-          newItems[itemIndex] = {
-            ...newItems[itemIndex],
-            bullets: [...newItems[itemIndex].bullets, ""]
-          };
+          if (newItems[itemIndex]) {
+            newItems[itemIndex] = {
+              ...newItems[itemIndex],
+              bullets: [...(newItems[itemIndex].bullets || []), ""]
+            };
+          }
           return { ...section, items: newItems };
         }
         return section;
@@ -527,10 +543,7 @@ export default function ResumeBuilder() {
                                         ...s,
                                         items: s.items.map((i, idx) =>
                                           idx === index
-                                            ? {
-                                                ...i,
-                                                description: e.target.value
-                                              }
+                                            ? { ...i, description: e.target.value }
                                             : i
                                         )
                                       }
@@ -541,7 +554,7 @@ export default function ResumeBuilder() {
                           />
                           {/* Bullet points */}
                           <div className="space-y-2">
-                            {item.bullets.map((bullet, bulletIndex) => (
+                            {(item.bullets || []).map((bullet, bulletIndex) => (
                               <Input
                                 key={bulletIndex}
                                 value={bullet}
