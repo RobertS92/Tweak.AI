@@ -1,0 +1,79 @@
+# Resume Builder Page Description
+
+## Overview
+The Resume Builder page allows users to create a professional resume by either manually entering information or uploading an existing resume for AI analysis and auto-population. The interface is organized into sections with an AI assistant that provides feedback and suggestions for improvement.
+
+## Step-by-Step Functionality
+
+1. **Initial Landing**
+   - User lands on a clean interface with the title "Resume Builder" at the top
+   - Three main buttons are visible: "Upload Resume", "New Resume", and "Download PDF"
+   - The left sidebar shows all available resume sections (Professional Summary, Work Experience, Education, Skills, Projects, Certifications)
+
+2. **Resume Creation Options**
+   - **Upload Resume**: User can either select a resume from their saved ones in the database or upload a new file from their computer
+   - **New Resume**: Starts with a blank template
+   - **Manual Entry**: User can click on any section to begin entering information directly
+
+3. **Resume Information Structure**
+   - **Personal Information**: At the top with fields for full name, email, phone, location, and LinkedIn URL
+   - **Content Sections**: Each section (Summary, Experience, Education, etc.) is expandable and editable
+
+4. **Section Editing**
+   - When a user clicks a section in the sidebar, that section becomes active and highlighted
+   - The AI assistant analyzes the current content of the selected section
+   - For sections like Work Experience, Education, Projects, and Certifications, users can add multiple entries with fields for:
+     - Title/Position/Degree
+     - Organization/Company/School
+     - Date Range
+     - Description
+     - Bullet Points (with ability to add more)
+
+5. **AI Assistant Functionality**
+   - Lives in a card at the bottom of the page (can be minimized)
+   - When a section is selected, the AI automatically analyzes that section
+   - Provides specific feedback and suggestions for improvement
+   - Presents clickable suggestion buttons that auto-apply improvements
+   - Allows the user to type questions about the currently selected section
+   - Responds conversationally to user inquiries
+   - Can make changes to content upon user request (e.g., "Make my summary more concise")
+
+6. **Resume Parsing**
+   - When a resume is uploaded, the system parses it to extract:
+     - Personal information (name, contact details, etc.)
+     - Professional summary
+     - Work experience entries with details
+     - Education history
+     - Skills
+     - Projects
+     - Certifications
+   - All extracted information populates the appropriate fields in the form
+   - If parsing fails for any section, it remains empty for manual entry
+
+7. **AI-Assisted Improvements**
+   - For each selected section, the AI offers suggestions like:
+     - Stronger action verbs for experience bullet points
+     - More concise phrasing for summary
+     - Better formatting for skills presentation
+     - More impactful descriptions of accomplishments
+
+8. **Final Actions**
+   - User reviews all sections and makes final edits
+   - When satisfied, user clicks "Download PDF" to generate a formatted resume
+   - The system produces a professional-looking PDF document with all the entered information
+
+## AI Assistant Interaction Examples
+
+1. **For Professional Summary**:
+   - "Your summary effectively covers your background but could be more impactful. Consider highlighting your key achievements more prominently."
+   - "Would you like me to rewrite this with stronger opening language?"
+
+2. **For Work Experience**:
+   - "I notice your bullet points start with passive language. Would you like me to revise them with stronger action verbs?"
+   - "You could add more metrics to demonstrate the impact of your work. For example: 'Increased sales by 20%'"
+
+3. **For Skills**:
+   - "Your skills section could be better organized by grouping related skills. Would you like me to categorize them?"
+   - "Consider adding proficiency levels to your technical skills to give employers better context."
+
+The resume builder combines intuitive form functionality with intelligent AI assistance to help users create more effective, professional resumes with minimal effort.
