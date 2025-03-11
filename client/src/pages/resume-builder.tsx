@@ -8,28 +8,33 @@ import { Upload, Plus, Download, Send, MinusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
-/** Interface for each resume section in state */
+/** Interface for section items */
+interface SectionItem {
+  title: string;
+  subtitle: string;
+  date: string;
+  description: string;
+  bullets: string[];
+}
+
+/** Interface for each resume section */
 interface ResumeSection {
   id: string;
   title: string;
   content?: string;
-  items?: Array<{
-    title: string;
-    subtitle: string;
-    date: string;
-    description: string;
-    bullets: string[];
-  }>;
+  items?: SectionItem[];
 }
 
 export default function ResumeBuilder() {
   const { toast } = useToast();
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Core states
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiMessage, setAiMessage] = useState("");
   const [aiInput, setAiInput] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
 
   // Personal info state
   const [personalInfo, setPersonalInfo] = useState({
@@ -37,182 +42,20 @@ export default function ResumeBuilder() {
     email: "",
     phone: "",
     location: "",
-    linkedin: "",
+    linkedin: ""
   });
 
-  // Sections state
+  // Resume sections state with proper initialization
   const [sections, setSections] = useState<ResumeSection[]>([
     { id: "summary", title: "Professional Summary", content: "" },
     { id: "experience", title: "Work Experience", items: [] },
     { id: "education", title: "Education", items: [] },
     { id: "skills", title: "Skills", content: "" },
     { id: "projects", title: "Projects", items: [] },
-    { id: "certifications", title: "Certifications", items: [] },
+    { id: "certifications", title: "Certifications", items: [] }
   ]);
 
-  /**
-   * 1. Handle uploading + parsing resume via /api/ai-resume-parser
-   */
-  const handleFileUpload = async (file: File) => {
-    if (!file) return;
-
-    setIsAnalyzing(true);
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      toast({
-        title: "Processing Resume",
-        description: "Your resume is being analyzed by AI...",
-      });
-
-      const response = await fetch("/api/ai-resume-parser", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to parse resume (${response.status})`);
-      }
-
-      const data = await response.json();
-      // data shape: { name, email, phone, location, linkedin, sections: [...] }
-
-      // Update personal info from top-level fields
-      setPersonalInfo({
-        name: data.name || "",
-        email: data.email || "",
-        phone: data.phone || "",
-        location: data.location || "",
-        linkedin: data.linkedin || "",
-      });
-
-      // Map the returned data.sections[] to our front-end sections
-      const updatedSections = sections.map((section) => {
-        const matchedServerSection = data.sections.find(
-          (serverSec: any) => serverSec.id === section.id,
-        );
-        if (!matchedServerSection) {
-          return section;
-        }
-
-        // If it's a simple "content" section
-        if (section.id === "summary" || section.id === "skills") {
-          return {
-            ...section,
-            content: matchedServerSection.content || "",
-          };
-        }
-
-        // If it's an "experience" section with items
-        if (section.id === "experience") {
-          return {
-            ...section,
-            items: (matchedServerSection.items || []).map((exp: any) => ({
-              title: exp.title || "",
-              subtitle: exp.company || "",
-              date: exp.dates || "",
-              description: "",
-              bullets: exp.responsibilities || [],
-            })),
-          };
-        }
-
-        // If it's an "education" section
-        if (section.id === "education") {
-          return {
-            ...section,
-            items: (matchedServerSection.items || []).map((edu: any) => ({
-              title: edu.degree || "",
-              subtitle: edu.institution || "",
-              date: edu.dates || "",
-              description: "",
-              bullets: edu.courses || [],
-            })),
-          };
-        }
-
-        // If it's a "projects" section
-        if (section.id === "projects") {
-          return {
-            ...section,
-            items: (matchedServerSection.items || []).map((proj: any) => ({
-              title: proj.name || "",
-              subtitle: proj.technologies || "",
-              date: "", // or proj.date if provided
-              description: proj.focus || "",
-              bullets: [],
-            })),
-          };
-        }
-
-        // If it's a "certifications" section
-        if (section.id === "certifications") {
-          return {
-            ...section,
-            items: (matchedServerSection.items || []).map((cert: any) => ({
-              title: cert.name || "",
-              subtitle: "",
-              date: "",
-              description: "",
-              bullets: [],
-            })),
-          };
-        }
-
-        return section;
-      });
-
-      setSections(updatedSections);
-
-      // Provide an AI message after populating
-      setAiMessage(
-        "I've analyzed your resume and populated all sections. Select any section to make edits or request AI improvements.",
-      );
-
-      toast({
-        title: "Resume Parsed Successfully",
-        description:
-          "All sections have been populated. Review and edit as needed.",
-      });
-    } catch (error) {
-      console.error("Error parsing resume:", error);
-      toast({
-        title: "Parsing Failed",
-        description:
-          "Unable to process your resume. Please try again or enter details manually.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  /**
-   * 2. Start a brand-new resume
-   */
-  const handleNewResume = () => {
-    setPersonalInfo({
-      name: "",
-      email: "",
-      phone: "",
-      location: "",
-      linkedin: "",
-    });
-    setSections((prevSections) =>
-      prevSections.map((section) => ({
-        ...section,
-        content: "",
-        items: section.items ? [] : undefined,
-      })),
-    );
-    setAiMessage(
-      "Start by uploading a resume or entering your information manually.",
-    );
-    // We do NOT change activeSection here, so if you want it reset, setActiveSection(null)
-  };
-
-  // Get the content of current section for AI analysis
+  // Get current section content
   const getCurrentSectionContent = useCallback(() => {
     if (!activeSection) return "";
 
@@ -230,15 +73,10 @@ export default function ResumeBuilder() {
     return "";
   }, [activeSection, sections]);
 
-  // Auto-analyze section when selected
-  useEffect(() => {
-    if (activeSection) {
-      getAiSuggestions(activeSection, "Please analyze this section and suggest improvements.");
-    }
-  }, [activeSection, getAiSuggestions]);
-
-  // Get AI suggestions
+  // Get AI suggestions - define before useEffect
   const getAiSuggestions = useCallback(async (sectionId: string, userQuery?: string) => {
+    if (!sectionId) return;
+
     setIsAiLoading(true);
     try {
       const sectionContent = getCurrentSectionContent();
@@ -272,13 +110,113 @@ export default function ResumeBuilder() {
     }
   }, [getCurrentSectionContent, toast]);
 
+  // Effect to get AI suggestions when section changes
+  useEffect(() => {
+    if (activeSection) {
+      getAiSuggestions(activeSection, "Please analyze this section and suggest improvements.");
+    }
+  }, [activeSection, getAiSuggestions]);
 
-  /**
-   * 4. Helper functions to modify sections on the fly
-   */
+  // Handle section selection
+  const handleSectionSelect = useCallback((sectionId: string) => {
+    setActiveSection(sectionId);
+  }, []);
+
+  // Handle AI chat input
+  const handleAiChat = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeSection || !aiInput.trim()) return;
+
+    const userMessage = aiInput;
+    setAiInput("");
+    await getAiSuggestions(activeSection, userMessage);
+  };
+
+  // File upload handler
+  const handleFileUpload = async (file: File) => {
+    if (!file) return;
+
+    setIsAnalyzing(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      toast({
+        title: "Processing Resume",
+        description: "Your resume is being analyzed by AI...",
+      });
+
+      const response = await fetch("/api/resume-parser", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to parse resume (${response.status})`);
+      }
+
+      const data = await response.json();
+
+      // Update personal info
+      setPersonalInfo({
+        name: data.name || "",
+        email: data.email || "",
+        phone: data.phone || "",
+        location: data.location || "",
+        linkedin: data.linkedin || ""
+      });
+
+      // Update sections with proper item initialization
+      setSections(data.sections.map((section: ResumeSection) => ({
+        ...section,
+        items: section.items?.map(item => ({
+          ...item,
+          bullets: item.bullets || []
+        }))
+      })));
+
+      setAiMessage("Resume parsed successfully. Select any section to get AI suggestions for improvements.");
+
+      toast({
+        title: "Resume Parsed Successfully",
+        description: "All sections have been populated. Review and edit as needed.",
+      });
+    } catch (error) {
+      console.error("Error parsing resume:", error);
+      toast({
+        title: "Parsing Failed",
+        description: "Unable to process your resume. Please try again or enter details manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Start new resume
+  const handleNewResume = () => {
+    setPersonalInfo({
+      name: "",
+      email: "",
+      phone: "",
+      location: "",
+      linkedin: ""
+    });
+    setSections(prevSections =>
+      prevSections.map(section => ({
+        ...section,
+        content: "",
+        items: section.items ? [] : undefined
+      }))
+    );
+    setAiMessage("Start by uploading a resume or entering your information manually.");
+    setActiveSection(null);
+  };
+
+  // Section item management functions
   const addSectionItem = (sectionId: string) => {
-    setSections((prev) =>
-      prev.map((section) => {
+    setSections(prev =>
+      prev.map(section => {
         if (section.id === sectionId && section.items) {
           return {
             ...section,
@@ -289,56 +227,131 @@ export default function ResumeBuilder() {
                 subtitle: "",
                 date: "",
                 description: "",
-                bullets: [],
-              },
-            ],
+                bullets: []
+              }
+            ]
           };
         }
         return section;
-      }),
+      })
     );
   };
 
   const removeSectionItem = (sectionId: string, itemIndex: number) => {
-    setSections((prev) =>
-      prev.map((section) => {
+    setSections(prev =>
+      prev.map(section => {
         if (section.id === sectionId && section.items) {
           return {
             ...section,
-            items: section.items.filter((_, idx) => idx !== itemIndex),
+            items: section.items.filter((_, idx) => idx !== itemIndex)
           };
         }
         return section;
-      }),
+      })
     );
   };
 
   const addBulletPoint = (sectionId: string, itemIndex: number) => {
-    setSections((prev) =>
-      prev.map((section) => {
+    setSections(prev =>
+      prev.map(section => {
         if (section.id === sectionId && section.items) {
           const newItems = [...section.items];
-          newItems[itemIndex] = {
-            ...newItems[itemIndex],
-            bullets: [...newItems[itemIndex].bullets, ""],
-          };
+          if (newItems[itemIndex]) {
+            newItems[itemIndex] = {
+              ...newItems[itemIndex],
+              bullets: [...(newItems[itemIndex].bullets || []), ""]
+            };
+          }
           return { ...section, items: newItems };
         }
         return section;
-      }),
+      })
     );
   };
 
-  const handleAiChat = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!activeSection || !aiInput.trim()) return;
-    await getAiSuggestions(activeSection, aiInput);
-    setAiInput("");
-  };
+  // Render sidebar buttons
+  const renderSidebarButtons = () => (
+    sections.map((section) => (
+      <button
+        key={section.id}
+        onClick={() => handleSectionSelect(section.id)}
+        className={cn(
+          "w-full text-left px-4 py-2 rounded-md transition-colors relative",
+          activeSection === section.id
+            ? "bg-primary text-primary-foreground"
+            : "hover:bg-muted"
+        )}
+      >
+        {section.title}
+        {activeSection === section.id && (
+          <span className="absolute right-2 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full" />
+        )}
+      </button>
+    ))
+  );
 
-  /**
-   * 5. Render the component
-   */
+  // Render AI Assistant
+  const renderAiAssistant = () => (
+    <Card className="sticky top-6 h-[calc(100vh-8rem)]">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <svg
+            className="w-5 h-5 text-blue-500"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          AI Assistant
+          {isAiLoading && (
+            <span className="text-sm text-muted-foreground ml-2">
+              (Thinking...)
+            </span>
+          )}
+          {activeSection && (
+            <span className="text-sm text-muted-foreground ml-2">
+              - {sections.find(s => s.id === activeSection)?.title}
+            </span>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0 h-full flex flex-col">
+        <ScrollArea className="flex-grow p-4">
+          <div className="space-y-4">
+            <div className="bg-muted rounded-lg p-4">
+              {aiMessage || (
+                activeSection 
+                  ? "Analyzing your content..."
+                  : "Select a section to get AI assistance and suggestions."
+              )}
+            </div>
+          </div>
+        </ScrollArea>
+        <form onSubmit={handleAiChat} className="p-4 border-t flex gap-2">
+          <Input
+            placeholder={
+              activeSection 
+                ? "Ask for suggestions or improvements..." 
+                : "Select a section first..."
+            }
+            value={aiInput}
+            onChange={(e) => setAiInput(e.target.value)}
+            disabled={!activeSection || isAiLoading}
+          />
+          <Button 
+            type="submit" 
+            size="icon" 
+            disabled={isAiLoading || !activeSection || !aiInput.trim()}
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-[1800px] mx-auto">
@@ -377,23 +390,7 @@ export default function ResumeBuilder() {
           {/* Left sidebar */}
           <Card className="h-fit sticky top-6">
             <CardContent className="p-4">
-              {sections.map((section) => (
-                <button
-                  key={section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  className={cn(
-                    "w-full text-left px-4 py-2 rounded-md transition-colors relative",
-                    activeSection === section.id
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
-                  )}
-                >
-                  {section.title}
-                  {activeSection === section.id && (
-                    <span className="absolute right-2 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full" />
-                  )}
-                </button>
-              ))}
+              {renderSidebarButtons()}
             </CardContent>
           </Card>
 
@@ -644,65 +641,8 @@ export default function ResumeBuilder() {
             </div>
           </ScrollArea>
 
-          {/* Right side - AI Assistant (Fixed position) */}
-          <Card className="sticky top-6 h-[calc(100vh-8rem)]">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <svg
-                  className="w-5 h-5 text-blue-500"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-                AI Assistant
-                {isAiLoading && (
-                  <span className="text-sm text-muted-foreground ml-2">
-                    (Thinking...)
-                  </span>
-                )}
-                {activeSection && (
-                  <span className="text-sm text-muted-foreground ml-2">
-                    - {sections.find(s => s.id === activeSection)?.title}
-                  </span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0 h-full flex flex-col">
-              <ScrollArea className="flex-grow p-4">
-                <div className="space-y-4">
-                  <div className="bg-muted rounded-lg p-4">
-                    {aiMessage || (
-                      activeSection 
-                        ? "Analyzing your content..."
-                        : "Select a section to get AI assistance and suggestions."
-                    )}
-                  </div>
-                </div>
-              </ScrollArea>
-              <form onSubmit={handleAiChat} className="p-4 border-t flex gap-2">
-                <Input
-                  placeholder={
-                    activeSection 
-                      ? "Ask for suggestions or improvements..." 
-                      : "Select a section first..."
-                  }
-                  value={aiInput}
-                  onChange={(e) => setAiInput(e.target.value)}
-                  disabled={!activeSection || isAiLoading}
-                />
-                <Button 
-                  type="submit" 
-                  size="icon" 
-                  disabled={isAiLoading || !activeSection || !aiInput.trim()}
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+          {/* Right side - AI Assistant */}
+          {renderAiAssistant()}
         </div>
       </div>
     </div>
