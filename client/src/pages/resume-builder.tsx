@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@radix-ui/react-select'
-
+import ResumeUploadDialog from "@/components/resume-upload-dialog";
 
 interface Section {
   id: string;
@@ -323,28 +323,72 @@ export default function ResumeBuilder() {
     }
   };
 
+  const handleFileUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/resumes/parse', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to parse resume');
+      }
+
+      const parsedData = await response.json();
+
+      // Update personal information
+      if (parsedData.personalInfo) {
+        setPersonalInfo({
+          name: parsedData.personalInfo.name || "",
+          email: parsedData.personalInfo.email || "",
+          phone: parsedData.personalInfo.phone || "",
+          location: parsedData.personalInfo.location || "",
+          linkedin: parsedData.personalInfo.linkedin || ""
+        });
+      }
+
+      // Update sections with parsed content
+      if (parsedData.sections) {
+        const newSections = sections.map(section => {
+          const parsedSection = parsedData.sections.find((s: any) => s.id === section.id);
+          if (parsedSection) {
+            return {
+              ...section,
+              content: parsedSection.content || "",
+              items: parsedSection.items || []
+            };
+          }
+          return section;
+        });
+        setSections(newSections);
+      }
+
+      toast({
+        title: "Resume Parsed",
+        description: "Your resume has been successfully parsed and loaded"
+      });
+    } catch (error) {
+      toast({
+        title: "Parsing Failed",
+        description: error instanceof Error ? error.message : "Failed to parse resume",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-[1400px] mx-auto flex flex-col gap-6 h-[calc(100vh-48px)]">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Resume Builder</h1>
           <div className="flex gap-3">
-            {existingResumes && existingResumes.length > 0 && (
-              <Select
-                onValueChange={(value) => populateFromResume(parseInt(value))}
-              >
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Use Existing Resume" />
-                </SelectTrigger>
-                <SelectContent>
-                  {existingResumes.map((resume) => (
-                    <SelectItem key={resume.id} value={resume.id.toString()}>
-                      {resume.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <ResumeUploadDialog
+              onResumeSelected={populateFromResume}
+              onFileUploaded={handleFileUpload}
+            />
             <Button variant="outline" onClick={() => {
               setSections(sections.map(s => ({ ...s, content: "", items: [] })));
               setPersonalInfo({
