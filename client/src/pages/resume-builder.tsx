@@ -336,37 +336,71 @@ export default function ResumeBuilder() {
 
   // Improved file upload function with better error handling and structure adaptability
   const handleFileUpload = async (file: File) => {
+    if (!file) {
+      toast({
+        title: "No File Selected",
+        description: "Please select a valid resume file to upload",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsParsingResume(true);
+
+    // First, read the file content for preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setResumeContent(e.target?.result as string);
+    };
+    reader.readAsText(file);
+
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-      // First, read the file content for preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setResumeContent(e.target?.result as string);
-      };
-      reader.readAsText(file);
-
-      const response = await fetch('/api/resumes/parse', {
+      // Call the AI-powered endpoint
+      const response = await fetch('/api/ai-resume-parser', {
         method: 'POST',
         body: formData
       });
 
       if (!response.ok) {
-        throw new Error('Failed to parse resume');
+        throw new Error(`Failed to parse resume (${response.status}): ${response.statusText}`);
       }
 
       const parsedData = await response.json();
-      console.log('Parsed resume data:', parsedData);
 
-      // Process the parsed data and create highlights
+      // Update personal info from AI-extracted data
+      setPersonalInfo({
+        name: parsedData.personalInfo?.name || "",
+        email: parsedData.personalInfo?.email || "",
+        phone: parsedData.personalInfo?.phone || "",
+        location: parsedData.personalInfo?.location || "",
+        linkedin: parsedData.personalInfo?.linkedin || ""
+      });
+
+      // Update sections with AI-extracted data
+      if (Array.isArray(parsedData.sections)) {
+        const newSections = sections.map(section => {
+          const parsedSection = parsedData.sections.find((s: any) => s.id === section.id);
+          if (parsedSection) {
+            return {
+              ...section,
+              content: parsedSection.content || "",
+              items: parsedSection.items || []
+            };
+          }
+          return section;
+        });
+        setSections(newSections);
+      }
+
+      // Create highlights for the preview
       const highlights: HighlightSection[] = [];
 
-      // Handle personal information
-      const personalInfoData = parsedData.personalInfo || parsedData.personal || parsedData.contact || parsedData;
-      if (personalInfoData) {
-        Object.entries(personalInfoData).forEach(([field, value]) => {
+      // Add personal info highlights
+      if (parsedData.personalInfo) {
+        Object.entries(parsedData.personalInfo).forEach(([field, value]) => {
           if (typeof value === 'string' && value.trim() && resumeContent.includes(value)) {
             highlights.push({
               text: value,
@@ -378,261 +412,37 @@ export default function ResumeBuilder() {
         });
       }
 
-      // Handle sections
-      const addHighlightsFromSection = (
-        items: any[],
-        fieldType: 'experience' | 'education' | 'skills' | 'projects' | 'certifications'
-      ) => {
-        items.forEach(item => {
-          Object.entries(item).forEach(([field, value]) => {
-            if (typeof value === 'string' && value.trim() && resumeContent.includes(value)) {
-              highlights.push({
-                text: value,
-                field: `${fieldType}_${field}`,
-                fieldType,
-                confidence: 0.8
+      // Add section highlights
+      if (Array.isArray(parsedData.sections)) {
+        parsedData.sections.forEach((section: any) => {
+          if (section.items) {
+            section.items.forEach((item: any) => {
+              Object.entries(item).forEach(([field, value]) => {
+                if (typeof value === 'string' && value.trim() && resumeContent.includes(value)) {
+                  highlights.push({
+                    text: value,
+                    field: `${section.id}_${field}`,
+                    fieldType: section.id as any,
+                    confidence: 0.8
+                  });
+                }
               });
-            }
-          });
+            });
+          }
         });
-      };
-
-      // Add highlights for each section
-      if (Array.isArray(parsedData.workExperience)) {
-        addHighlightsFromSection(parsedData.workExperience, 'experience');
-      }
-      if (Array.isArray(parsedData.education)) {
-        addHighlightsFromSection(parsedData.education, 'education');
-      }
-      if (Array.isArray(parsedData.skills)) {
-        addHighlightsFromSection(parsedData.skills, 'skills');
-      }
-      if (Array.isArray(parsedData.projects)) {
-        addHighlightsFromSection(parsedData.projects, 'projects');
-      }
-      if (Array.isArray(parsedData.certifications)) {
-        addHighlightsFromSection(parsedData.certifications, 'certifications');
       }
 
       setResumeHighlights(highlights);
 
-      // Update the form with parsed data
-      if (personalInfoData) {
-        setPersonalInfo({
-          name: personalInfoData.name || personalInfoData.fullName || "",
-          email: personalInfoData.email || personalInfoData.emailAddress || "",
-          phone: personalInfoData.phone || personalInfoData.phoneNumber || personalInfoData.telephone || "",
-          location: personalInfoData.location || personalInfoData.address || "",
-          linkedin: personalInfoData.linkedin || personalInfoData.linkedInUrl || ""
-        });
-      }
-
-      // Create a more flexible approach to handling sections
-      const newSections = [...sections];
-
-      // Function to extract array data safely
-      const extractArray = (data: any, paths: string[]): any[] => {
-        for (const path of paths) {
-          const value = path.split('.').reduce((obj, key) => obj && obj[key], data);
-          if (Array.isArray(value) && value.length > 0) {
-            return value;
-          }
-        }
-        return [];
-      };
-
-      // Function to extract string data safely
-      const extractString = (data: any, paths: string[]): string => {
-        for (const path of paths) {
-          const value = path.split('.').reduce((obj, key) => obj && obj[key], data);
-          if (typeof value === 'string' && value.trim()) {
-            return value;
-          }
-        }
-        return '';
-      };
-
-      // Handle summary section
-      const summaryText = extractString(
-        parsedData,
-        ['summary', 'professionalSummary', 'profile', 'about', 'objective', 'sections.summary.content']
-      );
-
-      if (summaryText) {
-        const summaryIndex = newSections.findIndex(s => s.id === "summary");
-        if (summaryIndex !== -1) {
-          newSections[summaryIndex] = {
-            ...newSections[summaryIndex],
-            content: summaryText
-          };
-        }
-      }
-
-      // Handle work experience
-      const workExperience = extractArray(
-        parsedData,
-        ['workExperience', 'experience', 'employment', 'jobs', 'sections.experience.items']
-      );
-
-      if (workExperience.length > 0) {
-        const experienceIndex = newSections.findIndex(s => s.id === "experience");
-        if (experienceIndex !== -1) {
-          newSections[experienceIndex] = {
-            ...newSections[experienceIndex],
-            items: workExperience.map(item => ({
-              title: item.jobTitle || item.title || item.position || "",
-              subtitle: item.company || item.employer || item.organization || "",
-              date: `${item.startDate || item.from || ""} - ${item.endDate || item.to || item.current ? "Present" : ""}`,
-              description: item.description || item.summary || "",
-              bullets: Array.isArray(item.responsibilities || item.achievements || item.duties || item.bulletPoints)
-                ? (item.responsibilities || item.achievements || item.duties || item.bulletPoints)
-                : []
-            }))
-          };
-        }
-      }
-
-      // Handle education
-      const education = extractArray(
-        parsedData,
-        ['education', 'educationHistory', 'academic', 'sections.education.items']
-      );
-
-      if (education.length > 0) {
-        const educationIndex = newSections.findIndex(s => s.id === "education");
-        if (educationIndex !== -1) {
-          newSections[educationIndex] = {
-            ...newSections[educationIndex],
-            items: education.map(item => ({
-              title: item.degree || item.qualification || item.title || "",
-              subtitle: item.institution || item.school || item.university || "",
-              date: `${item.startDate || item.from || ""} - ${item.endDate || item.to || ""}`,
-              description: item.description || item.summary || "",
-              bullets: Array.isArray(item.achievements || item.courses || item.activities || item.details)
-                ? (item.achievements || item.courses || item.activities || item.details)
-                : []
-            }))
-          };
-        }
-      }
-
-      // Handle skills
-      const skills = extractArray(
-        parsedData,
-        ['skills', 'skillSet', 'expertise', 'sections.skills.items']
-      );
-
-      if (skills.length > 0) {
-        const skillsIndex = newSections.findIndex(s => s.id === "skills");
-        if (skillsIndex !== -1) {
-          // Check if skills is an array of strings or an array of objects
-          if (typeof skills[0] === 'string') {
-            newSections[skillsIndex] = {
-              ...newSections[skillsIndex],
-              content: skills.join(", ")
-            };
-          } else {
-            newSections[skillsIndex] = {
-              ...newSections[skillsIndex],
-              items: skills.map(item => {
-                if (typeof item === 'string') {
-                  return {
-                    title: item,
-                    subtitle: "",
-                    description: ""
-                  };
-                } else {
-                  return {
-                    title: item.name || item.category || item.title || "",
-                    subtitle: "",
-                    description: Array.isArray(item.skills)
-                      ? item.skills.join(", ")
-                      : (item.description || "")
-                  };
-                }
-              })
-            };
-          }
-        }
-      } else {
-        // Try to find skills as a single string
-        const skillsString = extractString(
-          parsedData,
-          ['skillsText', 'skillsSummary', 'sections.skills.content']
-        );
-
-        if (skillsString) {
-          const skillsIndex = newSections.findIndex(s => s.id === "skills");
-          if (skillsIndex !== -1) {
-            newSections[skillsIndex] = {
-              ...newSections[skillsIndex],
-              content: skillsString
-            };
-          }
-        }
-      }
-
-      // Handle projects
-      const projects = extractArray(
-        parsedData,
-        ['projects', 'portfolio', 'works', 'sections.projects.items']
-      );
-
-      if (projects.length > 0) {
-        const projectsIndex = newSections.findIndex(s => s.id === "projects");
-        if (projectsIndex !== -1) {
-          newSections[projectsIndex] = {
-            ...newSections[projectsIndex],
-            items: projects.map(item => ({
-              title: item.name || item.title || "",
-              subtitle: item.technologies || item.tools || item.subtitle || "",
-              date: item.duration || item.date || item.period || "",
-              description: item.description || item.summary || "",
-              bullets: Array.isArray(item.highlights || item.details || item.achievements || item.bulletPoints)
-                ? (item.highlights || item.details || item.achievements || item.bulletPoints)
-                : []
-            }))
-          };
-        }
-      }
-
-      // Handle certifications
-      const certifications = extractArray(
-        parsedData,
-        ['certifications', 'certificates', 'qualifications', 'sections.certifications.items']
-      );
-
-      if (certifications.length > 0) {
-        const certificationsIndex = newSections.findIndex(s => s.id === "certifications");
-        if (certificationsIndex !== -1) {
-          newSections[certificationsIndex] = {
-            ...newSections[certificationsIndex],
-            items: certifications.map(item => ({
-              title: item.name || item.title || "",
-              subtitle: item.issuer || item.authority || item.organization || "",
-              date: item.issueDate || item.date || item.year || "",
-              description: item.description || item.summary || "",
-              bullets: Array.isArray(item.details || item.skills || item.bulletPoints)
-                ? (item.details || item.skills || item.bulletPoints)
-                : []
-            }))
-          };
-        }
-      }
-
-      console.log('Updating sections with:', newSections);
-      setSections(newSections);
-
-
       toast({
         title: "Resume Parsed Successfully",
-        description: "Your resume has been analyzed and sections have been populated. Please review and edit as needed."
+        description: "Your resume has been analyzed by AI and all sections have been populated."
       });
     } catch (error) {
       console.error('Error parsing resume:', error);
       toast({
         title: "Parsing Failed",
-        description: error instanceof Error ? error.message : "Failed to parse resume. Please try again or enter details manually.",
+        description: "Could not process your resume. Please try again or enter details manually.",
         variant: "destructive"
       });
     } finally {
