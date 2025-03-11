@@ -95,66 +95,23 @@ router.post("/api/ai-resume-parser", upload.single("file"), async (req, res) => 
 
     console.log("Calling OpenAI API...");
 
+    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: `You are a resume parser. Extract information from the resume text into the following JSON structure. For any missing information, use empty strings or arrays. Format all dates as YYYY-MM or "Present". The output must be strictly JSON with no additional text or comments.`
+          content: `You are a resume parser. Extract information from the resume text into JSON format with the following structure. For missing information use empty strings or arrays. All dates should be in YYYY-MM format or "Present".`
         },
         {
           role: "user",
-          content: `Parse this resume and return a JSON object with this exact structure:
-{
-  "personalInfo": {
-    "name": "string",
-    "email": "string",
-    "phone": "string",
-    "location": "string",
-    "linkedin": "string"
-  },
-  "summary": "string",
-  "experience": [{
-    "title": "string",
-    "company": "string",
-    "startDate": "string",
-    "endDate": "string",
-    "description": "string",
-    "responsibilities": ["string"]
-  }],
-  "education": [{
-    "degree": "string",
-    "institution": "string",
-    "startDate": "string",
-    "endDate": "string",
-    "description": "string",
-    "achievements": ["string"]
-  }],
-  "skills": ["string"],
-  "projects": [{
-    "name": "string",
-    "technologies": "string",
-    "duration": "string",
-    "description": "string",
-    "highlights": ["string"]
-  }],
-  "certifications": [{
-    "name": "string",
-    "issuer": "string",
-    "date": "string",
-    "description": "string",
-    "details": ["string"]
-  }]
-}
-
-Here's the resume content to parse:
+          content: `Here is the resume to parse. Extract the information and return ONLY a JSON object with no additional text:
 
 ${fileContent}`
         }
       ],
       temperature: 0.1,
-      max_tokens: 2048,
-      response_format: { type: "json_object" }
+      max_tokens: 2048
     });
 
     if (!completion.choices[0].message.content) {
