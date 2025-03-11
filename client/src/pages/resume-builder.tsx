@@ -359,47 +359,47 @@ export default function ResumeBuilder() {
               case "summary":
                 return {
                   ...section,
-                  content: parsedSection.content || ""
+                  content: parsedSection.summary || ""
                 };
               case "experience":
                 return {
                   ...section,
-                  items: parsedSection.items?.map((item: any) => ({
-                    title: item.title || "",
+                  items: parsedSection.workExperience?.map((item: any) => ({
+                    title: item.jobTitle || "",
                     subtitle: item.company || "",
-                    date: `${item.startDate || ""} - ${item.endDate || ""}`,
+                    date: `${item.startDate || ""} - ${item.endDate || "Present"}`,
                     description: item.description || "",
-                    bullets: item.achievements || []
+                    bullets: item.responsibilities || []
                   })) || []
                 };
               case "education":
                 return {
                   ...section,
-                  items: parsedSection.items?.map((item: any) => ({
+                  items: parsedSection.education?.map((item: any) => ({
                     title: item.degree || "",
-                    subtitle: item.school || "",
+                    subtitle: item.institution || "",
                     date: `${item.startDate || ""} - ${item.endDate || ""}`,
                     description: item.description || "",
-                    bullets: item.highlights || []
+                    bullets: item.achievements || []
                   })) || []
                 };
               case "skills":
                 return {
                   ...section,
-                  content: parsedSection.items?.join(", ") || "",
-                  items: parsedSection.items?.map((skill: string) => ({
-                    title: skill,
+                  content: parsedSection.skills?.join(", ") || "",
+                  items: parsedSection.skillCategories?.map((category: any) => ({
+                    title: category.name || "",
                     subtitle: "",
-                    description: ""
+                    description: category.skills?.join(", ") || ""
                   })) || []
                 };
               case "projects":
                 return {
                   ...section,
-                  items: parsedSection.items?.map((item: any) => ({
+                  items: parsedSection.projects?.map((item: any) => ({
                     title: item.name || "",
                     subtitle: item.technologies || "",
-                    date: item.date || "",
+                    date: item.duration || "",
                     description: item.description || "",
                     bullets: item.highlights || []
                   })) || []
@@ -407,12 +407,12 @@ export default function ResumeBuilder() {
               case "certifications":
                 return {
                   ...section,
-                  items: parsedSection.items?.map((item: any) => ({
+                  items: parsedSection.certifications?.map((item: any) => ({
                     title: item.name || "",
                     subtitle: item.issuer || "",
-                    date: item.date || "",
+                    date: item.issueDate || "",
                     description: item.description || "",
-                    bullets: []
+                    bullets: item.details || []
                   })) || []
                 };
               default:
