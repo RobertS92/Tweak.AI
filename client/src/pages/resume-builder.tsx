@@ -65,26 +65,30 @@ export default function ResumeBuilder() {
     if (section.content !== undefined) {
       return section.content || "";
     } else if (section.items && section.items.length > 0) {
-      const formattedItems = section.items.map(item => {
-        const bulletPoints = (item.bullets || [])
-          .filter(bullet => bullet.trim()) // Filter out empty bullets
-          .map(bullet => `• ${bullet}`)
-          .join('\n');
+      // Special formatting for sections with items (work experience, education, projects)
+      const formattedItems = section.items
+        .filter(item => item.title || item.subtitle || item.description || (item.bullets && item.bullets.length > 0))
+        .map(item => {
+          const bulletPoints = (item.bullets || [])
+            .filter(bullet => bullet && bullet.trim())
+            .map(bullet => `• ${bullet.trim()}`)
+            .join('\n');
 
-        let formattedItem = `
-[Entry]
-Position/Title: ${item.title}
-Company/Organization: ${item.subtitle}
+          return `
+Position: ${item.title}
+Company: ${item.subtitle}
 Date: ${item.date}
 ${item.description ? `Description: ${item.description}` : ''}
-${bulletPoints ? `\nAchievements/Details:\n${bulletPoints}` : ''}
+${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
 `.trim();
+        });
 
-        return formattedItem;
-      });
+      if (formattedItems.length === 0) {
+        return `No entries found in ${section.title}`;
+      }
 
-      // Add section header and join all items
-      return `=== ${section.title} ===\n\n${formattedItems.join('\n\n---\n\n')}`;
+      // Add section header and join all items with clear separators
+      return `${section.title.toUpperCase()}\n\n${formattedItems.join('\n\n==========\n\n')}`;
     }
     return "";
   }, [activeSection, sections]);
@@ -98,6 +102,7 @@ ${bulletPoints ? `\nAchievements/Details:\n${bulletPoints}` : ''}
       const sectionContent = getCurrentSectionContent();
       console.log('[DEBUG] Section ID:', sectionId);
       console.log('[DEBUG] Section Content:', sectionContent);
+      console.log('[DEBUG] Content Length:', sectionContent.length);
 
       const response = await fetch("/api/resume-ai-assistant", {
         method: "POST",

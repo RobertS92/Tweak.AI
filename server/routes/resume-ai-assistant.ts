@@ -6,12 +6,10 @@ dotenv.config();
 
 const router = Router();
 
-// Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Define the /api/resume-ai-assistant route
 router.post("/api/resume-ai-assistant", async (req, res) => {
   try {
     const { sectionId, sectionContent, userQuery } = req.body || {};
@@ -24,24 +22,29 @@ router.post("/api/resume-ai-assistant", async (req, res) => {
 
     console.log("[DEBUG] Full section content:", sectionContent);
 
-    // Enhanced system prompt for better section analysis
     const messages = [
       {
         role: "system",
-        content: `You are a professional resume writing assistant helping to improve resume sections.
-For sections with entries (like Work Experience, Education, Projects):
-- Analyze each entry separately
+        content: `You are a professional resume writing assistant. Your task is to analyze resume content and provide specific, actionable feedback.
+
+When analyzing work experience:
+- Check each position's description for impact and clarity
 - Suggest stronger action verbs and quantifiable achievements
-- Point out missing important details
-- Provide specific examples of improvements
+- Identify missing key details (responsibilities, results, technologies used)
+- Provide specific examples of how to improve each bullet point
 
-For summary and skills sections:
-- Suggest ways to make the content more impactful
-- Recommend better organization and presentation
-- Point out any missing key elements
+When analyzing education:
+- Verify degree information is clear and complete
+- Suggest relevant coursework or achievements to highlight
+- Recommend academic accomplishments to include
 
-Keep your feedback specific, actionable, and focused on the current section.
-If no content is provided, ask for the information needed to provide feedback.`
+When analyzing projects:
+- Ensure technical details and impact are clear
+- Suggest ways to better highlight skills and technologies
+- Recommend improvements to project descriptions
+
+Provide specific, actionable feedback for the exact content provided.
+If the section is empty, ask for the basic information needed.`
       },
       {
         role: "user",
@@ -53,23 +56,20 @@ ${userQuery || "Please analyze this section and suggest specific improvements."}
       }
     ];
 
-    // Call OpenAI with more tokens for detailed analysis
     const completion = await openai.chat.completions.create({
-      model: "gpt-4", // Using GPT-4 for better analysis
+      model: "gpt-4",
       messages: messages as any,
       temperature: 0.7,
       max_tokens: 1000,
     });
 
-    // Extract AI's suggestions
     const suggestions = completion.choices[0]?.message?.content || "";
 
     console.log("[DEBUG] AI suggestions generated:", suggestions.substring(0, 100) + "...");
 
-    // Send suggestions back as JSON
     return res.json({
       suggestions,
-      improvements: [], // For future structured improvements
+      improvements: []
     });
   } catch (error) {
     console.error("[DEBUG] AI Assistant error:", error);
