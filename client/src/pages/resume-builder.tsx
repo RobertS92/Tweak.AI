@@ -13,6 +13,7 @@ import { useLocation } from "wouter";
 import { queryClient } from "@/lib/queryClient";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@radix-ui/react-select'
 import ResumeUploadDialog from "@/components/resume-upload-dialog";
+import ResumeParsePreviewer from "@/components/resume-parse-previewer";
 
 interface Section {
   id: string;
@@ -31,6 +32,13 @@ interface AIEnhancement {
   enhancedContent: string;
   suggestions: string[];
   explanation: string;
+}
+
+interface HighlightSection {
+  text: string;
+  field: string;
+  fieldType: 'personal' | 'experience' | 'education' | 'skills' | 'projects' | 'certifications';
+  confidence: number;
 }
 
 export default function ResumeBuilder() {
@@ -198,6 +206,9 @@ export default function ResumeBuilder() {
   const [currentSuggestions, setCurrentSuggestions] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isAssistantMinimized, setIsAssistantMinimized] = useState(false);
+  const [resumeContent, setResumeContent] = useState<string>("");
+  const [resumeHighlights, setResumeHighlights] = useState<HighlightSection[]>([]);
+  const [isParsingResume, setIsParsingResume] = useState(false);
 
 
   const handleGeneratePDF = async () => {
@@ -325,10 +336,18 @@ export default function ResumeBuilder() {
 
   // Improved file upload function with better error handling and structure adaptability
   const handleFileUpload = async (file: File) => {
+    setIsParsingResume(true);
     const formData = new FormData();
     formData.append('file', file);
 
     try {
+      // First, read the file content for preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setResumeContent(e.target?.result as string);
+      };
+      reader.readAsText(file);
+
       const response = await fetch('/api/resumes/parse', {
         method: 'POST',
         body: formData
@@ -339,225 +358,271 @@ export default function ResumeBuilder() {
       }
 
       const parsedData = await response.json();
-
-      // Debug the structure of parsed data
       console.log('Parsed resume data:', parsedData);
 
-      // Flexible handling of personal information
-      // Try different possible paths to find personal info
-      if (parsedData) {
-        // Update personal information with improved validation and flexible path finding
-        const personalInfoData = parsedData.personalInfo || parsedData.personal || parsedData.contact || parsedData;
+      // Process the parsed data and create highlights
+      const highlights: HighlightSection[] = [];
 
-        if (personalInfoData) {
-          const updatedPersonalInfo = {
-            name: personalInfoData.name || personalInfoData.fullName || "",
-            email: personalInfoData.email || personalInfoData.emailAddress || "",
-            phone: personalInfoData.phone || personalInfoData.phoneNumber || personalInfoData.telephone || "",
-            location: personalInfoData.location || personalInfoData.address || "",
-            linkedin: personalInfoData.linkedin || personalInfoData.linkedInUrl || ""
+      // Handle personal information
+      const personalInfoData = parsedData.personalInfo || parsedData.personal || parsedData.contact || parsedData;
+      if (personalInfoData) {
+        Object.entries(personalInfoData).forEach(([field, value]) => {
+          if (typeof value === 'string' && value.trim() && resumeContent.includes(value)) {
+            highlights.push({
+              text: value,
+              field,
+              fieldType: 'personal',
+              confidence: 0.9
+            });
+          }
+        });
+      }
+
+      // Handle sections
+      const addHighlightsFromSection = (
+        items: any[],
+        fieldType: 'experience' | 'education' | 'skills' | 'projects' | 'certifications'
+      ) => {
+        items.forEach(item => {
+          Object.entries(item).forEach(([field, value]) => {
+            if (typeof value === 'string' && value.trim() && resumeContent.includes(value)) {
+              highlights.push({
+                text: value,
+                field: `${fieldType}_${field}`,
+                fieldType,
+                confidence: 0.8
+              });
+            }
+          });
+        });
+      };
+
+      // Add highlights for each section
+      if (Array.isArray(parsedData.workExperience)) {
+        addHighlightsFromSection(parsedData.workExperience, 'experience');
+      }
+      if (Array.isArray(parsedData.education)) {
+        addHighlightsFromSection(parsedData.education, 'education');
+      }
+      if (Array.isArray(parsedData.skills)) {
+        addHighlightsFromSection(parsedData.skills, 'skills');
+      }
+      if (Array.isArray(parsedData.projects)) {
+        addHighlightsFromSection(parsedData.projects, 'projects');
+      }
+      if (Array.isArray(parsedData.certifications)) {
+        addHighlightsFromSection(parsedData.certifications, 'certifications');
+      }
+
+      setResumeHighlights(highlights);
+
+      // Update the form with parsed data
+      if (personalInfoData) {
+        setPersonalInfo({
+          name: personalInfoData.name || personalInfoData.fullName || "",
+          email: personalInfoData.email || personalInfoData.emailAddress || "",
+          phone: personalInfoData.phone || personalInfoData.phoneNumber || personalInfoData.telephone || "",
+          location: personalInfoData.location || personalInfoData.address || "",
+          linkedin: personalInfoData.linkedin || personalInfoData.linkedInUrl || ""
+        });
+      }
+
+      // Create a more flexible approach to handling sections
+      const newSections = [...sections];
+
+      // Function to extract array data safely
+      const extractArray = (data: any, paths: string[]): any[] => {
+        for (const path of paths) {
+          const value = path.split('.').reduce((obj, key) => obj && obj[key], data);
+          if (Array.isArray(value) && value.length > 0) {
+            return value;
+          }
+        }
+        return [];
+      };
+
+      // Function to extract string data safely
+      const extractString = (data: any, paths: string[]): string => {
+        for (const path of paths) {
+          const value = path.split('.').reduce((obj, key) => obj && obj[key], data);
+          if (typeof value === 'string' && value.trim()) {
+            return value;
+          }
+        }
+        return '';
+      };
+
+      // Handle summary section
+      const summaryText = extractString(
+        parsedData,
+        ['summary', 'professionalSummary', 'profile', 'about', 'objective', 'sections.summary.content']
+      );
+
+      if (summaryText) {
+        const summaryIndex = newSections.findIndex(s => s.id === "summary");
+        if (summaryIndex !== -1) {
+          newSections[summaryIndex] = {
+            ...newSections[summaryIndex],
+            content: summaryText
           };
-
-          console.log('Updating personal info with:', updatedPersonalInfo);
-          setPersonalInfo(updatedPersonalInfo);
         }
+      }
 
-        // Create a more flexible approach to handling sections
-        const newSections = [...sections];
+      // Handle work experience
+      const workExperience = extractArray(
+        parsedData,
+        ['workExperience', 'experience', 'employment', 'jobs', 'sections.experience.items']
+      );
 
-        // Function to extract array data safely
-        const extractArray = (data: any, paths: string[]): any[] => {
-          for (const path of paths) {
-            const value = path.split('.').reduce((obj, key) => obj && obj[key], data);
-            if (Array.isArray(value) && value.length > 0) {
-              return value;
-            }
-          }
-          return [];
-        };
+      if (workExperience.length > 0) {
+        const experienceIndex = newSections.findIndex(s => s.id === "experience");
+        if (experienceIndex !== -1) {
+          newSections[experienceIndex] = {
+            ...newSections[experienceIndex],
+            items: workExperience.map(item => ({
+              title: item.jobTitle || item.title || item.position || "",
+              subtitle: item.company || item.employer || item.organization || "",
+              date: `${item.startDate || item.from || ""} - ${item.endDate || item.to || item.current ? "Present" : ""}`,
+              description: item.description || item.summary || "",
+              bullets: Array.isArray(item.responsibilities || item.achievements || item.duties || item.bulletPoints)
+                ? (item.responsibilities || item.achievements || item.duties || item.bulletPoints)
+                : []
+            }))
+          };
+        }
+      }
 
-        // Function to extract string data safely
-        const extractString = (data: any, paths: string[]): string => {
-          for (const path of paths) {
-            const value = path.split('.').reduce((obj, key) => obj && obj[key], data);
-            if (typeof value === 'string' && value.trim()) {
-              return value;
-            }
-          }
-          return '';
-        };
+      // Handle education
+      const education = extractArray(
+        parsedData,
+        ['education', 'educationHistory', 'academic', 'sections.education.items']
+      );
 
-        // Handle summary section
-        const summaryText = extractString(
-          parsedData, 
-          ['summary', 'professionalSummary', 'profile', 'about', 'objective', 'sections.summary.content']
-        );
+      if (education.length > 0) {
+        const educationIndex = newSections.findIndex(s => s.id === "education");
+        if (educationIndex !== -1) {
+          newSections[educationIndex] = {
+            ...newSections[educationIndex],
+            items: education.map(item => ({
+              title: item.degree || item.qualification || item.title || "",
+              subtitle: item.institution || item.school || item.university || "",
+              date: `${item.startDate || item.from || ""} - ${item.endDate || item.to || ""}`,
+              description: item.description || item.summary || "",
+              bullets: Array.isArray(item.achievements || item.courses || item.activities || item.details)
+                ? (item.achievements || item.courses || item.activities || item.details)
+                : []
+            }))
+          };
+        }
+      }
 
-        if (summaryText) {
-          const summaryIndex = newSections.findIndex(s => s.id === "summary");
-          if (summaryIndex !== -1) {
-            newSections[summaryIndex] = {
-              ...newSections[summaryIndex],
-              content: summaryText
+      // Handle skills
+      const skills = extractArray(
+        parsedData,
+        ['skills', 'skillSet', 'expertise', 'sections.skills.items']
+      );
+
+      if (skills.length > 0) {
+        const skillsIndex = newSections.findIndex(s => s.id === "skills");
+        if (skillsIndex !== -1) {
+          // Check if skills is an array of strings or an array of objects
+          if (typeof skills[0] === 'string') {
+            newSections[skillsIndex] = {
+              ...newSections[skillsIndex],
+              content: skills.join(", ")
+            };
+          } else {
+            newSections[skillsIndex] = {
+              ...newSections[skillsIndex],
+              items: skills.map(item => {
+                if (typeof item === 'string') {
+                  return {
+                    title: item,
+                    subtitle: "",
+                    description: ""
+                  };
+                } else {
+                  return {
+                    title: item.name || item.category || item.title || "",
+                    subtitle: "",
+                    description: Array.isArray(item.skills)
+                      ? item.skills.join(", ")
+                      : (item.description || "")
+                  };
+                }
+              })
             };
           }
         }
-
-        // Handle work experience
-        const workExperience = extractArray(
-          parsedData, 
-          ['workExperience', 'experience', 'employment', 'jobs', 'sections.experience.items']
-        );
-
-        if (workExperience.length > 0) {
-          const experienceIndex = newSections.findIndex(s => s.id === "experience");
-          if (experienceIndex !== -1) {
-            newSections[experienceIndex] = {
-              ...newSections[experienceIndex],
-              items: workExperience.map(item => ({
-                title: item.jobTitle || item.title || item.position || "",
-                subtitle: item.company || item.employer || item.organization || "",
-                date: `${item.startDate || item.from || ""} - ${item.endDate || item.to || item.current ? "Present" : ""}`,
-                description: item.description || item.summary || "",
-                bullets: Array.isArray(item.responsibilities || item.achievements || item.duties || item.bulletPoints) 
-                  ? (item.responsibilities || item.achievements || item.duties || item.bulletPoints)
-                  : []
-              }))
-            };
-          }
-        }
-
-        // Handle education
-        const education = extractArray(
+      } else {
+        // Try to find skills as a single string
+        const skillsString = extractString(
           parsedData,
-          ['education', 'educationHistory', 'academic', 'sections.education.items']
+          ['skillsText', 'skillsSummary', 'sections.skills.content']
         );
 
-        if (education.length > 0) {
-          const educationIndex = newSections.findIndex(s => s.id === "education");
-          if (educationIndex !== -1) {
-            newSections[educationIndex] = {
-              ...newSections[educationIndex],
-              items: education.map(item => ({
-                title: item.degree || item.qualification || item.title || "",
-                subtitle: item.institution || item.school || item.university || "",
-                date: `${item.startDate || item.from || ""} - ${item.endDate || item.to || ""}`,
-                description: item.description || item.summary || "",
-                bullets: Array.isArray(item.achievements || item.courses || item.activities || item.details)
-                  ? (item.achievements || item.courses || item.activities || item.details)
-                  : []
-              }))
-            };
-          }
-        }
-
-        // Handle skills
-        const skills = extractArray(
-          parsedData,
-          ['skills', 'skillSet', 'expertise', 'sections.skills.items']
-        );
-
-        if (skills.length > 0) {
+        if (skillsString) {
           const skillsIndex = newSections.findIndex(s => s.id === "skills");
           if (skillsIndex !== -1) {
-            // Check if skills is an array of strings or an array of objects
-            if (typeof skills[0] === 'string') {
-              newSections[skillsIndex] = {
-                ...newSections[skillsIndex],
-                content: skills.join(", ")
-              };
-            } else {
-              newSections[skillsIndex] = {
-                ...newSections[skillsIndex],
-                items: skills.map(item => {
-                  if (typeof item === 'string') {
-                    return {
-                      title: item,
-                      subtitle: "",
-                      description: ""
-                    };
-                  } else {
-                    return {
-                      title: item.name || item.category || item.title || "",
-                      subtitle: "",
-                      description: Array.isArray(item.skills) 
-                        ? item.skills.join(", ") 
-                        : (item.description || "")
-                    };
-                  }
-                })
-              };
-            }
-          }
-        } else {
-          // Try to find skills as a single string
-          const skillsString = extractString(
-            parsedData,
-            ['skillsText', 'skillsSummary', 'sections.skills.content']
-          );
-
-          if (skillsString) {
-            const skillsIndex = newSections.findIndex(s => s.id === "skills");
-            if (skillsIndex !== -1) {
-              newSections[skillsIndex] = {
-                ...newSections[skillsIndex],
-                content: skillsString
-              };
-            }
-          }
-        }
-
-        // Handle projects
-        const projects = extractArray(
-          parsedData,
-          ['projects', 'portfolio', 'works', 'sections.projects.items']
-        );
-
-        if (projects.length > 0) {
-          const projectsIndex = newSections.findIndex(s => s.id === "projects");
-          if (projectsIndex !== -1) {
-            newSections[projectsIndex] = {
-              ...newSections[projectsIndex],
-              items: projects.map(item => ({
-                title: item.name || item.title || "",
-                subtitle: item.technologies || item.tools || item.subtitle || "",
-                date: item.duration || item.date || item.period || "",
-                description: item.description || item.summary || "",
-                bullets: Array.isArray(item.highlights || item.details || item.achievements || item.bulletPoints)
-                  ? (item.highlights || item.details || item.achievements || item.bulletPoints)
-                  : []
-              }))
+            newSections[skillsIndex] = {
+              ...newSections[skillsIndex],
+              content: skillsString
             };
           }
         }
-
-        // Handle certifications
-        const certifications = extractArray(
-          parsedData,
-          ['certifications', 'certificates', 'qualifications', 'sections.certifications.items']
-        );
-
-        if (certifications.length > 0) {
-          const certificationsIndex = newSections.findIndex(s => s.id === "certifications");
-          if (certificationsIndex !== -1) {
-            newSections[certificationsIndex] = {
-              ...newSections[certificationsIndex],
-              items: certifications.map(item => ({
-                title: item.name || item.title || "",
-                subtitle: item.issuer || item.authority || item.organization || "",
-                date: item.issueDate || item.date || item.year || "",
-                description: item.description || item.summary || "",
-                bullets: Array.isArray(item.details || item.skills || item.bulletPoints)
-                  ? (item.details || item.skills || item.bulletPoints)
-                  : []
-              }))
-            };
-          }
-        }
-
-        console.log('Updating sections with:', newSections);
-        setSections(newSections);
       }
+
+      // Handle projects
+      const projects = extractArray(
+        parsedData,
+        ['projects', 'portfolio', 'works', 'sections.projects.items']
+      );
+
+      if (projects.length > 0) {
+        const projectsIndex = newSections.findIndex(s => s.id === "projects");
+        if (projectsIndex !== -1) {
+          newSections[projectsIndex] = {
+            ...newSections[projectsIndex],
+            items: projects.map(item => ({
+              title: item.name || item.title || "",
+              subtitle: item.technologies || item.tools || item.subtitle || "",
+              date: item.duration || item.date || item.period || "",
+              description: item.description || item.summary || "",
+              bullets: Array.isArray(item.highlights || item.details || item.achievements || item.bulletPoints)
+                ? (item.highlights || item.details || item.achievements || item.bulletPoints)
+                : []
+            }))
+          };
+        }
+      }
+
+      // Handle certifications
+      const certifications = extractArray(
+        parsedData,
+        ['certifications', 'certificates', 'qualifications', 'sections.certifications.items']
+      );
+
+      if (certifications.length > 0) {
+        const certificationsIndex = newSections.findIndex(s => s.id === "certifications");
+        if (certificationsIndex !== -1) {
+          newSections[certificationsIndex] = {
+            ...newSections[certificationsIndex],
+            items: certifications.map(item => ({
+              title: item.name || item.title || "",
+              subtitle: item.issuer || item.authority || item.organization || "",
+              date: item.issueDate || item.date || item.year || "",
+              description: item.description || item.summary || "",
+              bullets: Array.isArray(item.details || item.skills || item.bulletPoints)
+                ? (item.details || item.skills || item.bulletPoints)
+                : []
+            }))
+          };
+        }
+      }
+
+      console.log('Updating sections with:', newSections);
+      setSections(newSections);
+
 
       toast({
         title: "Resume Parsed Successfully",
@@ -570,6 +635,30 @@ export default function ResumeBuilder() {
         description: error instanceof Error ? error.message : "Failed to parse resume. Please try again or enter details manually.",
         variant: "destructive"
       });
+    } finally {
+      setIsParsingResume(false);
+    }
+  };
+
+  const handleHighlightClick = (field: string, value: string) => {
+    const [section, fieldName] = field.split('_');
+
+    // Update the corresponding form field based on the clicked highlight
+    if (section === 'personal') {
+      setPersonalInfo(prev => ({
+        ...prev,
+        [fieldName]: value
+      }));
+    } else {
+      // For other sections, find and update the relevant section
+      const sectionId = section;
+      setActiveSection(sectionId);
+
+      // You might want to scroll to the relevant section
+      const sectionElement = document.getElementById(sectionId);
+      if (sectionElement) {
+        sectionElement.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
 
@@ -583,8 +672,8 @@ export default function ResumeBuilder() {
               onResumeSelected={populateFromResume}
               onFileUploaded={handleFileUpload}
             />
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setSections(sections.map(s => ({ ...s, content: "", items: [] })));
                 setPersonalInfo({
@@ -606,7 +695,7 @@ export default function ResumeBuilder() {
           </div>
         </div>
 
-        <div className="grid grid-cols-[240px_1fr] gap-6 h-[calc(100vh-48px)]">
+        <div className="grid grid-cols-[240px_1fr_300px] gap-6 h-[calc(100vh-48px)]">
           <Card className="h-fit">
             <CardContent className="p-4">
               {sections.map((section) => (
@@ -748,100 +837,106 @@ export default function ResumeBuilder() {
               </div>
             ))}
           </div>
-          <Card className={cn(
-            "transition-all duration-300",
-            isAssistantMinimized ? "h-[48px]" : "h-[55vh]"
-          )}>
-            <CardHeader className="py-3 px-6 border-b flex flex-row justify-between items-center">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <svg
-                  className="w-5 h-5 text-blue-500"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
-                AI Assistant {isAnalyzing && "(Analyzing...)"}
-              </CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsAssistantMinimized(!isAssistantMinimized)}
-                className="ml-auto"
-              >
-                {isAssistantMinimized ? (
-                  <ArrowUpWideNarrow className="h-4 w-4" />
-                ) : (
-                  <ArrowDownWideNarrow className="h-4 w-4" />
-                )}
-              </Button>
-            </CardHeader>
-            {!isAssistantMinimized && (
-              <CardContent className="p-0 flex flex-col h-[calc(100%-57px)]">
-                <ScrollArea className="flex-1 p-4">
-                  <div className="space-y-4">
-                    {messages.map((message, index) => (
-                      <div
-                        key={index}
-                        className={cn(
-                          "max-w-[85%] rounded-xl p-3",
-                          message.type === "assistant"
-                            ? "bg-gray-100 text-gray-800 mr-auto"
-                            : "bg-blue-500 text-white ml-auto"
-                        )}
-                      >
-                        {message.content}
-                      </div>
-                    ))}
-                    {currentSuggestions.length > 0 && (
-                      <div className="bg-gray-100 rounded-xl p-4 space-y-2">
-                        <p className="font-medium text-sm text-gray-700">Suggested Improvements:</p>
-                        {currentSuggestions.map((suggestion, index) => (
-                          <Button
-                            key={index}
-                            variant="outline"
-                            size="sm"
-                            className="w-full text-left justify-start h-auto py-2 px-3"
-                            onClick={() => applySuggestion(suggestion)}
-                          >
-                            {suggestion}
-                          </Button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
-                <div className="p-4 border-t flex gap-3">
-                  <Textarea
-                    value={chatMessage}
-                    onChange={(e) => setChatMessage(e.target.value)}
-                    placeholder={
-                      activeSection
-                        ? "Ask for specific improvements or suggestions..."
-                        : "Select a section to get started..."
-                    }
-                    className="flex-1 resize-none h-14"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                  />
-                  <Button
-                    onClick={handleSendMessage}
-                    className="h-14 w-14 p-0"
-                    disabled={!activeSection}
-                  >
-                    <Send className="h-5 w-5" />
-                  </Button>
-                </div>
-              </CardContent>
-            )}
-          </Card>
+          <ResumeParsePreviewer
+            content={resumeContent}
+            highlights={resumeHighlights}
+            isAnalyzing={isParsingResume}
+            onHighlightClick={handleHighlightClick}
+          />
         </div>
+        <Card className={cn(
+          "transition-all duration-300",
+          isAssistantMinimized ? "h-[48px]" : "h-[55vh]"
+        )}>
+          <CardHeader className="py-3 px-6 border-b flex flex-row justify-between items-center">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <svg
+                className="w-5 h-5 text-blue-500"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              AI Assistant {isAnalyzing && "(Analyzing...)"}
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsAssistantMinimized(!isAssistantMinimized)}
+              className="ml-auto"
+            >
+              {isAssistantMinimized ? (
+                <ArrowUpWideNarrow className="h-4 w-4" />
+              ) : (
+                <ArrowDownWideNarrow className="h-4 w-4" />
+              )}
+            </Button>
+          </CardHeader>
+          {!isAssistantMinimized && (
+            <CardContent className="p-0 flex flex-col h-[calc(100%-57px)]">
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-4">
+                  {messages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={cn(
+                        "max-w-[85%] rounded-xl p-3",
+                        message.type === "assistant"
+                          ? "bg-gray-100 text-gray-800 mr-auto"
+                          : "bg-blue-500 text-white ml-auto"
+                      )}
+                    >
+                      {message.content}
+                    </div>
+                  ))}
+                  {currentSuggestions.length > 0 && (
+                    <div className="bg-gray-100 rounded-xl p-4 space-y-2">
+                      <p className="font-medium text-sm text-gray-700">Suggested Improvements:</p>
+                      {currentSuggestions.map((suggestion, index) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          size="sm"
+                          className="w-full text-left justify-start h-auto py-2 px-3"
+                          onClick={() => applySuggestion(suggestion)}
+                        >
+                          {suggestion}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+              <div className="p-4 border-t flex gap-3">
+                <Textarea
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  placeholder={
+                    activeSection
+                      ? "Ask for specific improvements or suggestions..."
+                      : "Select a section to get started..."
+                  }
+                  className="flex-1 resize-none h-14"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  className="h-14 w-14 p-0"
+                  disabled={!activeSection}
+                >
+                  <Send className="h-5 w-5" />
+                </Button>
+              </div>
+            </CardContent>
+          )}
+        </Card>
       </div>
     </div>
   );
