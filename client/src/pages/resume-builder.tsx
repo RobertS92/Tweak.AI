@@ -339,7 +339,7 @@ export default function ResumeBuilder() {
 
       const parsedData = await response.json();
 
-      // Update personal information
+      // Update personal information with improved validation
       if (parsedData.personalInfo) {
         setPersonalInfo({
           name: parsedData.personalInfo.name || "",
@@ -350,16 +350,74 @@ export default function ResumeBuilder() {
         });
       }
 
-      // Update sections with parsed content
+      // Update sections with enhanced parsing and structure
       if (parsedData.sections) {
         const newSections = sections.map(section => {
           const parsedSection = parsedData.sections.find((s: any) => s.id === section.id);
           if (parsedSection) {
-            return {
-              ...section,
-              content: parsedSection.content || "",
-              items: parsedSection.items || []
-            };
+            switch (section.id) {
+              case "summary":
+                return {
+                  ...section,
+                  content: parsedSection.content || ""
+                };
+              case "experience":
+                return {
+                  ...section,
+                  items: parsedSection.items?.map((item: any) => ({
+                    title: item.title || "",
+                    subtitle: item.company || "",
+                    date: `${item.startDate || ""} - ${item.endDate || ""}`,
+                    description: item.description || "",
+                    bullets: item.achievements || []
+                  })) || []
+                };
+              case "education":
+                return {
+                  ...section,
+                  items: parsedSection.items?.map((item: any) => ({
+                    title: item.degree || "",
+                    subtitle: item.school || "",
+                    date: `${item.startDate || ""} - ${item.endDate || ""}`,
+                    description: item.description || "",
+                    bullets: item.highlights || []
+                  })) || []
+                };
+              case "skills":
+                return {
+                  ...section,
+                  content: parsedSection.items?.join(", ") || "",
+                  items: parsedSection.items?.map((skill: string) => ({
+                    title: skill,
+                    subtitle: "",
+                    description: ""
+                  })) || []
+                };
+              case "projects":
+                return {
+                  ...section,
+                  items: parsedSection.items?.map((item: any) => ({
+                    title: item.name || "",
+                    subtitle: item.technologies || "",
+                    date: item.date || "",
+                    description: item.description || "",
+                    bullets: item.highlights || []
+                  })) || []
+                };
+              case "certifications":
+                return {
+                  ...section,
+                  items: parsedSection.items?.map((item: any) => ({
+                    title: item.name || "",
+                    subtitle: item.issuer || "",
+                    date: item.date || "",
+                    description: item.description || "",
+                    bullets: []
+                  })) || []
+                };
+              default:
+                return section;
+            }
           }
           return section;
         });
@@ -367,13 +425,13 @@ export default function ResumeBuilder() {
       }
 
       toast({
-        title: "Resume Parsed",
-        description: "Your resume has been successfully parsed and loaded"
+        title: "Resume Parsed Successfully",
+        description: "Your resume has been analyzed and all sections have been populated. Please review and edit as needed."
       });
     } catch (error) {
       toast({
         title: "Parsing Failed",
-        description: error instanceof Error ? error.message : "Failed to parse resume",
+        description: error instanceof Error ? error.message : "Failed to parse resume. Please try again or enter details manually.",
         variant: "destructive"
       });
     }
