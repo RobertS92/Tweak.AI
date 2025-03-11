@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Download, Plus, Upload, ArrowDownWideNarrow, ArrowUpWideNarrow } from "lucide-react";
+import { Send, Download, Plus, Upload, ArrowDownWideNarrow, ArrowUpWideNarrow, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -209,6 +210,7 @@ export default function ResumeBuilder() {
   const [resumeContent, setResumeContent] = useState<string>("");
   const [resumeHighlights, setResumeHighlights] = useState<HighlightSection[]>([]);
   const [isParsingResume, setIsParsingResume] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
 
   const handleGeneratePDF = async () => {
@@ -498,6 +500,10 @@ export default function ResumeBuilder() {
               <Plus className="w-4 h-4 mr-2" />
               New Resume
             </Button>
+            <Button variant="outline" onClick={() => setIsPreviewOpen(true)}>
+              <Eye className="w-4 h-4 mr-2" />
+              Preview Resume
+            </Button>
             <Button onClick={handleGeneratePDF}>
               <Download className="w-4 h-4 mr-2" />
               Download PDF
@@ -505,7 +511,7 @@ export default function ResumeBuilder() {
           </div>
         </div>
 
-        <div className="grid grid-cols-[240px_1fr_300px] gap-6 h-[calc(100vh-48px)]">
+        <div className="grid grid-cols-[240px_1fr] gap-6 h-[calc(100vh-48px)]">
           <Card className="h-fit">
             <CardContent className="p-4">
               {sections.map((section) => (
@@ -647,12 +653,6 @@ export default function ResumeBuilder() {
               </div>
             ))}
           </div>
-          <ResumeParsePreviewer
-            content={resumeContent}
-            highlights={resumeHighlights}
-            isAnalyzing={isParsingResume}
-            onHighlightClick={handleHighlightClick}
-          />
         </div>
         <Card className={cn(
           "transition-all duration-300",
@@ -748,6 +748,22 @@ export default function ResumeBuilder() {
           )}
         </Card>
       </div>
+
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-4xl h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Resume Preview</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            <ResumeParsePreviewer
+              content={resumeContent}
+              highlights={resumeHighlights}
+              isAnalyzing={isParsingResume}
+              onHighlightClick={handleHighlightClick}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
