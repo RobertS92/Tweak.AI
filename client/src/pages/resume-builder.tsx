@@ -422,10 +422,10 @@ export default function ResumeBuilder() {
           case "skills":
             return {
               ...section,
-              content: Array.isArray(parsedData.skills) 
+              content: Array.isArray(parsedData.skills)
                 ? parsedData.skills.join(", ")
                 : parsedData.skills || "",
-              items: Array.isArray(parsedData.skillGroups) 
+              items: Array.isArray(parsedData.skillGroups)
                 ? parsedData.skillGroups.map((group: any) => ({
                     title: group.category || "",
                     subtitle: "",
@@ -553,10 +553,22 @@ export default function ResumeBuilder() {
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Resume Builder</h1>
           <div className="flex gap-3">
-            <ResumeUploadDialog
-              onResumeSelected={populateFromResume}
-              onFileUploaded={handleFileUpload}
-            />
+            <Button
+              onClick={() => {
+                // Open file input
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.pdf,.doc,.docx,.txt';
+                input.onchange = (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (file) handleFileUpload(file);
+                };
+                input.click();
+              }}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Upload Resume
+            </Button>
             <Button
               variant="outline"
               onClick={() => {
@@ -654,13 +666,13 @@ export default function ResumeBuilder() {
                   {section.title}
                 </h2>
 
-                {section.id === "summary" ? (
+                {section.id === "summary" || section.id === "skills" ? (
                   <Textarea
                     value={section.content}
                     onChange={(e) => setSections(prev =>
                       prev.map(s => s.id === section.id ? { ...s, content: e.target.value } : s)
                     )}
-                    placeholder="Write a compelling professional summary..."
+                    placeholder={`Enter your ${section.title.toLowerCase()}...`}
                     className="min-h-[120px]"
                   />
                 ) : (
