@@ -7,7 +7,6 @@ import path from "path";
 const router = Router();
 const upload = multer({ dest: "uploads/" });
 
-// Initialize OpenAI with API key
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
@@ -24,69 +23,60 @@ router.post("/api/ai-resume-parser", upload.single("file"), async (req, res) => 
     // Clean up the uploaded file
     await fs.unlink(req.file.path);
 
-    // Prepare the system prompt for GPT-4
-    const prompt = `As a professional resume analyzer, extract and structure the following information from this resume. Format your response as JSON with the following structure:
+    // Prepare the prompt with structured output format
+    const systemPrompt = `You are a professional resume analyzer. Extract information from the resume and structure it exactly as follows:
+- Personal Information: name, email, phone, location, linkedin URL
+- Professional Summary: brief overview
+- Work Experience: for each position include title, company, dates, description, and key responsibilities
+- Education: degree, institution, dates, and achievements
+- Skills: list of technical and professional skills
+- Projects: name, technologies used, duration, description, and key highlights
+- Certifications: name, issuer, date, and details
 
+Format the output exactly like this example:
 {
   "personalInfo": {
-    "name": "string",
-    "email": "string",
-    "phone": "string",
-    "location": "string",
-    "linkedin": "string"
+    "name": "John Smith",
+    "email": "john@example.com",
+    "phone": "123-456-7890",
+    "location": "New York, NY",
+    "linkedin": "linkedin.com/in/johnsmith"
   },
-  "summary": "string",
-  "experience": [{
-    "title": "string",
-    "company": "string",
-    "startDate": "string",
-    "endDate": "string",
-    "description": "string",
-    "responsibilities": ["string"]
-  }],
-  "education": [{
-    "degree": "string",
-    "institution": "string",
-    "startDate": "string",
-    "endDate": "string",
-    "description": "string",
-    "achievements": ["string"]
-  }],
-  "skills": ["string"],
-  "projects": [{
-    "name": "string",
-    "technologies": "string",
-    "duration": "string",
-    "description": "string",
-    "highlights": ["string"]
-  }],
-  "certifications": [{
-    "name": "string",
-    "issuer": "string",
-    "date": "string",
-    "description": "string",
-    "details": ["string"]
-  }]
-}
-
-Extract the information maintaining the exact structure. For dates, use consistent formatting. For missing information, use empty strings or arrays.`;
+  "summary": "Experienced software engineer...",
+  "experience": [
+    {
+      "title": "Senior Developer",
+      "company": "Tech Co",
+      "startDate": "2020-01",
+      "endDate": "Present",
+      "description": "Led development...",
+      "responsibilities": ["Led team of 5", "Improved performance by 50%"]
+    }
+  ]
+}`;
 
     // Call OpenAI API
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
-        { role: "system", content: prompt },
-        { role: "user", content: fileContent }
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Parse this resume:\n\n${fileContent}` }
       ],
-      response_format: { type: "json_object" }
+      temperature: 0.7,
+      max_tokens: 2000
     });
 
     if (!completion.choices[0].message.content) {
       throw new Error("No content in OpenAI response");
     }
 
-    // Parse the response
-    const parsedData = JSON.parse(completion.choices[0].message.content);
+    // Parse the response to ensure it's valid JSON
+    const responseText = completion.choices[0].message.content.trim();
+    const jsonStartIndex = responseText.indexOf('{');
+    const jsonEndIndex = responseText.lastIndexOf('}') + 1;
+    const jsonContent = responseText.slice(jsonStartIndex, jsonEndIndex);
+
+    const parsedData = JSON.parse(jsonContent);
 
     // Send structured response
     res.json(parsedData);
