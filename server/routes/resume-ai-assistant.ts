@@ -7,12 +7,23 @@ dotenv.config();
 const router = Router();
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 router.post("/api/resume-ai-assistant", async (req, res) => {
+  // Declare sectionId outside the try block so we can use it in finally.
+  let sectionId = "unknown";
+
   try {
-    const { sectionId, sectionContent, userQuery } = req.body || {};
+    // Destructure from req.body
+    const {
+      sectionId: incomingSectionId,
+      sectionContent,
+      userQuery,
+    } = req.body || {};
+
+    // Store in local variable so we can reference in finally block
+    sectionId = incomingSectionId || "unknown";
 
     console.log("[DEBUG] AI Assistant request:", {
       sectionId,
@@ -44,7 +55,7 @@ When analyzing projects:
 - Recommend improvements to project descriptions
 
 Provide specific, actionable feedback for the exact content provided.
-If the section is empty, ask for the basic information needed.`
+If the section is empty, ask for the basic information needed.`,
       },
       {
         role: "user",
@@ -52,8 +63,8 @@ If the section is empty, ask for the basic information needed.`
 
 ${sectionContent || "[No content provided]"}
 
-${userQuery || "Please analyze this section and suggest specific improvements."}`
-      }
+${userQuery || "Please analyze this section and suggest specific improvements."}`,
+      },
     ];
 
     const completion = await openai.chat.completions.create({
@@ -65,11 +76,14 @@ ${userQuery || "Please analyze this section and suggest specific improvements."}
 
     const suggestions = completion.choices[0]?.message?.content || "";
 
-    console.log("[DEBUG] AI suggestions generated:", suggestions.substring(0, 100) + "...");
+    console.log(
+      "[DEBUG] AI suggestions generated:",
+      suggestions.substring(0, 100) + "...",
+    );
 
     return res.json({
       suggestions,
-      improvements: []
+      improvements: [],
     });
   } catch (error) {
     console.error("[DEBUG] AI Assistant error:", error);
@@ -78,7 +92,11 @@ ${userQuery || "Please analyze this section and suggest specific improvements."}
       details: error instanceof Error ? error.message : String(error),
     });
   } finally {
-    console.log("[DEBUG] AI Assistant request completed for section:", req.body?.sectionId || "unknown");
+    // Use the local variable so there's no ReferenceError
+    console.log(
+      "[DEBUG] AI Assistant request completed for section:",
+      sectionId,
+    );
   }
 });
 

@@ -42,7 +42,7 @@ export default function ResumeBuilder() {
     email: "",
     phone: "",
     location: "",
-    linkedin: ""
+    linkedin: "",
   });
 
   // Resume sections state with proper initialization
@@ -52,34 +52,47 @@ export default function ResumeBuilder() {
     { id: "education", title: "Education", items: [] },
     { id: "skills", title: "Skills", content: "" },
     { id: "projects", title: "Projects", items: [] },
-    { id: "certifications", title: "Certifications", items: [] }
+    { id: "certifications", title: "Certifications", items: [] },
   ]);
 
-  // Get current section content
+  /**
+   * Collects the current section's text.
+   * Now includes `item.date` in the filter
+   * so that date-only entries are not discarded.
+   */
   const getCurrentSectionContent = useCallback(() => {
     if (!activeSection) return "";
 
-    const section = sections.find(s => s.id === activeSection);
+    const section = sections.find((s) => s.id === activeSection);
     if (!section) return "";
 
+    // If it's a simple text-based section
     if (section.content !== undefined) {
       return section.content || "";
-    } else if (section.items && section.items.length > 0) {
-      // Special formatting for sections with items (work experience, education, projects)
+    }
+    // Otherwise, handle "items" sections like experience, etc.
+    else if (section.items && section.items.length > 0) {
       const formattedItems = section.items
-        .filter(item => item.title || item.subtitle || item.description || (item.bullets && item.bullets.length > 0))
-        .map(item => {
+        .filter(
+          (item) =>
+            item.title ||
+            item.subtitle ||
+            item.date || // <--- Added this
+            item.description ||
+            (item.bullets && item.bullets.length > 0),
+        )
+        .map((item) => {
           const bulletPoints = (item.bullets || [])
-            .filter(bullet => bullet && bullet.trim())
-            .map(bullet => `• ${bullet.trim()}`)
-            .join('\n');
+            .filter((bullet) => bullet && bullet.trim())
+            .map((bullet) => `• ${bullet.trim()}`)
+            .join("\n");
 
           return `
 Position: ${item.title}
 Company: ${item.subtitle}
 Date: ${item.date}
-${item.description ? `Description: ${item.description}` : ''}
-${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
+${item.description ? `Description: ${item.description}` : ""}
+${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
 `.trim();
         });
 
@@ -87,65 +100,73 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
         return `No entries found in ${section.title}`;
       }
 
-      // Add section header and join all items with clear separators
-      return `${section.title.toUpperCase()}\n\n${formattedItems.join('\n\n==========\n\n')}`;
+      // Add section header and join all items
+      return `${section.title.toUpperCase()}\n\n${formattedItems.join("\n\n==========\n\n")}`;
     }
     return "";
   }, [activeSection, sections]);
 
-  // Get AI suggestions - define before useEffect
-  const getAiSuggestions = useCallback(async (sectionId: string, userQuery?: string) => {
-    if (!sectionId) return;
+  /**
+   * Calls the AI assistant route
+   */
+  const getAiSuggestions = useCallback(
+    async (sectionId: string, userQuery?: string) => {
+      if (!sectionId) return;
 
-    setIsAiLoading(true);
-    try {
-      const sectionContent = getCurrentSectionContent();
-      console.log('[DEBUG] Section ID:', sectionId);
-      console.log('[DEBUG] Section Content:', sectionContent);
-      console.log('[DEBUG] Content Length:', sectionContent.length);
+      setIsAiLoading(true);
+      try {
+        const sectionContent = getCurrentSectionContent();
+        console.log("[DEBUG] Section ID:", sectionId);
+        console.log("[DEBUG] Section Content:", sectionContent);
+        console.log("[DEBUG] Content Length:", sectionContent.length);
 
-      const response = await fetch("/api/resume-ai-assistant", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sectionId,
-          sectionContent,
-          userQuery
-        }),
-      });
+        const response = await fetch("/api/resume-ai-assistant", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sectionId, sectionContent, userQuery }),
+        });
 
-      if (!response.ok) throw new Error("Failed to get AI suggestions");
+        if (!response.ok) throw new Error("Failed to get AI suggestions");
 
-      const data = await response.json();
-      setAiMessage(data.suggestions);
+        const data = await response.json();
+        setAiMessage(data.suggestions);
+      } catch (error) {
+        console.error("AI suggestion error:", error);
+        toast({
+          title: "AI Assistant Error",
+          description: "Failed to get AI suggestions. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsAiLoading(false);
+      }
+    },
+    [getCurrentSectionContent, toast],
+  );
 
-    } catch (error) {
-      console.error("AI suggestion error:", error);
-      toast({
-        title: "AI Assistant Error",
-        description: "Failed to get AI suggestions. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsAiLoading(false);
-    }
-  }, [getCurrentSectionContent, toast]);
-
-  // Effect to get AI suggestions when section changes
+  /**
+   * If the user changes the active section, automatically
+   * fetch AI suggestions for it.
+   */
   useEffect(() => {
     if (activeSection) {
-      getAiSuggestions(activeSection, "Please analyze this section and suggest improvements.");
+      getAiSuggestions(
+        activeSection,
+        "Please analyze this section and suggest improvements.",
+      );
     }
   }, [activeSection, getAiSuggestions]);
 
-  // Handle section selection
+  /**
+   * Selects a section from the sidebar
+   */
   const handleSectionSelect = useCallback((sectionId: string) => {
     setActiveSection(sectionId);
   }, []);
 
-  // Handle AI chat input
+  /**
+   * Submits a direct AI query (user typed something).
+   */
   const handleAiChat = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeSection || !aiInput.trim()) return;
@@ -155,7 +176,9 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
     await getAiSuggestions(activeSection, userMessage);
   };
 
-  // File upload handler
+  /**
+   * Handle file upload -> parse the resume
+   */
   const handleFileUpload = async (file: File) => {
     if (!file) return;
 
@@ -186,29 +209,34 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
         email: data.email || "",
         phone: data.phone || "",
         location: data.location || "",
-        linkedin: data.linkedin || ""
+        linkedin: data.linkedin || "",
       });
 
-      // Update sections with proper item initialization
-      setSections(data.sections.map((section: ResumeSection) => ({
-        ...section,
-        items: section.items?.map(item => ({
-          ...item,
-          bullets: item.bullets || []
-        }))
-      })));
+      // Update sections
+      setSections(
+        data.sections.map((section: ResumeSection) => ({
+          ...section,
+          items: section.items?.map((item) => ({
+            ...item,
+            bullets: item.bullets || [],
+          })),
+        })),
+      );
 
-      setAiMessage("Resume parsed successfully. Select any section to get AI suggestions for improvements.");
-
+      setAiMessage(
+        "Resume parsed successfully. Select any section to get AI suggestions for improvements.",
+      );
       toast({
         title: "Resume Parsed Successfully",
-        description: "All sections have been populated. Review and edit as needed.",
+        description:
+          "All sections have been populated. Review and edit as needed.",
       });
     } catch (error) {
       console.error("Error parsing resume:", error);
       toast({
         title: "Parsing Failed",
-        description: "Unable to process your resume. Please try again or enter details manually.",
+        description:
+          "Unable to process your resume. Please try again or enter details manually.",
         variant: "destructive",
       });
     } finally {
@@ -216,30 +244,36 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
     }
   };
 
-  // Start new resume
+  /**
+   * Clears out the resume entirely
+   */
   const handleNewResume = () => {
     setPersonalInfo({
       name: "",
       email: "",
       phone: "",
       location: "",
-      linkedin: ""
+      linkedin: "",
     });
-    setSections(prevSections =>
-      prevSections.map(section => ({
+    setSections((prevSections) =>
+      prevSections.map((section) => ({
         ...section,
         content: "",
-        items: section.items ? [] : undefined
-      }))
+        items: section.items ? [] : undefined,
+      })),
     );
-    setAiMessage("Start by uploading a resume or entering your information manually.");
+    setAiMessage(
+      "Start by uploading a resume or entering your information manually.",
+    );
     setActiveSection(null);
   };
 
-  // Section item management functions
+  /**
+   * Section item management functions
+   */
   const addSectionItem = (sectionId: string) => {
-    setSections(prev =>
-      prev.map(section => {
+    setSections((prev) =>
+      prev.map((section) => {
         if (section.id === sectionId && section.items) {
           return {
             ...section,
@@ -250,50 +284,50 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
                 subtitle: "",
                 date: "",
                 description: "",
-                bullets: []
-              }
-            ]
+                bullets: [],
+              },
+            ],
           };
         }
         return section;
-      })
+      }),
     );
   };
 
   const removeSectionItem = (sectionId: string, itemIndex: number) => {
-    setSections(prev =>
-      prev.map(section => {
+    setSections((prev) =>
+      prev.map((section) => {
         if (section.id === sectionId && section.items) {
           return {
             ...section,
-            items: section.items.filter((_, idx) => idx !== itemIndex)
+            items: section.items.filter((_, idx) => idx !== itemIndex),
           };
         }
         return section;
-      })
+      }),
     );
   };
 
   const addBulletPoint = (sectionId: string, itemIndex: number) => {
-    setSections(prev =>
-      prev.map(section => {
+    setSections((prev) =>
+      prev.map((section) => {
         if (section.id === sectionId && section.items) {
           const newItems = [...section.items];
           if (newItems[itemIndex]) {
             newItems[itemIndex] = {
               ...newItems[itemIndex],
-              bullets: [...(newItems[itemIndex].bullets || []), ""]
+              bullets: [...(newItems[itemIndex].bullets || []), ""],
             };
           }
           return { ...section, items: newItems };
         }
         return section;
-      })
+      }),
     );
   };
 
-  // Render sidebar buttons
-  const renderSidebarButtons = () => (
+  // Render the sidebar buttons
+  const renderSidebarButtons = () =>
     sections.map((section) => (
       <button
         key={section.id}
@@ -302,7 +336,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
           "w-full text-left px-4 py-2 rounded-md transition-colors relative",
           activeSection === section.id
             ? "bg-primary text-primary-foreground"
-            : "hover:bg-muted"
+            : "hover:bg-muted",
         )}
       >
         {section.title}
@@ -310,10 +344,9 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
           <span className="absolute right-2 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-blue-500 rounded-full" />
         )}
       </button>
-    ))
-  );
+    ));
 
-  // Render AI Assistant
+  // Render the AI Assistant area
   const renderAiAssistant = () => (
     <Card className="h-[30vh] mt-6">
       <CardHeader className="py-3">
@@ -335,7 +368,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
           )}
           {activeSection && (
             <span className="text-sm text-muted-foreground ml-2">
-              - {sections.find(s => s.id === activeSection)?.title}
+              - {sections.find((s) => s.id === activeSection)?.title}
             </span>
           )}
         </CardTitle>
@@ -344,11 +377,10 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
         <ScrollArea className="flex-grow p-4">
           <div className="space-y-4">
             <div className="bg-muted rounded-lg p-4">
-              {aiMessage || (
-                activeSection
+              {aiMessage ||
+                (activeSection
                   ? "Analyzing your content..."
-                  : "Select a section to get AI assistance and suggestions."
-              )}
+                  : "Select a section to get AI assistance and suggestions.")}
             </div>
           </div>
         </ScrollArea>
@@ -412,9 +444,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
         <div className="flex-1 flex gap-6 overflow-hidden">
           {/* Left sidebar */}
           <Card className="w-60 shrink-0 sticky top-6 h-fit">
-            <CardContent className="p-4">
-              {renderSidebarButtons()}
-            </CardContent>
+            <CardContent className="p-4">{renderSidebarButtons()}</CardContent>
           </Card>
 
           {/* Center content area - Scrollable */}
@@ -510,7 +540,9 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
                               variant="ghost"
                               size="icon"
                               className="absolute top-2 right-2"
-                              onClick={() => removeSectionItem(section.id, index)}
+                              onClick={() =>
+                                removeSectionItem(section.id, index)
+                              }
                             >
                               <MinusCircle className="h-4 w-4" />
                             </Button>
@@ -526,11 +558,11 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
                                           items: s.items.map((i, idx) =>
                                             idx === index
                                               ? { ...i, title: e.target.value }
-                                              : i
+                                              : i,
                                           ),
                                         }
-                                      : s
-                                  )
+                                      : s,
+                                  ),
                                 )
                               }
                             />
@@ -545,12 +577,15 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
                                           ...s,
                                           items: s.items.map((i, idx) =>
                                             idx === index
-                                              ? { ...i, subtitle: e.target.value }
-                                              : i
+                                              ? {
+                                                  ...i,
+                                                  subtitle: e.target.value,
+                                                }
+                                              : i,
                                           ),
                                         }
-                                      : s
-                                  )
+                                      : s,
+                                  ),
                                 )
                               }
                             />
@@ -566,11 +601,11 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
                                           items: s.items.map((i, idx) =>
                                             idx === index
                                               ? { ...i, date: e.target.value }
-                                              : i
+                                              : i,
                                           ),
                                         }
-                                      : s
-                                  )
+                                      : s,
+                                  ),
                                 )
                               }
                             />
@@ -589,51 +624,55 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
                                                   ...i,
                                                   description: e.target.value,
                                                 }
-                                              : i
+                                              : i,
                                           ),
                                         }
-                                      : s
-                                  )
+                                      : s,
+                                  ),
                                 )
                               }
                             />
                             {/* Bullet points */}
                             <div className="space-y-2">
-                              {(item.bullets || []).map((bullet, bulletIndex) => (
-                                <Input
-                                  key={bulletIndex}
-                                  value={bullet}
-                                  placeholder="Bullet point"
-                                  onChange={(e) =>
-                                    setSections((prev) =>
-                                      prev.map((s) =>
-                                        s.id === section.id && s.items
-                                          ? {
-                                              ...s,
-                                              items: s.items.map((i, idx) =>
-                                                idx === index
-                                                  ? {
-                                                      ...i,
-                                                      bullets: i.bullets.map(
-                                                        (b, bidx) =>
-                                                          bidx === bulletIndex
-                                                            ? e.target.value
-                                                            : b
-                                                      ),
-                                                    }
-                                                  : i
-                                              ),
-                                            }
-                                          : s
+                              {(item.bullets || []).map(
+                                (bullet, bulletIndex) => (
+                                  <Input
+                                    key={bulletIndex}
+                                    value={bullet}
+                                    placeholder="Bullet point"
+                                    onChange={(e) =>
+                                      setSections((prev) =>
+                                        prev.map((s) =>
+                                          s.id === section.id && s.items
+                                            ? {
+                                                ...s,
+                                                items: s.items.map((i, idx) =>
+                                                  idx === index
+                                                    ? {
+                                                        ...i,
+                                                        bullets: i.bullets.map(
+                                                          (b, bidx) =>
+                                                            bidx === bulletIndex
+                                                              ? e.target.value
+                                                              : b,
+                                                        ),
+                                                      }
+                                                    : i,
+                                                ),
+                                              }
+                                            : s,
+                                        ),
                                       )
-                                    )
-                                  }
-                                />
-                              ))}
+                                    }
+                                  />
+                                ),
+                              )}
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => addBulletPoint(section.id, index)}
+                                onClick={() =>
+                                  addBulletPoint(section.id, index)
+                                }
                               >
                                 <Plus className="w-4 h-4 mr-2" />
                                 Add Bullet Point
@@ -650,8 +689,8 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ''}
                             prev.map((s) =>
                               s.id === section.id
                                 ? { ...s, content: e.target.value }
-                                : s
-                            )
+                                : s,
+                            ),
                           )
                         }
                         placeholder={`Enter your ${section.title.toLowerCase()}...`}
