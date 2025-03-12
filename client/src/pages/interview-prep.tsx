@@ -16,66 +16,128 @@ export default function InterviewPrep() {
   const [interviewStarted, setInterviewStarted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
-  // Initialize speech recognition
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const recognition = new SpeechRecognition();
-
-  // Initialize speech synthesis
-  const synth = window.speechSynthesis;
+  // Initialize speech recognition and synthesis
+  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+  const [synth, setSynth] = useState<SpeechSynthesis | null>(null);
 
   useEffect(() => {
-    // Reset recognition and synthesis on unmount
+    // Initialize speech recognition
+    if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognitionInstance = new SpeechRecognition();
+      recognitionInstance.continuous = true;
+      recognitionInstance.interimResults = true;
+      setRecognition(recognitionInstance);
+    } else {
+      toast({
+        title: "Speech Recognition Not Available",
+        description: "Your browser doesn't support speech recognition. Please use a modern browser like Chrome.",
+        variant: "destructive"
+      });
+    }
+
+    // Initialize speech synthesis
+    if (window.speechSynthesis) {
+      setSynth(window.speechSynthesis);
+    } else {
+      toast({
+        title: "Text-to-Speech Not Available",
+        description: "Your browser doesn't support text-to-speech. Please use a modern browser like Chrome.",
+        variant: "destructive"
+      });
+    }
+
+    // Cleanup on unmount
     return () => {
-      recognition.stop();
-      synth.cancel();
+      if (recognition) recognition.stop();
+      if (synth) synth.cancel();
     };
   }, []);
 
-  recognition.continuous = true;
-  recognition.interimResults = true;
+  useEffect(() => {
+    if (recognition) {
+      recognition.onresult = (event) => {
+        const current = event.resultIndex;
+        const transcript = event.results[current][0].transcript;
+        setTranscript((prev) => prev + " " + transcript);
+      };
 
-  recognition.onresult = (event) => {
-    const current = event.resultIndex;
-    const transcript = event.results[current][0].transcript;
-    setTranscript((prev) => prev + " " + transcript);
-  };
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        toast({
+          title: "Error",
+          description: "There was an error with the speech recognition. Please try again.",
+          variant: "destructive"
+        });
+        stopRecording();
+      };
 
-  recognition.onerror = (event) => {
-    console.error('Speech recognition error:', event.error);
-    toast({
-      title: "Error",
-      description: "There was an error with the speech recognition. Please try again.",
-      variant: "destructive"
-    });
-    stopRecording();
-  };
-
-  recognition.onend = () => {
-    // Auto-submit when user stops speaking
-    if (transcript.trim()) {
-      submitAnswer();
+      recognition.onend = () => {
+        if (transcript.trim()) {
+          submitAnswer();
+        }
+      };
     }
-  };
+  }, [recognition]);
 
-  const speakText = (text: string) => {
-    return new Promise((resolve) => {
+  const speakText = async (text: string) => {
+    if (!synth) {
+      toast({
+        title: "Text-to-Speech Not Available",
+        description: "Cannot speak the response. Please check your browser's speech synthesis support.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    return new Promise<void>((resolve) => {
       setIsSpeaking(true);
+
+      // Cancel any ongoing speech
+      synth.cancel();
+
       const utterance = new SpeechSynthesisUtterance(text);
+
+      // Configure speech parameters for better clarity
+      utterance.rate = 0.9; // Slightly slower than default
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      // Use a different voice if available
+      const voices = synth.getVoices();
+      const englishVoices = voices.filter(voice => voice.lang.startsWith('en-'));
+      if (englishVoices.length > 0) {
+        utterance.voice = englishVoices[0];
+      }
+
       utterance.onend = () => {
         setIsSpeaking(false);
-        resolve(true);
+        resolve();
       };
+
+      utterance.onerror = () => {
+        setIsSpeaking(false);
+        toast({
+          title: "Speech Error",
+          description: "Failed to speak the response. Please try again.",
+          variant: "destructive"
+        });
+        resolve();
+      };
+
       synth.speak(utterance);
     });
   };
 
   const startRecording = () => {
+    if (!recognition) return;
     setIsRecording(true);
     setTranscript("");
     recognition.start();
   };
 
   const stopRecording = () => {
+    if (!recognition) return;
     setIsRecording(false);
     recognition.stop();
   };
