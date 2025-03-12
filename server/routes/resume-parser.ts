@@ -36,12 +36,16 @@ const openai = new OpenAI({
 function cleanTextContent(text: string): string {
   console.log("[DEBUG] Cleaning text content, initial length:", text.length);
 
-  // Remove debug log lines
-  text = text.split('\n')
+  // Remove debug lines and preserve structure
+  const lines = text.split('\n');
+  const cleanedLines = lines
     .filter(line => !line.includes('[DEBUG]'))
-    .join('\n');
+    .filter(line => line.trim().length > 0);
 
-  // Clean up the text
+  // Join lines with proper spacing
+  text = cleanedLines.join('\n');
+
+  // Clean up the text while preserving structure
   text = text
     .replace(/[\r\n]{3,}/g, '\n\n')  // Normalize line breaks
     .replace(/[^\x20-\x7E\n]/g, '')  // Remove non-printable characters
@@ -55,40 +59,36 @@ function cleanTextContent(text: string): string {
 async function parseResume(content: string) {
   console.log("[DEBUG] Starting resume parsing with OpenAI");
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4",
-    messages: [
-      {
-        role: "system",
-        content: `You are a resume parsing expert. Extract information into JSON format with exactly this structure:
+  const systemPrompt = `You are a resume parsing expert. Extract ALL information into a JSON object with EXACTLY this structure, ensuring NO fields are left empty:
+
 {
   "personalInfo": {
-    "name": "",
-    "email": "",
-    "phone": "",
-    "location": "",
-    "website": "",
-    "linkedin": "",
-    "objective": ""
+    "name": "Full name",
+    "email": "Email address",
+    "phone": "Phone number",
+    "location": "City, State",
+    "website": "Personal/portfolio website",
+    "linkedin": "LinkedIn URL",
+    "objective": "Career objective"
   },
   "sections": [
     {
       "id": "professional-summary",
       "title": "Professional Summary",
-      "content": ""
+      "content": "Summary text"
     },
     {
       "id": "work-experience",
       "title": "Work Experience",
       "items": [
         {
-          "title": "",
-          "company": "",
-          "location": "",
-          "startDate": "",
-          "endDate": "",
-          "description": "",
-          "achievements": []
+          "title": "Job title",
+          "company": "Company name",
+          "location": "Job location",
+          "startDate": "YYYY-MM",
+          "endDate": "YYYY-MM or Present",
+          "description": "Role description",
+          "achievements": ["Achievement 1", "Achievement 2"]
         }
       ]
     },
@@ -97,13 +97,13 @@ async function parseResume(content: string) {
       "title": "Education",
       "items": [
         {
-          "degree": "",
-          "institution": "",
-          "location": "",
-          "startDate": "",
-          "endDate": "",
-          "gpa": "",
-          "courses": []
+          "degree": "Degree name",
+          "institution": "School name",
+          "location": "School location",
+          "startDate": "YYYY-MM",
+          "endDate": "YYYY-MM",
+          "gpa": "GPA if available",
+          "courses": ["Relevant course 1", "Relevant course 2"]
         }
       ]
     },
@@ -113,53 +113,35 @@ async function parseResume(content: string) {
       "categories": [
         {
           "name": "Technical Skills",
-          "skills": []
+          "skills": ["Skill 1", "Skill 2"]
         },
         {
           "name": "Soft Skills",
-          "skills": []
-        }
-      ]
-    },
-    {
-      "id": "certifications",
-      "title": "Certifications",
-      "items": [
-        {
-          "name": "",
-          "issuer": "",
-          "date": "",
-          "expiry": "",
-          "id": "",
-          "url": ""
-        }
-      ]
-    },
-    {
-      "id": "projects",
-      "title": "Projects",
-      "items": [
-        {
-          "name": "",
-          "description": "",
-          "technologies": [],
-          "url": "",
-          "startDate": "",
-          "endDate": ""
+          "skills": ["Soft skill 1", "Soft skill 2"]
         }
       ]
     }
   ]
 }
 
-IMPORTANT: Return ONLY the JSON object, no additional text or explanation.
-Keep section IDs exactly as shown above for frontend compatibility.
-Format dates as YYYY-MM.
-Include all sections even if empty.`
+IMPORTANT:
+1. Return ONLY the JSON object, no additional text
+2. Extract ALL contact information from the text
+3. Always include all sections even if empty
+4. Format dates consistently as YYYY-MM
+5. Parse skills into technical and soft skills categories
+6. Keep section IDs exactly as shown for frontend compatibility`;
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [
+      {
+        role: "system",
+        content: systemPrompt
       },
       {
         role: "user",
-        content: `Parse this resume text into the specified JSON structure:\n\n${content}`
+        content: `Parse this resume text into the specified JSON structure. Extract ALL information and ensure each section is populated:\n\n${content}`
       }
     ],
     temperature: 0.1,
@@ -171,8 +153,21 @@ Include all sections even if empty.`
 
   try {
     const parsedData = JSON.parse(response.choices[0].message.content);
-    console.log("[DEBUG] Successfully parsed resume");
-    console.log("[DEBUG] Found sections:", parsedData.sections.map(s => s.id));
+
+    // Validate parsed data
+    console.log("[DEBUG] Parsed Data Statistics:");
+    console.log("[DEBUG] Personal Info Fields:", Object.entries(parsedData.personalInfo)
+      .filter(([_, value]) => value && String(value).trim().length > 0)
+      .map(([key]) => key));
+
+    parsedData.sections.forEach(section => {
+      console.log(`[DEBUG] Section '${section.id}':`, {
+        hasContent: section.content ? "Yes" : "No",
+        items: section.items?.length || 0,
+        categories: section.categories?.length || 0
+      });
+    });
+
     return parsedData;
   } catch (error) {
     console.error("[DEBUG] JSON parse error:", error);
@@ -213,7 +208,6 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
         const result = await mammoth.extractRawText({ buffer });
         fileContent = cleanTextContent(result.value);
       } else {
-        // Handle text files
         fileContent = cleanTextContent(buffer.toString('utf8'));
       }
 
