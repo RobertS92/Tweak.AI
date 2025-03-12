@@ -4,6 +4,9 @@ import { fileTypeFromBuffer } from "file-type";
 import pdfParse from "pdf-parse-fork";
 import mammoth from "mammoth";
 import OpenAI from "openai";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const router = Router();
 
@@ -30,6 +33,133 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Helper function to chunk text while preserving structure
+function chunkText(text: string, maxLength: number = 3000): string[] {
+  const sections = text.split(/\n\n+/);
+  const chunks: string[] = [];
+  let currentChunk = '';
+
+  for (const section of sections) {
+    if ((currentChunk + section).length > maxLength && currentChunk) {
+      chunks.push(currentChunk.trim());
+      currentChunk = section;
+    } else {
+      currentChunk = currentChunk ? `${currentChunk}\n\n${section}` : section;
+    }
+  }
+
+  if (currentChunk) {
+    chunks.push(currentChunk.trim());
+  }
+
+  return chunks;
+}
+
+// Test endpoint with sample resume
+router.get("/api/test-parser", async (req, res) => {
+  try {
+    const sampleResume = `
+Rob Seals
+AI / ML Engineer & Financial Data Analyst
+Email: rseals13@gmail.com | Phone: 832-517-0329 | Location: Houston, TX
+
+Professional Summary
+Detail-oriented AI/ML Engineer and Data Analyst with 5+ years of combined experience.
+
+Work Experience
+AI / ML Engineer
+Tata Consultancy Services (TCS)
+Jun 2024 – Oct 2024
+• Integrated NLP models to parse and classify unstructured text
+• Deployed LLM-based solutions on AWS Lambda
+
+Education
+Post Graduate Degree (AI & ML)
+University of Texas
+Jan 2022 – Dec 2023
+`;
+
+    console.log("[DEBUG] Testing parser with sample resume");
+    const chunks = chunkText(sampleResume);
+    console.log("[DEBUG] Created chunks:", chunks.length);
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: `Parse the resume text into sections. Focus on:
+1. Personal details (name, contact)
+2. Work experience (jobs, dates)
+3. Education (degrees, dates)
+Return in the exact JSON structure requested.`
+        },
+        {
+          role: "user",
+          content: `Parse this resume into the following JSON structure:
+{
+  "name": "",
+  "email": "",
+  "phone": "",
+  "location": "",
+  "linkedin": "",
+  "sections": [
+    {
+      "id": "summary",
+      "title": "Professional Summary",
+      "content": ""
+    },
+    {
+      "id": "experience",
+      "title": "Work Experience",
+      "items": [
+        {
+          "title": "",
+          "subtitle": "",
+          "date": "",
+          "description": "",
+          "bullets": []
+        }
+      ]
+    },
+    {
+      "id": "education",
+      "title": "Education",
+      "items": [
+        {
+          "title": "",
+          "subtitle": "",
+          "date": "",
+          "description": "",
+          "bullets": []
+        }
+      ]
+    }
+  ]
+}
+
+Resume text:
+${sampleResume}`
+        }
+      ],
+      temperature: 0.1,
+      response_format: { type: "json_object" }
+    });
+
+    console.log("[DEBUG] Raw OpenAI response:", completion.choices[0].message.content);
+    const result = JSON.parse(completion.choices[0].message.content);
+    return res.json(result);
+
+  } catch (error) {
+    console.error("[DEBUG] Test parser error:", error);
+    return res.status(500).json({
+      error: "Parser test failed",
+      details: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+// Main resume parsing endpoint
 router.post("/api/resume-parser", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
@@ -57,7 +187,6 @@ router.post("/api/resume-parser", upload.single("file"), async (req, res) => {
           pagerender: function(pageData) {
             return pageData.getTextContent().then(function(textContent) {
               let lastY, text = '';
-              // Sort items by position to maintain layout structure
               const items = textContent.items.sort((a, b) => {
                 if (Math.abs(b.transform[5] - a.transform[5]) > 5) {
                   return b.transform[5] - a.transform[5];
@@ -66,7 +195,6 @@ router.post("/api/resume-parser", upload.single("file"), async (req, res) => {
               });
 
               for (const item of items) {
-                // Add line breaks between different vertical positions
                 if (lastY !== item.transform[5] && text) {
                   text += '\n';
                 }
@@ -87,41 +215,41 @@ router.post("/api/resume-parser", upload.single("file"), async (req, res) => {
         fileContent = buffer.toString('utf8');
       }
 
-      // Clean up the extracted text while preserving structure
       fileContent = fileContent
-        .replace(/[\r\n]{3,}/g, '\n\n')  // Normalize multiple line breaks
-        .replace(/[^\x20-\x7E\n]/g, '')  // Remove non-printable characters
-        .replace(/[ \t]+/g, ' ')         // Normalize spaces
+        .replace(/[\r\n]{3,}/g, '\n\n')
+        .replace(/[^\x20-\x7E\n]/g, '')
+        .replace(/[ \t]+/g, ' ')
         .trim();
 
       console.log("[DEBUG] Extracted content length:", fileContent.length);
       console.log("[DEBUG] First 200 chars of content:", fileContent.substring(0, 200));
 
-    } catch (extractError) {
-      console.error("[DEBUG] Error extracting file content:", extractError);
-      throw new Error("Failed to extract content from file: " + extractError.message);
+    } catch (error) {
+      console.error("[DEBUG] Text extraction error:", error);
+      throw new Error(`Failed to extract text: ${error.message}`);
     }
 
-    console.log("[DEBUG] Calling OpenAI API...");
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4", // Using GPT-4 for better parsing accuracy
-      messages: [
-        {
-          role: "system",
-          content: `You are a precise resume parser that excels at identifying and extracting structured information from resumes. Focus on accurately identifying and extracting:
-1. Work experience entries (job titles, companies, dates, and achievements)
-2. Education details (degrees, institutions, dates)
-3. Projects and their details
-4. Skills and summary content
+    // Split into smaller chunks to avoid token limits
+    const chunks = chunkText(fileContent, 3000);
+    console.log("[DEBUG] Split content into", chunks.length, "chunks");
 
-Even if sections are incomplete, extract whatever information is available.
-If a section or field is truly empty, use an empty string.
-Always maintain the exact structure of the requested JSON format.`
-        },
-        {
-          role: "user",
-          content: `Parse this resume text and extract ALL available information into this exact JSON structure:
-
+    let parsedData;
+    try {
+      // Process first chunk to get structure
+      const firstChunkResponse = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: `Extract structured information from resumes. Focus on:
+1. Personal details (name, contact)
+2. Work experience (jobs, dates)
+3. Education (degrees, dates)
+Return in the exact JSON structure requested.`
+          },
+          {
+            role: "user",
+            content: `Parse this resume chunk into the following JSON structure:
 {
   "name": "",
   "email": "",
@@ -137,28 +265,12 @@ Always maintain the exact structure of the requested JSON format.`
     {
       "id": "experience",
       "title": "Work Experience",
-      "items": [
-        {
-          "title": "",      // Job title
-          "subtitle": "",   // Company name
-          "date": "",      // Employment dates
-          "description": "", // Description if available
-          "bullets": []    // Achievement bullets
-        }
-      ]
+      "items": []
     },
     {
       "id": "education",
       "title": "Education",
-      "items": [
-        {
-          "title": "",      // Degree/Program
-          "subtitle": "",   // Institution
-          "date": "",      // Dates
-          "description": "", // Additional details
-          "bullets": []    // Achievements/courses
-        }
-      ]
+      "items": []
     },
     {
       "id": "skills",
@@ -168,60 +280,87 @@ Always maintain the exact structure of the requested JSON format.`
     {
       "id": "projects",
       "title": "Projects",
-      "items": [
-        {
-          "title": "",      // Project name
-          "subtitle": "",   // Technologies used
-          "date": "",      // Timeline
-          "description": "", // Description
-          "bullets": []    // Key points
-        }
-      ]
+      "items": []
     },
     {
       "id": "certifications",
       "title": "Certifications",
-      "items": [
-        {
-          "title": "",      // Certification name
-          "subtitle": "",   // Issuing organization
-          "date": "",      // Date earned
-          "description": "", // Details
-          "bullets": []    // Additional info
-        }
-      ]
+      "items": []
     }
   ]
 }
 
-Resume text to parse:
-${fileContent}`
-        }
-      ],
-      temperature: 0.1,
-      max_tokens: 3000,
-      response_format: { type: "json_object" }
-    });
+Resume text:
+${chunks[0]}`
+          }
+        ],
+        temperature: 0.1,
+        response_format: { type: "json_object" }
+      });
 
-    let parsedData;
-    try {
-      parsedData = JSON.parse(completion.choices[0].message.content);
-      console.log("[DEBUG] Successfully parsed JSON response");
-      console.log("[DEBUG] Raw response:", completion.choices[0].message.content);
-      console.log("[DEBUG] Parsed data structure:", parsedData);
-    } catch (parseError) {
-      console.error("[DEBUG] Error parsing OpenAI response:", parseError);
-      throw new Error("Failed to parse OpenAI response into JSON");
+      parsedData = JSON.parse(firstChunkResponse.choices[0].message.content);
+      console.log("[DEBUG] Parsed first chunk successfully");
+
+      // Process remaining chunks if any
+      if (chunks.length > 1) {
+        for (let i = 1; i < chunks.length; i++) {
+          console.log(`[DEBUG] Processing chunk ${i + 1} of ${chunks.length}`);
+          const chunkResponse = await openai.chat.completions.create({
+            model: "gpt-4",
+            messages: [
+              {
+                role: "system",
+                content: "Extract additional entries from this resume chunk to add to the existing structure."
+              },
+              {
+                role: "user",
+                content: `Parse this additional resume chunk:\n\n${chunks[i]}`
+              }
+            ],
+            temperature: 0.1,
+            response_format: { type: "json_object" }
+          });
+
+          const chunkData = JSON.parse(chunkResponse.choices[0].message.content);
+
+          // Merge additional items into existing sections
+          for (const section of parsedData.sections) {
+            const additionalSection = chunkData.sections?.find(s => s.id === section.id);
+            if (additionalSection) {
+              if (section.items && additionalSection.items) {
+                section.items.push(...additionalSection.items);
+              } else if (additionalSection.content && !section.content) {
+                section.content = additionalSection.content;
+              }
+            }
+          }
+        }
+      }
+
+      // Ensure required sections exist
+      const requiredSections = ['experience', 'education'];
+      for (const sectionId of requiredSections) {
+        if (!parsedData.sections.find(s => s.id === sectionId)) {
+          parsedData.sections.push({
+            id: sectionId,
+            title: sectionId === 'experience' ? 'Work Experience' : 'Education',
+            items: []
+          });
+        }
+      }
+
+    } catch (error) {
+      console.error("[DEBUG] OpenAI parsing error:", error);
+      throw new Error("Failed to parse resume content: " + error.message);
     }
 
-    // Validate and sanitize the data
     const sanitizedData = {
       name: parsedData.name || "",
       email: parsedData.email || "",
       phone: parsedData.phone || "",
       location: parsedData.location || "",
       linkedin: parsedData.linkedin || "",
-      sections: (parsedData.sections || []).map(section => ({
+      sections: parsedData.sections.map(section => ({
         id: section.id || "",
         title: section.title || "",
         content: section.content || "",
@@ -230,23 +369,11 @@ ${fileContent}`
           subtitle: item.subtitle || "",
           date: item.date || "",
           description: item.description || "",
-          bullets: Array.isArray(item.bullets) ? 
+          bullets: Array.isArray(item.bullets) ?
             item.bullets.filter(bullet => bullet && bullet.trim()) : []
         }))
       }))
     };
-
-    // Verify that work experience and education sections exist
-    const requiredSections = ['experience', 'education'];
-    for (const sectionId of requiredSections) {
-      if (!sanitizedData.sections.find(s => s.id === sectionId)) {
-        sanitizedData.sections.push({
-          id: sectionId,
-          title: sectionId === 'experience' ? 'Work Experience' : 'Education',
-          items: []
-        });
-      }
-    }
 
     console.log("[DEBUG] Sending parsed data to frontend:", {
       personalInfo: {
