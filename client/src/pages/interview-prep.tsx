@@ -16,13 +16,10 @@ export default function InterviewPrep() {
   const [interviewStarted, setInterviewStarted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentAudioData, setCurrentAudioData] = useState<string>("");
+  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Initialize speech recognition
-  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
-
   useEffect(() => {
-    // Initialize speech recognition
     if (window.SpeechRecognition || window.webkitSpeechRecognition) {
       console.log("[DEBUG] Initializing speech recognition");
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -41,17 +38,10 @@ export default function InterviewPrep() {
       });
     }
 
-    // Initialize audio element
-    console.log("[DEBUG] Initializing audio element");
     audioRef.current = new Audio();
-    audioRef.current.onended = () => {
-      setIsSpeaking(false);
-      console.log("[DEBUG] Audio playback completed");
-    };
+    audioRef.current.onended = () => setIsSpeaking(false);
 
-    // Cleanup
     return () => {
-      console.log("[DEBUG] Cleaning up speech recognition and audio");
       if (recognition) recognition.stop();
       if (audioRef.current) audioRef.current.pause();
     };
@@ -116,17 +106,21 @@ export default function InterviewPrep() {
       }
 
       setIsSpeaking(true);
-      console.log(`[DEBUG] Creating audio blob from base64 string (length: ${base64Audio.length})`);
+      console.log(`[DEBUG] Creating audio blob from base64 string`);
 
-      const buffer = Buffer.from(base64Audio, 'base64');
-      console.log(`[DEBUG] Created buffer of size: ${buffer.length}`);
+      // Convert base64 to binary
+      const binaryString = window.atob(base64Audio);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
 
-      const blob = new Blob([buffer], { type: 'audio/mp3' });
-      console.log(`[DEBUG] Created blob of size: ${blob.size}`);
-
+      // Create blob and URL
+      const blob = new Blob([bytes], { type: 'audio/mp3' });
       const url = URL.createObjectURL(blob);
-      console.log(`[DEBUG] Created object URL: ${url}`);
+      console.log(`[DEBUG] Created audio URL: ${url}`);
 
+      // Set up audio element
       audioRef.current.src = url;
 
       try {
