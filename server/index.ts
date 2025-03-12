@@ -8,6 +8,8 @@ import resumeAiAssistant from "./routes/resume-ai-assistant";
 log("[DEBUG] Starting server initialization...");
 
 const app = express();
+
+// Basic middleware setup
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
