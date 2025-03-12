@@ -78,21 +78,7 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
 
       if (mime === "application/pdf") {
         console.log("[DEBUG] Processing PDF file...");
-        const pdfData = await pdfParse(buffer, {
-          pagerender: function(pageData) {
-            return pageData.getTextContent().then(function(textContent) {
-              let lastY, text = '';
-              for (const item of textContent.items) {
-                if (lastY !== item.transform[5] && text) {
-                  text += '\n';
-                }
-                text += item.str + ' ';
-                lastY = item.transform[5];
-              }
-              return text;
-            });
-          }
-        });
+        const pdfData = await pdfParse(buffer);
         fileContent = pdfData.text;
       } else if (mime.includes("word")) {
         console.log("[DEBUG] Processing Word document...");
@@ -108,10 +94,6 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
         .replace(/[^\x20-\x7E\n]/g, '')
         .replace(/[ \t]+/g, ' ')
         .trim();
-
-      if (!fileContent || fileContent.length === 0) {
-        throw new Error("No content could be extracted from file");
-      }
 
       console.log("[DEBUG] Extracted text length:", fileContent.length);
       console.log("[DEBUG] First 200 chars:", fileContent.substring(0, 200));
@@ -131,16 +113,14 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
         messages: [
           {
             role: "system",
-            content: `You are a resume parsing expert. Extract structured information focusing on:
-1. Personal details (name, email, phone, location)
-2. Professional summary
-3. Work experience with detailed entries
-4. Education history with institutions and dates
-5. Skills and technical competencies
+            content: `You are a resume parsing expert. Extract all information into a structured format, focusing on:
+1. Contact information (name, email, phone, location)
+2. Work experience entries (must include job titles, companies, dates)
+3. Education history (must include degrees, institutions, dates)
+4. Skills and other relevant sections
 
-Format response as a valid JSON object with an exact structure matching the example. 
-Include ALL fields even if empty.
-Ensure dates and contact info are properly formatted.`
+Format response as a JSON object with exact structure provided in the user message.
+Return ONLY the JSON object, no additional text.`
           },
           {
             role: "user",
@@ -196,7 +176,7 @@ Resume text:
 ${chunks[0]}`
           }
         ],
-        temperature: 0.1
+        temperature: 0.1,
       });
 
       if (!firstChunkResponse.choices[0].message.content) {
@@ -205,7 +185,6 @@ ${chunks[0]}`
 
       try {
         parsedData = JSON.parse(firstChunkResponse.choices[0].message.content);
-        console.log("[DEBUG] Successfully parsed first chunk:", parsedData);
       } catch (parseError) {
         console.error("[DEBUG] JSON parse error:", parseError);
         console.log("[DEBUG] Raw response:", firstChunkResponse.choices[0].message.content);
@@ -220,16 +199,14 @@ ${chunks[0]}`
             messages: [
               {
                 role: "system",
-                content: `Extract additional information from this resume chunk, maintaining the exact same JSON structure.
-Focus on work experience and education entries.
-Return only the extracted data in JSON format.`
+                content: "Extract additional work experience and education entries from this resume chunk, maintaining the same JSON structure. Return ONLY the JSON object."
               },
               {
                 role: "user",
                 content: `Additional resume text:\n${chunks[i]}`
               }
             ],
-            temperature: 0.1
+            temperature: 0.1,
           });
 
           if (!chunkResponse.choices[0].message.content) {
@@ -239,8 +216,6 @@ Return only the extracted data in JSON format.`
 
           try {
             const chunkData = JSON.parse(chunkResponse.choices[0].message.content);
-
-            // Merge additional data into existing sections
             for (const section of parsedData.sections) {
               const additionalSection = chunkData.sections?.find((s: any) => s.id === section.id);
               if (additionalSection?.items?.length) {
@@ -260,7 +235,7 @@ Return only the extracted data in JSON format.`
       throw new Error(`Failed to parse resume: ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    // Add default sections if missing
+    // Ensure all required sections exist with default values
     const requiredSections = ['summary', 'experience', 'education', 'skills'];
     for (const sectionId of requiredSections) {
       if (!parsedData.sections.find((s: any) => s.id === sectionId)) {
@@ -273,39 +248,9 @@ Return only the extracted data in JSON format.`
       }
     }
 
-    // Validate and clean the data
-    const cleanData = {
-      name: parsedData.name || "",
-      email: parsedData.email || "",
-      phone: parsedData.phone || "",
-      location: parsedData.location || "",
-      linkedin: parsedData.linkedin || "",
-      sections: parsedData.sections.map(section => ({
-        id: section.id,
-        title: section.title,
-        content: section.content || "",
-        items: (section.items || []).map(item => ({
-          title: item.title || "",
-          subtitle: item.subtitle || "",
-          date: item.date || "",
-          description: item.description || "",
-          bullets: Array.isArray(item.bullets) ? item.bullets.filter(Boolean) : []
-        }))
-      }))
-    };
+    console.log("[DEBUG] Successfully parsed resume");
+    res.json(parsedData);
 
-    console.log("[DEBUG] Resume parsed successfully:", {
-      contactInfo: {
-        name: cleanData.name,
-        email: cleanData.email
-      },
-      sectionCounts: cleanData.sections.map(s => ({
-        id: s.id,
-        items: s.items?.length || 0
-      }))
-    });
-
-    res.json(cleanData);
   } catch (error) {
     console.error("[DEBUG] Resume parsing error:", error);
     res.status(500).json({
