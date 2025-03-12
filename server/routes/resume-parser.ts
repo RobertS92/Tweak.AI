@@ -34,6 +34,7 @@ const openai = new OpenAI({
 });
 
 function chunkText(text: string, maxLength: number = 3000): string[] {
+  console.log("[DEBUG] Chunking text, initial length:", text.length);
   const sections = text.split(/\n\n+/);
   const chunks: string[] = [];
   let currentChunk = '';
@@ -50,6 +51,11 @@ function chunkText(text: string, maxLength: number = 3000): string[] {
   if (currentChunk) {
     chunks.push(currentChunk.trim());
   }
+
+  console.log("[DEBUG] Created", chunks.length, "chunks");
+  chunks.forEach((chunk, i) => {
+    console.log(`[DEBUG] Chunk ${i + 1} length:`, chunk.length);
+  });
 
   return chunks;
 }
@@ -114,18 +120,19 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
           {
             role: "system",
             content: `You are a resume parsing expert. Extract all information into a structured format, focusing on:
-1. Personal information (name, email, phone, location, website, etc.)
-2. Work experience entries (must include job titles, companies, dates)
-3. Education history (must include degrees, institutions, dates)
-4. Skills (both technical and soft skills)
-5. Certifications and achievements
-6. Projects (if any)
+1. Personal details (name, contact info, location, links)
+2. Professional summary
+3. Work experience (jobs, dates, achievements)
+4. Education (degrees, dates, details)
+5. Skills (technical and soft skills)
+6. Certifications and licenses
+7. Projects and publications
 
-Parse even partial or unclear information:
-- Maintain consistent structure
-- Use empty arrays/strings for missing sections
-- Format dates consistently
-- Keep original text within sections for analysis`
+Parse all information carefully:
+- Keep section IDs consistent
+- Format dates as YYYY-MM
+- Include all fields even if empty
+- Preserve original content structure`
           },
           {
             role: "user",
@@ -143,12 +150,12 @@ Parse even partial or unclear information:
   },
   "sections": [
     {
-      "id": "summary",
+      "id": "professional-summary",
       "title": "Professional Summary",
       "content": ""
     },
     {
-      "id": "experience",
+      "id": "work-experience",
       "title": "Work Experience",
       "items": [
         {
@@ -193,13 +200,14 @@ Parse even partial or unclear information:
     },
     {
       "id": "certifications",
-      "title": "Certifications",
+      "title": "Certifications & Licenses",
       "items": [
         {
           "name": "",
           "issuer": "",
           "date": "",
-          "description": "",
+          "expiry": "",
+          "id": "",
           "url": ""
         }
       ]
@@ -213,7 +221,8 @@ Parse even partial or unclear information:
           "description": "",
           "technologies": [],
           "url": "",
-          "date": ""
+          "startDate": "",
+          "endDate": ""
         }
       ]
     }
@@ -225,6 +234,7 @@ ${chunks[0]}`
           }
         ],
         temperature: 0.1,
+        response_format: { type: "json_object" }
       });
 
       if (!firstChunkResponse.choices[0].message.content) {
@@ -233,12 +243,15 @@ ${chunks[0]}`
 
       try {
         parsedData = JSON.parse(firstChunkResponse.choices[0].message.content);
+        console.log("[DEBUG] Successfully parsed first chunk");
+        console.log("[DEBUG] Section IDs found:", parsedData.sections.map(s => s.id));
       } catch (parseError) {
         console.error("[DEBUG] JSON parse error:", parseError);
         console.log("[DEBUG] Raw response:", firstChunkResponse.choices[0].message.content);
         throw new Error("Failed to parse OpenAI response as JSON");
       }
 
+      // Process remaining chunks
       if (chunks.length > 1) {
         for (let i = 1; i < chunks.length; i++) {
           console.log(`[DEBUG] Processing chunk ${i + 1} of ${chunks.length}`);
@@ -247,7 +260,7 @@ ${chunks[0]}`
             messages: [
               {
                 role: "system",
-                content: "Extract additional information from this resume chunk, maintaining the same JSON structure. Pay special attention to work experience, education, and certifications."
+                content: "Extract additional information from this resume chunk, maintaining the same JSON structure. Focus on work experience, education, certifications, and projects."
               },
               {
                 role: "user",
@@ -255,22 +268,30 @@ ${chunks[0]}`
               }
             ],
             temperature: 0.1,
+            response_format: { type: "json_object" }
           });
-
-          if (!chunkResponse.choices[0].message.content) {
-            console.warn(`[DEBUG] Empty response for chunk ${i + 1}`);
-            continue;
-          }
 
           try {
             const chunkData = JSON.parse(chunkResponse.choices[0].message.content);
-            // Merge section data
+            console.log(`[DEBUG] Successfully parsed chunk ${i + 1}`);
+
+            // Merge sections
             for (const section of parsedData.sections) {
               const additionalSection = chunkData.sections?.find((s: any) => s.id === section.id);
-              if (additionalSection?.items?.length) {
-                section.items = [...(section.items || []), ...additionalSection.items];
-              } else if (additionalSection?.content && !section.content) {
-                section.content = additionalSection.content;
+              if (additionalSection) {
+                if (section.items && additionalSection.items) {
+                  console.log(`[DEBUG] Merging items for section: ${section.id}`);
+                  section.items.push(...additionalSection.items);
+                } else if (additionalSection.content && !section.content) {
+                  console.log(`[DEBUG] Adding content for section: ${section.id}`);
+                  section.content = additionalSection.content;
+                } else if (additionalSection.categories) {
+                  console.log(`[DEBUG] Merging categories for section: ${section.id}`);
+                  section.categories = section.categories.map((cat: any, idx: number) => ({
+                    ...cat,
+                    skills: [...new Set([...cat.skills, ...(additionalSection.categories[idx]?.skills || [])])]
+                  }));
+                }
               }
             }
           } catch (parseError) {
@@ -279,40 +300,53 @@ ${chunks[0]}`
         }
       }
 
-      // Analyze sections for suggestions
-      const sectionAnalysis = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert resume reviewer. Analyze each section and provide specific, actionable improvements. Format suggestions in a clear, readable way with bullet points and examples where relevant.
+      // Verify all required sections exist
+      const requiredSections = [
+        'professional-summary',
+        'work-experience',
+        'education',
+        'skills',
+        'certifications',
+        'projects'
+      ];
 
-Focus on:
-- Content completeness
-- Impact and achievement focus
-- Modern resume best practices
-- ATS optimization
-- Industry-specific improvements`
-          },
-          {
-            role: "user",
-            content: `Analyze this resume data and provide section-by-section suggestions:
-${JSON.stringify(parsedData, null, 2)}`
-          }
-        ],
-        temperature: 0.7,
-      });
-
-      if (sectionAnalysis.choices[0].message.content) {
-        parsedData.analysis = sectionAnalysis.choices[0].message.content;
+      console.log("[DEBUG] Verifying required sections...");
+      for (const sectionId of requiredSections) {
+        if (!parsedData.sections.find(s => s.id === sectionId)) {
+          console.log(`[DEBUG] Adding missing section: ${sectionId}`);
+          parsedData.sections.push({
+            id: sectionId,
+            title: sectionId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+            items: [],
+            content: '',
+            categories: sectionId === 'skills' ? [
+              { name: 'Technical Skills', skills: [] },
+              { name: 'Soft Skills', skills: [] }
+            ] : undefined
+          });
+        }
       }
+
+      // Log section statistics
+      console.log("[DEBUG] Resume parsing statistics:", {
+        personalInfo: {
+          fieldsFound: Object.entries(parsedData.personalInfo)
+            .filter(([_, value]) => value && value.length > 0).length
+        },
+        sections: parsedData.sections.map(section => ({
+          id: section.id,
+          itemCount: section.items?.length || 0,
+          contentLength: section.content?.length || 0,
+          categoriesCount: section.categories?.length || 0
+        }))
+      });
 
     } catch (error) {
       console.error("[DEBUG] OpenAI parsing error:", error);
       throw new Error(`Failed to parse resume: ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    console.log("[DEBUG] Successfully parsed resume");
+    console.log("[DEBUG] Resume parsing completed successfully");
     res.json(parsedData);
 
   } catch (error) {
