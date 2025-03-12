@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Mic, Square, Play } from "lucide-react";
+import { Mic, Square, Play, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function InterviewPrep() {
@@ -16,6 +16,7 @@ export default function InterviewPrep() {
   const [interviewStarted, setInterviewStarted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentAudioData, setCurrentAudioData] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -55,10 +56,7 @@ export default function InterviewPrep() {
 
       recognition.onend = () => {
         console.log("[DEBUG] Speech recognition ended");
-        if (transcript.trim()) {
-          console.log("[DEBUG] Processing final transcript");
-          evaluateAnswer();
-        }
+        setIsRecording(false);
       };
 
       recognition.onresult = (event) => {
@@ -169,6 +167,52 @@ export default function InterviewPrep() {
     recognition.stop();
   };
 
+  const evaluateAnswer = async () => {
+    if (!transcript.trim()) {
+      console.log("[DEBUG] No answer to evaluate");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      console.log("[DEBUG] Sending answer for evaluation");
+      const response = await fetch('/api/interview/evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          answer: transcript
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get feedback');
+      }
+
+      const data = await response.json();
+      console.log("[DEBUG] Received evaluation response");
+      console.log(`[DEBUG] Completeness score: ${data.evaluation.completeness}`);
+
+      setCurrentQuestion(data.nextQuestion);
+      setCurrentAudioData(data.audio);
+      setTranscript("");
+
+      console.log("[DEBUG] Playing AI response");
+      await playAudio(data.audio);
+
+    } catch (error) {
+      console.log(`[DEBUG] Answer evaluation error: ${error}`);
+      toast({
+        title: "Error",
+        description: "Failed to get feedback. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const startInterview = async () => {
     if (!jobDescription) {
       console.log("[DEBUG] Interview start failed - missing job description");
@@ -234,48 +278,6 @@ export default function InterviewPrep() {
       });
     } finally {
       setIsAnalyzing(false);
-    }
-  };
-
-  const evaluateAnswer = async () => {
-    if (!transcript.trim()) {
-      console.log("[DEBUG] No answer to evaluate");
-      return;
-    }
-
-    try {
-      console.log("[DEBUG] Sending answer for evaluation");
-      const response = await fetch('/api/interview/evaluate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          answer: transcript
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to get feedback');
-      }
-
-      const data = await response.json();
-      console.log("[DEBUG] Received evaluation response");
-      console.log(`[DEBUG] Completeness score: ${data.evaluation.completeness}`);
-
-      setCurrentQuestion(data.nextQuestion);
-      setCurrentAudioData(data.audio);
-      setTranscript("");
-
-      console.log("[DEBUG] Playing AI response");
-      await playAudio(data.audio);
-
-    } catch (error) {
-      console.log(`[DEBUG] Answer evaluation error: ${error}`);
-      toast({
-        title: "Error",
-        description: "Failed to get feedback. Please try again.",
-        variant: "destructive"
-      });
     }
   };
 
@@ -346,7 +348,7 @@ export default function InterviewPrep() {
                 {transcript || "Your answer will appear here as you speak..."}
               </div>
 
-              <div className="flex justify-center">
+              <div className="flex justify-center gap-4">
                 <Button
                   variant={isRecording ? "destructive" : "default"}
                   onClick={isRecording ? stopRecording : startRecording}
@@ -360,6 +362,17 @@ export default function InterviewPrep() {
                     <Mic className="h-6 w-6" />
                   )}
                 </Button>
+
+                {!isRecording && transcript && (
+                  <Button
+                    onClick={evaluateAnswer}
+                    disabled={isSubmitting || isSpeaking}
+                    size="lg"
+                    className="rounded-full h-16 w-16 p-0"
+                  >
+                    <Send className="h-6 w-6" />
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
