@@ -77,6 +77,8 @@ ${userQuery || "Please analyze this section and suggest specific improvements."}
       error: "Failed to get AI suggestions",
       details: error instanceof Error ? error.message : String(error),
     });
+  } finally {
+    console.log("[DEBUG] AI Assistant request completed for section:", sectionId);
   }
 });
 
