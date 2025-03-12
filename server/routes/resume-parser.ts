@@ -42,14 +42,13 @@ function cleanTextContent(text: string): string {
     .filter(line => !line.includes('[DEBUG]'))
     .filter(line => line.trim().length > 0);
 
-  // Join lines with proper spacing
   text = cleanedLines.join('\n');
 
   // Clean up the text while preserving structure
   text = text
-    .replace(/[\r\n]{3,}/g, '\n\n')  // Normalize line breaks
-    .replace(/[^\x20-\x7E\n]/g, '')  // Remove non-printable characters
-    .replace(/[ \t]+/g, ' ')         // Normalize spaces
+    .replace(/[\r\n]{3,}/g, '\n\n')
+    .replace(/[^\x20-\x7E\n]/g, '')
+    .replace(/[ \t]+/g, ' ')
     .trim();
 
   console.log("[DEBUG] Cleaned text length:", text.length);
@@ -59,49 +58,48 @@ function cleanTextContent(text: string): string {
 async function parseResume(content: string) {
   console.log("[DEBUG] Starting resume parsing with OpenAI");
 
-  const systemPrompt = `You are a resume parsing expert. Extract ALL information into a JSON object with EXACTLY this structure, ensuring NO fields are left empty:
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [
+      {
+        role: "system",
+        content: `You are a resume parsing expert. Extract ALL information into a JSON object with exactly this structure:
 
 {
+  "name": "",
+  "email": "",
+  "phone": "",
+  "location": "",
+  "website": "",
+  "linkedin": "",
+  "objective": "",
   "personalInfo": {
-    "name": "Full name",
-    "email": "Email address",
-    "phone": "Phone number",
-    "location": "City, State",
-    "website": "Personal/portfolio website",
-    "linkedin": "LinkedIn URL",
-    "objective": "Career objective"
+    "name": "",
+    "email": "",
+    "phone": "",
+    "location": "",
+    "website": "",
+    "linkedin": "",
+    "objective": ""
   },
   "sections": [
     {
-      "id": "personal-information",
-      "title": "Personal Information",
-      "fields": {
-        "name": "Full name",
-        "email": "Email address",
-        "phone": "Phone number",
-        "location": "City, State",
-        "website": "Website URL",
-        "linkedin": "LinkedIn URL",
-        "objective": "Career objective"
-      }
-    },
-    {
       "id": "professional-summary",
       "title": "Professional Summary",
-      "content": "Summary text"
+      "content": ""
     },
     {
       "id": "work-experience",
       "title": "Work Experience",
       "items": [
         {
-          "title": "Job title",
-          "company": "Company name",
-          "location": "Job location",
-          "startDate": "YYYY-MM",
-          "endDate": "YYYY-MM or Present",
-          "description": "Role description",
-          "achievements": ["Achievement 1", "Achievement 2"]
+          "title": "",
+          "company": "",
+          "location": "",
+          "startDate": "",
+          "endDate": "",
+          "description": "",
+          "achievements": []
         }
       ]
     },
@@ -110,13 +108,13 @@ async function parseResume(content: string) {
       "title": "Education",
       "items": [
         {
-          "degree": "Degree name",
-          "institution": "School name",
-          "location": "School location",
-          "startDate": "YYYY-MM",
-          "endDate": "YYYY-MM",
-          "gpa": "GPA if available",
-          "courses": ["Relevant course 1", "Relevant course 2"]
+          "degree": "",
+          "institution": "",
+          "location": "",
+          "startDate": "",
+          "endDate": "",
+          "gpa": "",
+          "courses": []
         }
       ]
     },
@@ -126,11 +124,11 @@ async function parseResume(content: string) {
       "categories": [
         {
           "name": "Technical Skills",
-          "skills": ["Skill 1", "Skill 2"]
+          "skills": []
         },
         {
           "name": "Soft Skills",
-          "skills": ["Soft skill 1", "Soft skill 2"]
+          "skills": []
         }
       ]
     }
@@ -144,14 +142,7 @@ IMPORTANT:
 4. Format dates consistently as YYYY-MM
 5. Parse skills into technical and soft skills categories
 6. Keep section IDs exactly as shown for frontend compatibility
-7. Add personal information both in personalInfo and in sections array with id "personal-information"`;
-
-  const response = await openai.chat.completions.create({
-    model: "gpt-4",
-    messages: [
-      {
-        role: "system",
-        content: systemPrompt
+7. Include personal info fields both at top level AND in personalInfo object for compatibility`
       },
       {
         role: "user",
@@ -170,33 +161,17 @@ IMPORTANT:
 
     // Debug Personal Information
     console.log("\n[DEBUG] Personal Information Parsing:");
-    const personalInfo = parsedData.personalInfo;
-    Object.entries(personalInfo).forEach(([field, value]) => {
+    Object.entries(parsedData.personalInfo).forEach(([field, value]) => {
       console.log(`[DEBUG] ${field}: ${value ? '✓ Found' : '✗ Empty'} ${value ? `(${value})` : ''}`);
+      // Copy to top level for backwards compatibility
+      parsedData[field] = value;
     });
-
-    // Ensure personal-information section exists in sections array
-    if (!parsedData.sections.find(s => s.id === 'personal-information')) {
-      parsedData.sections.unshift({
-        id: 'personal-information',
-        title: 'Personal Information',
-        fields: { ...personalInfo }
-      });
-      console.log("[DEBUG] Added personal-information section to sections array");
-    }
 
     // Debug Sections
     console.log("\n[DEBUG] Sections Parsing:");
     parsedData.sections.forEach(section => {
       console.log(`\n[DEBUG] Section: ${section.id}`);
       console.log(`[DEBUG] Title: ${section.title}`);
-
-      if (section.fields) {
-        console.log("[DEBUG] Fields:");
-        Object.entries(section.fields).forEach(([field, value]) => {
-          console.log(`[DEBUG]   ${field}: ${value ? '✓' : '✗'} ${value || ''}`);
-        });
-      }
 
       if (section.content) {
         console.log(`[DEBUG] Content: ✓ Found (${section.content.length} chars)`);
@@ -225,19 +200,9 @@ IMPORTANT:
       }
     });
 
-    // Validate required fields
-    const missingFields = [];
-    if (!personalInfo.name) missingFields.push('name');
-    if (!personalInfo.email) missingFields.push('email');
-    if (!personalInfo.phone) missingFields.push('phone');
-
-    if (missingFields.length > 0) {
-      console.log(`\n[DEBUG] Warning: Missing required fields: ${missingFields.join(', ')}`);
-    }
-
     // Overall statistics
     console.log("\n[DEBUG] Parsing Statistics:");
-    console.log(`[DEBUG] Personal Info Fields: ${Object.values(personalInfo).filter(Boolean).length}/${Object.keys(personalInfo).length}`);
+    console.log(`[DEBUG] Personal Info Fields: ${Object.values(parsedData.personalInfo).filter(Boolean).length}/${Object.keys(parsedData.personalInfo).length}`);
     console.log(`[DEBUG] Total Sections: ${parsedData.sections.length}`);
     console.log(`[DEBUG] Work Experience Items: ${parsedData.sections.find(s => s.id === 'work-experience')?.items?.length || 0}`);
     console.log(`[DEBUG] Education Items: ${parsedData.sections.find(s => s.id === 'education')?.items?.length || 0}`);

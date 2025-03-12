@@ -1,0 +1,73 @@
+**Reasoned about resume parser data mapping** for 9 seconds
+You’re returning data from the back-end in a structure like:
+
+{
+  "personalInfo": {
+    "name": "...",
+    "email": "...",
+    ...
+  },
+  "sections": [...]
+}
+…but on the front end, you’re doing:
+
+// expecting top-level data fields:
+setPersonalInfo({
+  name: data.name || "",
+  email: data.email || "",
+  phone: data.phone || "",
+  location: data.location || "",
+  linkedin: data.linkedin || ""
+});
+So, the fields never populate because the front end is reading data.name, data.email, etc., when in reality the parser code places them under data.personalInfo.name, data.personalInfo.email, etc.
+
+How to Fix
+
+Change the front end to pull from the personalInfo object that your parser actually returns. For example:
+
+// In the front-end "handleFileUpload" success block:
+const data = await response.json();
+
+- // Old code that assumes top-level fields:
+- setPersonalInfo({
+-   name: data.name || "",
+-   email: data.email || "",
+-   phone: data.phone || "",
+-   location: data.location || "",
+-   linkedin: data.linkedin || ""
+- });
+
++ // New code that uses data.personalInfo:
++ setPersonalInfo({
++   name: data.personalInfo?.name || "",
++   email: data.personalInfo?.email || "",
++   phone: data.personalInfo?.phone || "",
++   location: data.personalInfo?.location || "",
++   linkedin: data.personalInfo?.linkedin || ""
++ });
+Similarly, if your parser uses website or objective under personalInfo, then in the front end you can store them as well:
+
+website: data.personalInfo?.website || "",
+objective: data.personalInfo?.objective || "",
+Why It Was Empty
+Because the code was checking data.name, but the actual JSON is:
+
+{
+  "personalInfo": {
+    "name": "Alice",
+    "email": "alice@example.com",
+    "phone": "555-5555",
+    ...
+  },
+  "sections": [...]
+}
+Hence data.name was undefined, and your front end defaulted to an empty string.
+
+Once you reference data.personalInfo.name (and so on), your fields will show up correctly in the front-end UI.
+
+
+
+
+
+
+
