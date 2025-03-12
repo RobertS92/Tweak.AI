@@ -108,24 +108,19 @@ router.post("/api/resume-parser", upload.single("file"), async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `You are a precise resume parser that excels at identifying and extracting structured information from resumes. Follow these key instructions:
+          content: `You are a precise resume parser that excels at identifying and extracting structured information from resumes. Focus on accurately identifying and extracting:
+1. Work experience entries (job titles, companies, dates, and achievements)
+2. Education details (degrees, institutions, dates)
+3. Projects and their details
+4. Skills and summary content
 
-1. Always identify and extract work experience and education sections, even if incomplete
-2. For each work experience entry:
-   - Capture job titles, company names, dates, and descriptions
-   - Extract all bullet points and achievements
-   - Use empty strings for truly missing fields
-3. For each education entry:
-   - Include degree names, institutions, and dates
-   - Capture any relevant coursework or achievements
-4. Preserve original text formatting where possible
-5. Return a complete JSON structure with all sections, even if some are empty
-
-If you can't find certain information, use empty strings but maintain the structure.`
+Even if sections are incomplete, extract whatever information is available.
+If a section or field is truly empty, use an empty string.
+Always maintain the exact structure of the requested JSON format.`
         },
         {
           role: "user",
-          content: `Parse this resume and extract ALL information into this exact JSON structure. Pay special attention to work experience and education sections:
+          content: `Parse this resume text and extract ALL available information into this exact JSON structure:
 
 {
   "name": "",
@@ -144,10 +139,10 @@ If you can't find certain information, use empty strings but maintain the struct
       "title": "Work Experience",
       "items": [
         {
-          "title": "",      // Job title, required
-          "subtitle": "",   // Company name, required
+          "title": "",      // Job title
+          "subtitle": "",   // Company name
           "date": "",      // Employment dates
-          "description": "", // Role description
+          "description": "", // Description if available
           "bullets": []    // Achievement bullets
         }
       ]
@@ -157,11 +152,11 @@ If you can't find certain information, use empty strings but maintain the struct
       "title": "Education",
       "items": [
         {
-          "title": "",      // Degree name, required
-          "subtitle": "",   // Institution name, required
-          "date": "",      // Education dates
-          "description": "", // Program description
-          "bullets": []    // Achievements/coursework
+          "title": "",      // Degree/Program
+          "subtitle": "",   // Institution
+          "date": "",      // Dates
+          "description": "", // Additional details
+          "bullets": []    // Achievements/courses
         }
       ]
     },
@@ -175,11 +170,11 @@ If you can't find certain information, use empty strings but maintain the struct
       "title": "Projects",
       "items": [
         {
-          "title": "",
-          "subtitle": "",
-          "date": "",
-          "description": "",
-          "bullets": []
+          "title": "",      // Project name
+          "subtitle": "",   // Technologies used
+          "date": "",      // Timeline
+          "description": "", // Description
+          "bullets": []    // Key points
         }
       ]
     },
@@ -188,11 +183,11 @@ If you can't find certain information, use empty strings but maintain the struct
       "title": "Certifications",
       "items": [
         {
-          "title": "",
-          "subtitle": "",
-          "date": "",
-          "description": "",
-          "bullets": []
+          "title": "",      // Certification name
+          "subtitle": "",   // Issuing organization
+          "date": "",      // Date earned
+          "description": "", // Details
+          "bullets": []    // Additional info
         }
       ]
     }
@@ -212,6 +207,8 @@ ${fileContent}`
     try {
       parsedData = JSON.parse(completion.choices[0].message.content);
       console.log("[DEBUG] Successfully parsed JSON response");
+      console.log("[DEBUG] Raw response:", completion.choices[0].message.content);
+      console.log("[DEBUG] Parsed data structure:", parsedData);
     } catch (parseError) {
       console.error("[DEBUG] Error parsing OpenAI response:", parseError);
       throw new Error("Failed to parse OpenAI response into JSON");
@@ -251,7 +248,6 @@ ${fileContent}`
       }
     }
 
-    console.log("[DEBUG] Resume parsed successfully");
     console.log("[DEBUG] Sending parsed data to frontend:", {
       personalInfo: {
         name: sanitizedData.name,
@@ -279,4 +275,4 @@ ${fileContent}`
   }
 });
 
-export default router;
+export { router as default };
