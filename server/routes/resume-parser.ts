@@ -33,6 +33,86 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+async function extractTextFromPDF(buffer: Buffer): Promise<string> {
+  console.log("[DEBUG] Starting PDF text extraction");
+
+  try {
+    // First validate if it's a valid PDF by checking for PDF signature
+    const pdfSignature = buffer.toString('ascii', 0, 5);
+    if (pdfSignature !== '%PDF-') {
+      console.error("[DEBUG] Invalid PDF signature:", pdfSignature);
+      throw new Error('Invalid PDF format - missing PDF signature');
+    }
+
+    console.log("[DEBUG] PDF signature validated");
+
+    try {
+      // Try with default options first
+      console.log("[DEBUG] Attempting PDF parsing with default options");
+      const data = await pdfParse(buffer);
+      if (!data || !data.text || data.text.trim().length === 0) {
+        throw new Error('No text content extracted');
+      }
+      return data.text;
+    } catch (firstError) {
+      console.log("[DEBUG] First parsing attempt failed, trying with fallback options");
+
+      // Fallback: Try with modified options
+      const data = await pdfParse(buffer, {
+        max: 0, // No page limit
+        version: 'v2.0.550',
+        pagerender: null // Disable rendering
+      });
+
+      if (!data || !data.text || data.text.trim().length === 0) {
+        throw new Error('No text content extracted with fallback options');
+      }
+
+      return data.text;
+    }
+  } catch (error) {
+    console.error("[DEBUG] PDF parsing error details:", error);
+
+    // Use Vision API as last resort for PDFs that fail parsing
+    try {
+      console.log("[DEBUG] Attempting extraction using Vision API");
+      const base64Pdf = buffer.toString('base64');
+      const response = await openai.chat.completions.create({
+        model: "gpt-4-vision-preview",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Extract and return only the text content from this resume PDF. Include all details but remove any irrelevant text or formatting."
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:application/pdf;base64,${base64Pdf}`
+                }
+              }
+            ],
+          },
+        ],
+        max_tokens: 1500,
+      });
+
+      const extractedText = response.choices[0].message.content;
+      if (!extractedText) {
+        throw new Error('Vision API returned no content');
+      }
+
+      console.log("[DEBUG] Successfully extracted text using Vision API");
+      return extractedText;
+    } catch (visionError) {
+      console.error("[DEBUG] Vision API extraction failed:", visionError);
+      throw new Error('Failed to extract text from PDF using all available methods');
+    }
+  }
+}
+
 function chunkText(text: string, maxLength: number = 3000): string[] {
   console.log("[DEBUG] Chunking text, initial length:", text.length);
   const sections = text.split(/\n\n+/);
@@ -84,8 +164,7 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
 
       if (mime === "application/pdf") {
         console.log("[DEBUG] Processing PDF file...");
-        const pdfData = await pdfParse(buffer);
-        fileContent = pdfData.text;
+        fileContent = await extractTextFromPDF(buffer);
       } else if (mime.includes("word")) {
         console.log("[DEBUG] Processing Word document...");
         const result = await mammoth.extractRawText({ buffer });

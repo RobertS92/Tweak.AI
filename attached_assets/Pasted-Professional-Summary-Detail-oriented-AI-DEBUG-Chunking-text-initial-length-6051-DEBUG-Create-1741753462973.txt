@@ -1,0 +1,54 @@
+Professional Summary 
+Detail-oriented AI/
+[DEBUG] Chunking text, initial length: 6051
+[DEBUG] Created 3 chunks
+[DEBUG] Chunk 1 length: 1586
+[DEBUG] Chunk 2 length: 1809
+[DEBUG] Chunk 3 length: 2648
+[DEBUG] Split content into 3 chunks
+[DEBUG] OpenAI parsing error: BadRequestError: 400 Invalid parameter: 'response_format' of type 'json_object' is not supported with this model.
+    at Function.generate (/home/runner/workspace/node_modules/openai/src/error.ts:72:14)
+    at OpenAI.makeStatusError (/home/runner/workspace/node_modules/openai/src/core.ts:443:21)
+    at OpenAI.makeRequest (/home/runner/workspace/node_modules/openai/src/core.ts:507:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/home/runner/workspace/server/routes/resume-parser.ts:117:34) {
+  status: 400,
+  headers: {
+    'access-control-expose-headers': 'X-Request-ID',
+    'alt-svc': 'h3=":443"; ma=86400',
+    'cf-cache-status': 'DYNAMIC',
+    'cf-ray': '91f085256875d449-SEA',
+    connection: 'keep-alive',
+    'content-length': '217',
+    'content-type': 'application/json',
+    date: 'Wed, 12 Mar 2025 04:24:07 GMT',
+    'openai-organization': 'user-84emsomucedptm9djwfsd3rs',
+    'openai-processing-ms': '22',
+    'openai-version': '2020-10-01',
+    server: 'cloudflare',
+    'set-cookie': '__cf_bm=ZUcWX6xklwU01RzSgS7vk_.p1ltGqNMJZCEdw4x40Ro-1741753447-1.0.1.1-eiG84E7MloWlP6BGlcP.SRBHDaieEjgwPLQ1ljsP80AGbVPpPluvw7WfKKElNmR9cTWmpUGoW8z1H1065GfvKwc1TWlkuCTIkZB1omBaT5Q; path=/; expires=Wed, 12-Mar-25 04:54:07 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None, _cfuvid=P2AkWLJb_A6G7k_UlzO5XBwzriUjydRNe1JNpo3HZrs-1741753447381-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None',
+    'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+    'x-content-type-options': 'nosniff',
+    'x-ratelimit-limit-requests': '5000',
+    'x-ratelimit-limit-tokens': '80000',
+    'x-ratelimit-remaining-requests': '4999',
+    'x-ratelimit-remaining-tokens': '79023',
+    'x-ratelimit-reset-requests': '12ms',
+    'x-ratelimit-reset-tokens': '732ms',
+    'x-request-id': 'req_a037abb13b2bea672a950ae00bf57d48'
+  },
+  request_id: 'req_a037abb13b2bea672a950ae00bf57d48',
+  error: {
+    message: "Invalid parameter: 'response_format' of type 'json_object' is not supported with this model.",
+    type: 'invalid_request_error',
+    param: 'response_format',
+    code: null
+  },
+  code: null,
+  param: 'response_format',
+  type: 'invalid_request_error'
+}
+[DEBUG] Resume parsing error: Error: Failed to parse resume: 400 Invalid parameter: 'response_format' of type 'json_object' is not supported with this model.
+    at <anonymous> (/home/runner/workspace/server/routes/resume-parser.ts:346:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+4:24:07 AM [express] POST /api/resume-parser 500 in 345ms :: {"error":"Failed to parse resume","deta…
