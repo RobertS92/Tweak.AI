@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,10 +15,10 @@ export default function InterviewPrep() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [interviewStarted, setInterviewStarted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Initialize speech recognition and synthesis
+  // Initialize speech recognition
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
-  const [synth, setSynth] = useState<SpeechSynthesis | null>(null);
 
   useEffect(() => {
     // Initialize speech recognition
@@ -27,6 +27,7 @@ export default function InterviewPrep() {
       const recognitionInstance = new SpeechRecognition();
       recognitionInstance.continuous = true;
       recognitionInstance.interimResults = true;
+      recognitionInstance.lang = 'en-US'; // Set language for better accuracy
       setRecognition(recognitionInstance);
     } else {
       toast({
@@ -36,30 +37,31 @@ export default function InterviewPrep() {
       });
     }
 
-    // Initialize speech synthesis
-    if (window.speechSynthesis) {
-      setSynth(window.speechSynthesis);
-    } else {
-      toast({
-        title: "Text-to-Speech Not Available",
-        description: "Your browser doesn't support text-to-speech. Please use a modern browser like Chrome.",
-        variant: "destructive"
-      });
-    }
+    // Initialize audio element
+    audioRef.current = new Audio();
+    audioRef.current.onended = () => setIsSpeaking(false);
 
-    // Cleanup on unmount
     return () => {
       if (recognition) recognition.stop();
-      if (synth) synth.cancel();
+      if (audioRef.current) audioRef.current.pause();
     };
   }, []);
 
   useEffect(() => {
     if (recognition) {
       recognition.onresult = (event) => {
-        const current = event.resultIndex;
-        const transcript = event.results[current][0].transcript;
-        setTranscript((prev) => prev + " " + transcript);
+        let finalTranscript = '';
+        let interimTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+
+        setTranscript((prev) => prev + finalTranscript);
       };
 
       recognition.onerror = (event) => {
@@ -74,59 +76,27 @@ export default function InterviewPrep() {
 
       recognition.onend = () => {
         if (transcript.trim()) {
-          submitAnswer();
+          evaluateAnswer();
         }
       };
     }
-  }, [recognition]);
+  }, [recognition, transcript]);
 
-  const speakText = async (text: string) => {
-    if (!synth) {
-      toast({
-        title: "Text-to-Speech Not Available",
-        description: "Cannot speak the response. Please check your browser's speech synthesis support.",
-        variant: "destructive"
-      });
-      return;
-    }
+  const playAudio = async (base64Audio: string) => {
+    if (!audioRef.current) return;
 
-    return new Promise<void>((resolve) => {
-      setIsSpeaking(true);
+    setIsSpeaking(true);
+    const blob = new Blob([Buffer.from(base64Audio, 'base64')], { type: 'audio/mp3' });
+    const url = URL.createObjectURL(blob);
 
-      // Cancel any ongoing speech
-      synth.cancel();
+    audioRef.current.src = url;
+    await audioRef.current.play();
 
-      const utterance = new SpeechSynthesisUtterance(text);
-
-      // Configure speech parameters for better clarity
-      utterance.rate = 0.9; // Slightly slower than default
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-
-      // Use a different voice if available
-      const voices = synth.getVoices();
-      const englishVoices = voices.filter(voice => voice.lang.startsWith('en-'));
-      if (englishVoices.length > 0) {
-        utterance.voice = englishVoices[0];
-      }
-
-      utterance.onend = () => {
-        setIsSpeaking(false);
-        resolve();
-      };
-
-      utterance.onerror = () => {
-        setIsSpeaking(false);
-        toast({
-          title: "Speech Error",
-          description: "Failed to speak the response. Please try again.",
-          variant: "destructive"
-        });
-        resolve();
-      };
-
-      synth.speak(utterance);
-    });
+    // Cleanup URL after playing
+    audioRef.current.onended = () => {
+      setIsSpeaking(false);
+      URL.revokeObjectURL(url);
+    };
   };
 
   const startRecording = () => {
@@ -190,8 +160,8 @@ export default function InterviewPrep() {
       setInterviewStarted(true);
       setTranscript("");
 
-      // Speak the initial question
-      await speakText(data.question);
+      // Play the AI's question
+      await playAudio(data.audio);
 
       toast({
         title: "Interview Started",
@@ -208,13 +178,13 @@ export default function InterviewPrep() {
     }
   };
 
-  const submitAnswer = async () => {
+  const evaluateAnswer = async () => {
     if (!transcript.trim()) {
       return;
     }
 
     try {
-      const response = await fetch('/api/interview/respond', {
+      const response = await fetch('/api/interview/evaluate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -230,11 +200,12 @@ export default function InterviewPrep() {
       }
 
       const data = await response.json();
-      setCurrentQuestion(data.feedback);
+      setCurrentQuestion(data.nextQuestion);
       setTranscript("");
 
-      // Speak the follow-up question
-      await speakText(data.feedback);
+      // Play the AI's response
+      await playAudio(data.audio);
+
     } catch (error) {
       toast({
         title: "Error",
@@ -292,7 +263,11 @@ export default function InterviewPrep() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => speakText(currentQuestion)}
+                        onClick={() => {
+                          if (audioRef.current && audioRef.current.src) {
+                            playAudio(audioRef.current.src);
+                          }
+                        }}
                         disabled={isSpeaking}
                       >
                         <Play className="h-4 w-4" />

@@ -76,6 +76,21 @@ router.post("/interview/analyze", async (req, res) => {
   }
 });
 
+async function generateSpeech(text: string): Promise<Buffer> {
+  console.log("[DEBUG] Generating speech for text length:", text.length);
+
+  const mp3Response = await openai.audio.speech.create({
+    model: "tts-1",
+    voice: "echo",
+    input: text,
+  });
+
+  const buffer = Buffer.from(await mp3Response.arrayBuffer());
+  console.log("[DEBUG] Generated speech buffer size:", buffer.length);
+
+  return buffer;
+}
+
 router.post("/interview/start", async (req, res) => {
   try {
     console.log("[DEBUG] Starting interview session setup");
@@ -103,7 +118,8 @@ router.post("/interview/start", async (req, res) => {
 4. Asks an engaging first question
 
 Keep your response conversational and natural, as it will be spoken aloud.
-Focus on building rapport while staying professional.`
+Focus on building rapport while staying professional.
+Keep the response under 60 seconds when spoken.`
         },
         {
           role: "user",
@@ -113,8 +129,10 @@ Focus on building rapport while staying professional.`
       temperature: 0.7
     });
 
-    const sessionId = Date.now().toString();
     const response = completion.choices[0].message.content;
+    const speechBuffer = await generateSpeech(response);
+
+    const sessionId = Date.now().toString();
 
     // Store interview context
     interviewSessions.set(sessionId, {
@@ -128,11 +146,85 @@ Focus on building rapport while staying professional.`
     res.json({
       sessionId,
       question: response,
+      audio: speechBuffer.toString('base64')
     });
   } catch (error) {
     console.error("[DEBUG] Interview start error:", error);
     res.status(500).json({
       error: "Failed to start interview",
+      details: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+router.post("/interview/evaluate", async (req, res) => {
+  try {
+    const { sessionId, answer } = req.body;
+
+    if (!sessionId || !answer) {
+      return res.status(400).json({
+        error: "Missing required fields",
+        details: "Session ID and answer are required"
+      });
+    }
+
+    const session = interviewSessions.get(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        error: "Session not found",
+        details: "Interview session has expired or is invalid"
+      });
+    }
+
+    // Evaluate the answer
+    const evaluation = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert technical interviewer. Evaluate the candidate's response and return a JSON object with:
+{
+  "completeness": number (0-1),
+  "clarity": number (0-1),
+  "technicalAccuracy": number (0-1),
+  "missingPoints": ["point1", "point2"],
+  "suggestedFollowUp": "follow-up question if answer is incomplete",
+  "nextQuestion": "next question if answer is complete"
+}`
+        },
+        {
+          role: "user",
+          content: `Previous question: ${session.currentQuestion}\nCandidate's answer: ${answer}\nEvaluate this response.`
+        }
+      ],
+      temperature: 0.7
+    });
+
+    const evaluationResult = JSON.parse(evaluation.choices[0].message.content);
+
+    // Generate appropriate follow-up or next question
+    const nextQuestion = evaluationResult.completeness < 0.7 ? 
+      evaluationResult.suggestedFollowUp : 
+      evaluationResult.nextQuestion;
+
+    const speechBuffer = await generateSpeech(nextQuestion);
+
+    // Update session history
+    session.history.push(
+      { role: "candidate", content: answer },
+      { role: "interviewer", content: nextQuestion }
+    );
+    session.currentQuestion = nextQuestion;
+
+    res.json({
+      evaluation: evaluationResult,
+      nextQuestion,
+      audio: speechBuffer.toString('base64')
+    });
+  } catch (error) {
+    console.error("[DEBUG] Answer evaluation error:", error);
+    res.status(500).json({
+      error: "Failed to evaluate answer",
       details: error instanceof Error ? error.message : String(error)
     });
   }
