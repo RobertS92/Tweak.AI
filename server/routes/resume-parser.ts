@@ -73,6 +73,19 @@ async function parseResume(content: string) {
   },
   "sections": [
     {
+      "id": "personal-information",
+      "title": "Personal Information",
+      "fields": {
+        "name": "Full name",
+        "email": "Email address",
+        "phone": "Phone number",
+        "location": "City, State",
+        "website": "Website URL",
+        "linkedin": "LinkedIn URL",
+        "objective": "Career objective"
+      }
+    },
+    {
       "id": "professional-summary",
       "title": "Professional Summary",
       "content": "Summary text"
@@ -130,7 +143,8 @@ IMPORTANT:
 3. Always include all sections even if empty
 4. Format dates consistently as YYYY-MM
 5. Parse skills into technical and soft skills categories
-6. Keep section IDs exactly as shown for frontend compatibility`;
+6. Keep section IDs exactly as shown for frontend compatibility
+7. Add personal information both in personalInfo and in sections array with id "personal-information"`;
 
   const response = await openai.chat.completions.create({
     model: "gpt-4",
@@ -161,11 +175,28 @@ IMPORTANT:
       console.log(`[DEBUG] ${field}: ${value ? '✓ Found' : '✗ Empty'} ${value ? `(${value})` : ''}`);
     });
 
+    // Ensure personal-information section exists in sections array
+    if (!parsedData.sections.find(s => s.id === 'personal-information')) {
+      parsedData.sections.unshift({
+        id: 'personal-information',
+        title: 'Personal Information',
+        fields: { ...personalInfo }
+      });
+      console.log("[DEBUG] Added personal-information section to sections array");
+    }
+
     // Debug Sections
     console.log("\n[DEBUG] Sections Parsing:");
     parsedData.sections.forEach(section => {
       console.log(`\n[DEBUG] Section: ${section.id}`);
       console.log(`[DEBUG] Title: ${section.title}`);
+
+      if (section.fields) {
+        console.log("[DEBUG] Fields:");
+        Object.entries(section.fields).forEach(([field, value]) => {
+          console.log(`[DEBUG]   ${field}: ${value ? '✓' : '✗'} ${value || ''}`);
+        });
+      }
 
       if (section.content) {
         console.log(`[DEBUG] Content: ✓ Found (${section.content.length} chars)`);
