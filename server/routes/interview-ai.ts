@@ -31,7 +31,7 @@ router.post("/interview/analyze", async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `You are an expert interview preparation assistant. Analyze job descriptions and extract key information. Return response as JSON with:
+          content: `You are an expert technical interviewer. Analyze job descriptions and create a comprehensive interview strategy. Return response as JSON with:
 {
   "roleAnalysis": {
     "title": "Job title",
@@ -49,20 +49,17 @@ router.post("/interview/analyze", async (req, res) => {
     "behavioral": ["topic1", "topic2"],
     "domain": ["topic1", "topic2"]
   },
-  "interviewStructure": {
-    "rounds": [
-      {
-        "type": "Technical/Behavioral/System Design",
-        "focus": "Main focus areas",
-        "duration": "Suggested duration"
-      }
-    ]
+  "questionStrategy": {
+    "introduction": "Opening statement",
+    "technicalDepth": "How deep to go technically",
+    "focusAreas": ["area1", "area2"],
+    "redFlags": ["flag1", "flag2"]
   }
 }`
         },
         {
           role: "user",
-          content: `Analyze this job description and provide structured interview preparation guidance:\n\n${jobDescription}`
+          content: `Analyze this job description and create a comprehensive interview strategy:\n\n${jobDescription}`
         }
       ],
       temperature: 0.7
@@ -82,7 +79,7 @@ router.post("/interview/analyze", async (req, res) => {
 router.post("/interview/start", async (req, res) => {
   try {
     console.log("[DEBUG] Starting interview session setup");
-    const { jobDescription, mode = "technical" } = req.body;
+    const { jobDescription } = req.body;
 
     if (!jobDescription) {
       return res.status(400).json({
@@ -91,7 +88,7 @@ router.post("/interview/start", async (req, res) => {
       });
     }
 
-    console.log("[DEBUG] Creating interview plan for mode:", mode);
+    console.log("[DEBUG] Creating interview plan");
 
     // Generate initial interview context
     const completion = await openai.chat.completions.create({
@@ -99,18 +96,18 @@ router.post("/interview/start", async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `You are an experienced technical interviewer. Create an interview plan with:
-1. Initial greeting and role introduction
-2. Structured ${mode} questions based on job requirements
-3. Follow-up topics to explore
-4. Evaluation criteria for responses
-5. Areas to probe deeper based on candidate answers
+          content: `You are an experienced technical interviewer. Create a natural, conversational interview opening that:
+1. Introduces yourself briefly
+2. Makes the candidate comfortable
+3. Sets expectations for the interview
+4. Asks an engaging first question
 
-Format your response to be clear and engaging. Include specific questions and topics to discuss.`
+Keep your response conversational and natural, as it will be spoken aloud.
+Focus on building rapport while staying professional.`
         },
         {
           role: "user",
-          content: `Job Description: ${jobDescription}\n\nPrepare an interview plan and initial question.`
+          content: `Start an interview for this job description, introducing yourself and asking the first question:\n\n${jobDescription}`
         }
       ],
       temperature: 0.7
@@ -122,9 +119,9 @@ Format your response to be clear and engaging. Include specific questions and to
     // Store interview context
     interviewSessions.set(sessionId, {
       jobDescription,
-      mode,
       currentQuestion: response,
-      history: [{ role: "interviewer", content: response }]
+      history: [{ role: "interviewer", content: response }],
+      analysis: null
     });
 
     console.log("[DEBUG] Interview session created:", sessionId);
@@ -171,28 +168,26 @@ router.post("/interview/respond", async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `You are conducting a ${session.mode} interview. For each response:
-1. Evaluate answer quality and completeness
-2. Identify areas for improvement
-3. Generate relevant follow-up questions
-4. Provide constructive feedback
-5. Track key points covered vs. missing
+          content: `You are conducting a natural, conversational technical interview. For each candidate response:
+1. Listen actively and acknowledge their response
+2. Provide subtle, conversational feedback
+3. Ask relevant follow-up questions
+4. Keep the conversation flowing naturally
 
-Format your response with clear sections:
-• Feedback on previous answer
-• Follow-up question
-• Areas to explore further`
+Format your response conversationally, as it will be spoken aloud.
+Guide the conversation while keeping it natural and engaging.
+Focus on exploring the candidate's experience and knowledge.`
         },
         {
           role: "user",
           content: `Job Description: ${session.jobDescription}
-Interview History: ${JSON.stringify(session.history)}
+Previous Conversation: ${JSON.stringify(session.history)}
 Latest Answer: ${answer}
 
-Provide feedback and a follow-up question.`
+Generate a natural follow-up response and question.`
         }
       ],
-      temperature: 0.7
+      temperature: 0.8
     });
 
     const response = completion.choices[0].message.content;

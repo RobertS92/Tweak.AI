@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Mic, MicOff, Send } from "lucide-react";
+import { Mic, MicOff, Play, Square } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function InterviewPrep() {
@@ -11,16 +10,26 @@ export default function InterviewPrep() {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [jobDescription, setJobDescription] = useState("");
-  const [companyName, setCompanyName] = useState("");
   const [sessionId, setSessionId] = useState<string>("");
   const [currentQuestion, setCurrentQuestion] = useState("");
-  const [feedback, setFeedback] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [interviewStarted, setInterviewStarted] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   // Initialize speech recognition
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRecognition();
+
+  // Initialize speech synthesis
+  const synth = window.speechSynthesis;
+
+  useEffect(() => {
+    // Reset recognition and synthesis on unmount
+    return () => {
+      recognition.stop();
+      synth.cancel();
+    };
+  }, []);
 
   recognition.continuous = true;
   recognition.interimResults = true;
@@ -41,8 +50,28 @@ export default function InterviewPrep() {
     stopRecording();
   };
 
+  recognition.onend = () => {
+    // Auto-submit when user stops speaking
+    if (transcript.trim()) {
+      submitAnswer();
+    }
+  };
+
+  const speakText = (text: string) => {
+    return new Promise((resolve) => {
+      setIsSpeaking(true);
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        resolve(true);
+      };
+      synth.speak(utterance);
+    });
+  };
+
   const startRecording = () => {
     setIsRecording(true);
+    setTranscript("");
     recognition.start();
   };
 
@@ -52,10 +81,10 @@ export default function InterviewPrep() {
   };
 
   const startInterview = async () => {
-    if (!jobDescription || !companyName) {
+    if (!jobDescription) {
       toast({
         title: "Missing Information",
-        description: "Please provide both job description and company name.",
+        description: "Please provide the job description.",
         variant: "destructive"
       });
       return;
@@ -70,10 +99,7 @@ export default function InterviewPrep() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          jobDescription,
-          companyName
-        }),
+        body: JSON.stringify({ jobDescription }),
       });
 
       if (!analysisResponse.ok) {
@@ -89,10 +115,7 @@ export default function InterviewPrep() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          jobDescription,
-          companyName
-        }),
+        body: JSON.stringify({ jobDescription }),
       });
 
       if (!response.ok) {
@@ -105,9 +128,12 @@ export default function InterviewPrep() {
       setInterviewStarted(true);
       setTranscript("");
 
+      // Speak the initial question
+      await speakText(data.question);
+
       toast({
         title: "Interview Started",
-        description: "The AI interviewer will now ask you questions. Click the microphone to start answering.",
+        description: "The AI interviewer will now ask you questions. Speak naturally to respond.",
       });
     } catch (error) {
       toast({
@@ -122,11 +148,6 @@ export default function InterviewPrep() {
 
   const submitAnswer = async () => {
     if (!transcript.trim()) {
-      toast({
-        title: "No Answer",
-        description: "Please provide an answer before submitting.",
-        variant: "destructive"
-      });
       return;
     }
 
@@ -149,6 +170,9 @@ export default function InterviewPrep() {
       const data = await response.json();
       setCurrentQuestion(data.feedback);
       setTranscript("");
+
+      // Speak the follow-up question
+      await speakText(data.feedback);
     } catch (error) {
       toast({
         title: "Error",
@@ -161,46 +185,35 @@ export default function InterviewPrep() {
   return (
     <div className="container py-6 max-w-[1400px] mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">AI Interview Preparation</h1>
+        <h1 className="text-2xl font-bold">AI Interview Practice</h1>
         <p className="text-muted-foreground mt-2">
-          Practice your interview skills with our AI interviewer. Speak naturally and get instant feedback.
+          Have a natural conversation with our AI interviewer. Just paste the job description and start speaking.
         </p>
       </div>
 
       <div className="grid gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Interview Setup</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Company Name</label>
-              <Input
-                placeholder="Enter company name"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                disabled={interviewStarted}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Job Description</label>
-              <Textarea
-                placeholder="Paste the job description here"
-                value={jobDescription}
-                onChange={(e) => setJobDescription(e.target.value)}
-                className="min-h-[200px]"
-                disabled={interviewStarted}
-              />
-            </div>
-            {!interviewStarted && (
+        {!interviewStarted ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Interview Setup</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Job Description</label>
+                <Textarea
+                  placeholder="Paste the job description here"
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  className="min-h-[200px]"
+                  disabled={interviewStarted}
+                />
+              </div>
               <Button onClick={startInterview} disabled={isAnalyzing}>
                 {isAnalyzing ? "Analyzing..." : "Start Interview"}
               </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        {interviewStarted && (
+            </CardContent>
+          </Card>
+        ) : (
           <Card>
             <CardHeader>
               <CardTitle>Interview Session</CardTitle>
@@ -208,8 +221,22 @@ export default function InterviewPrep() {
             <CardContent className="space-y-4">
               {currentQuestion && (
                 <div className="bg-muted p-4 rounded-lg">
-                  <h3 className="font-medium mb-2">Interviewer:</h3>
-                  <p className="whitespace-pre-wrap">{currentQuestion}</p>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-medium mb-2">Interviewer:</h3>
+                      <p className="whitespace-pre-wrap">{currentQuestion}</p>
+                    </div>
+                    {!isRecording && !isSpeaking && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => speakText(currentQuestion)}
+                        disabled={isSpeaking}
+                      >
+                        <Play className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -217,26 +244,19 @@ export default function InterviewPrep() {
                 {transcript || "Your answer will appear here as you speak..."}
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex justify-center">
                 <Button
                   variant={isRecording ? "destructive" : "default"}
                   onClick={isRecording ? stopRecording : startRecording}
+                  disabled={isSpeaking}
+                  size="lg"
+                  className="rounded-full h-16 w-16 p-0"
                 >
                   {isRecording ? (
-                    <>
-                      <MicOff className="w-4 h-4 mr-2" />
-                      Stop Recording
-                    </>
+                    <Square className="h-6 w-6" />
                   ) : (
-                    <>
-                      <Mic className="w-4 h-4 mr-2" />
-                      Start Recording
-                    </>
+                    <Mic className="h-6 w-6" />
                   )}
-                </Button>
-                <Button onClick={submitAnswer} disabled={!transcript.trim()}>
-                  <Send className="w-4 h-4 mr-2" />
-                  Submit Answer
                 </Button>
               </div>
             </CardContent>
