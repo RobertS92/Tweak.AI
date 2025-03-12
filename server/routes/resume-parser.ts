@@ -10,7 +10,6 @@ dotenv.config();
 
 const router = Router();
 
-// Configure multer for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
@@ -34,7 +33,6 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Helper function to chunk text while preserving structure
 function chunkText(text: string, maxLength: number = 3000): string[] {
   const sections = text.split(/\n\n+/);
   const chunks: string[] = [];
@@ -56,14 +54,14 @@ function chunkText(text: string, maxLength: number = 3000): string[] {
   return chunks;
 }
 
-// Main resume parsing endpoint
 router.post("/resume-parser", upload.single("file"), async (req, res) => {
   try {
+    console.log("[DEBUG] Starting resume parsing process...");
+
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
-    console.log("[DEBUG] Starting resume parsing process...");
     console.log("[DEBUG] File info:", {
       filename: req.file.originalname,
       mimetype: req.file.mimetype,
@@ -75,6 +73,8 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
       const buffer = req.file.buffer;
       const fileType = await fileTypeFromBuffer(buffer);
       const mime = fileType?.mime || req.file.mimetype;
+
+      console.log("[DEBUG] Detected file type:", mime);
 
       if (mime === "application/pdf") {
         console.log("[DEBUG] Processing PDF file...");
@@ -89,11 +89,10 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
         fileContent = buffer.toString('utf8');
       }
 
-      // Clean up the extracted text while preserving structure
       fileContent = fileContent
-        .replace(/[\r\n]{3,}/g, '\n\n')  // Normalize multiple line breaks
-        .replace(/[^\x20-\x7E\n]/g, '')  // Remove non-printable characters
-        .replace(/[ \t]+/g, ' ')         // Normalize spaces
+        .replace(/[\r\n]{3,}/g, '\n\n')
+        .replace(/[^\x20-\x7E\n]/g, '')
+        .replace(/[ \t]+/g, ' ')
         .trim();
 
       console.log("[DEBUG] Extracted text length:", fileContent.length);
@@ -101,16 +100,14 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
 
     } catch (error) {
       console.error("[DEBUG] Text extraction error:", error);
-      throw new Error(`Failed to extract text: ${error.message}`);
+      throw new Error(`Failed to extract text: ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    // Split into manageable chunks
     const chunks = chunkText(fileContent);
     console.log("[DEBUG] Split content into", chunks.length, "chunks");
 
     let parsedData;
     try {
-      // Process first chunk to get structure
       const firstChunkResponse = await openai.chat.completions.create({
         model: "gpt-4",
         messages: [
@@ -122,17 +119,12 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
 3. Education history (must include degrees, institutions, dates)
 4. Skills and other relevant sections
 
-If the information is partial or unclear:
-- Create entries with available data
-- Use empty strings for missing fields
-- Maintain consistent structure
-
-Format all dates as strings in a consistent format.
-Return complete JSON structure even if sections are empty.`
+Format response as a JSON object with exact structure provided in the user message.
+Return ONLY the JSON object, no additional text.`
           },
           {
             role: "user",
-            content: `Parse this resume into the exact JSON structure below. Pay special attention to work experience and education sections:
+            content: `Parse this resume text into this exact JSON structure:
 
 {
   "name": "",
@@ -151,11 +143,11 @@ Return complete JSON structure even if sections are empty.`
       "title": "Work Experience",
       "items": [
         {
-          "title": "",      // Job title
-          "subtitle": "",   // Company name
-          "date": "",      // Employment dates
-          "description": "", // Role description
-          "bullets": []    // Achievement bullets
+          "title": "",
+          "subtitle": "",
+          "date": "",
+          "description": "",
+          "bullets": []
         }
       ]
     },
@@ -164,11 +156,11 @@ Return complete JSON structure even if sections are empty.`
       "title": "Education",
       "items": [
         {
-          "title": "",      // Degree/Program
-          "subtitle": "",   // Institution
-          "date": "",      // Dates
-          "description": "", // Additional details
-          "bullets": []    // Achievements/coursework
+          "title": "",
+          "subtitle": "",
+          "date": "",
+          "description": "",
+          "bullets": []
         }
       ]
     },
@@ -176,16 +168,6 @@ Return complete JSON structure even if sections are empty.`
       "id": "skills",
       "title": "Skills",
       "content": ""
-    },
-    {
-      "id": "projects",
-      "title": "Projects",
-      "items": []
-    },
-    {
-      "id": "certifications",
-      "title": "Certifications",
-      "items": []
     }
   ]
 }
@@ -195,13 +177,20 @@ ${chunks[0]}`
           }
         ],
         temperature: 0.1,
-        response_format: { type: "json_object" }
       });
 
-      parsedData = JSON.parse(firstChunkResponse.choices[0].message.content);
-      console.log("[DEBUG] Successfully parsed first chunk");
+      if (!firstChunkResponse.choices[0].message.content) {
+        throw new Error("No content in OpenAI response");
+      }
 
-      // Process remaining chunks
+      try {
+        parsedData = JSON.parse(firstChunkResponse.choices[0].message.content);
+      } catch (parseError) {
+        console.error("[DEBUG] JSON parse error:", parseError);
+        console.log("[DEBUG] Raw response:", firstChunkResponse.choices[0].message.content);
+        throw new Error("Failed to parse OpenAI response as JSON");
+      }
+
       if (chunks.length > 1) {
         for (let i = 1; i < chunks.length; i++) {
           console.log(`[DEBUG] Processing chunk ${i + 1} of ${chunks.length}`);
@@ -210,92 +199,65 @@ ${chunks[0]}`
             messages: [
               {
                 role: "system",
-                content: "Extract additional entries from this resume chunk, focusing on work experience and education sections. Add them to the existing structure."
+                content: "Extract additional work experience and education entries from this resume chunk, maintaining the same JSON structure. Return ONLY the JSON object."
               },
               {
                 role: "user",
-                content: `Parse this additional chunk:\n\n${chunks[i]}`
+                content: `Additional resume text:\n${chunks[i]}`
               }
             ],
             temperature: 0.1,
-            response_format: { type: "json_object" }
           });
 
-          const chunkData = JSON.parse(chunkResponse.choices[0].message.content);
+          if (!chunkResponse.choices[0].message.content) {
+            console.warn(`[DEBUG] Empty response for chunk ${i + 1}`);
+            continue;
+          }
 
-          // Merge additional items into existing sections
-          for (const section of parsedData.sections) {
-            const additionalSection = chunkData.sections?.find(s => s.id === section.id);
-            if (additionalSection) {
-              if (section.items && additionalSection.items) {
-                section.items.push(...additionalSection.items);
-              } else if (additionalSection.content && !section.content) {
+          try {
+            const chunkData = JSON.parse(chunkResponse.choices[0].message.content);
+            for (const section of parsedData.sections) {
+              const additionalSection = chunkData.sections?.find((s: any) => s.id === section.id);
+              if (additionalSection?.items?.length) {
+                section.items = [...(section.items || []), ...additionalSection.items];
+              } else if (additionalSection?.content && !section.content) {
                 section.content = additionalSection.content;
               }
             }
+          } catch (parseError) {
+            console.error(`[DEBUG] Failed to parse chunk ${i + 1}:`, parseError);
           }
-        }
-      }
-
-      // Ensure required sections exist
-      const requiredSections = ['experience', 'education'];
-      for (const sectionId of requiredSections) {
-        if (!parsedData.sections.find(s => s.id === sectionId)) {
-          parsedData.sections.push({
-            id: sectionId,
-            title: sectionId === 'experience' ? 'Work Experience' : 'Education',
-            items: []
-          });
         }
       }
 
     } catch (error) {
       console.error("[DEBUG] OpenAI parsing error:", error);
-      throw new Error("Failed to parse resume content: " + error.message);
+      throw new Error(`Failed to parse resume: ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    // Sanitize and validate the parsed data
-    const sanitizedData = {
-      name: parsedData.name || "",
-      email: parsedData.email || "",
-      phone: parsedData.phone || "",
-      location: parsedData.location || "",
-      linkedin: parsedData.linkedin || "",
-      sections: parsedData.sections.map(section => ({
-        id: section.id || "",
-        title: section.title || "",
-        content: section.content || "",
-        items: section.items?.map(item => ({
-          title: item.title || "",
-          subtitle: item.subtitle || "",
-          date: item.date || "",
-          description: item.description || "",
-          bullets: Array.isArray(item.bullets) ?
-            item.bullets.filter(bullet => bullet && bullet.trim()) : []
-        }))
-      }))
-    };
+    // Ensure all required sections exist with default values
+    const requiredSections = ['summary', 'experience', 'education', 'skills'];
+    for (const sectionId of requiredSections) {
+      if (!parsedData.sections.find((s: any) => s.id === sectionId)) {
+        parsedData.sections.push({
+          id: sectionId,
+          title: sectionId.charAt(0).toUpperCase() + sectionId.slice(1),
+          content: '',
+          items: []
+        });
+      }
+    }
 
-    console.log("[DEBUG] Resume parsed successfully. Structure:", {
-      personalInfo: {
-        name: sanitizedData.name,
-        email: sanitizedData.email
-      },
-      sections: sanitizedData.sections.map(s => ({
-        id: s.id,
-        itemCount: s.items?.length || 0,
-        hasContent: !!s.content
-      }))
-    });
+    console.log("[DEBUG] Successfully parsed resume");
+    res.json(parsedData);
 
-    return res.json(sanitizedData);
-  } catch (err) {
-    console.error("[DEBUG] Resume parsing error:", err);
-    return res.status(500).json({
+  } catch (error) {
+    console.error("[DEBUG] Resume parsing error:", error);
+    res.status(500).json({
       error: "Failed to parse resume",
-      details: err instanceof Error ? err.message : String(err)
+      details: error instanceof Error ? error.message : String(error)
     });
   }
 });
 
-export { router as default };
+export default router;
