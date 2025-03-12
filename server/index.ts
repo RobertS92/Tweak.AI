@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import resumeParserRouter from "./routes/resume-parser";
 import resumeAiAssistant from "./routes/resume-ai-assistant";
+import interviewAiRouter from "./routes/interview-ai";
 
 // Start debug logging
 log("[DEBUG] Starting server initialization...");
@@ -44,14 +45,20 @@ app.use((req, res, next) => {
   next();
 });
 
+// Add early ping endpoint for health checks
+app.get("/api/ping", (_, res) => {
+  res.json({ status: "ok", time: new Date().toISOString() });
+});
+
 const startServer = async (port: number): Promise<void> => {
   try {
     log(`[DEBUG] Attempting to start server on port ${port}...`);
 
     // Register API routes first, before Vite/static middleware
-    log("[DEBUG] Registering resume routes...");
+    log("[DEBUG] Registering routes...");
     app.use("/api", resumeParserRouter);
     app.use("/api", resumeAiAssistant);
+    app.use("/api", interviewAiRouter);
 
     // Then register other routes
     const server = await registerRoutes(app);
