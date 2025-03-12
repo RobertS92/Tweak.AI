@@ -77,18 +77,28 @@ router.post("/interview/analyze", async (req, res) => {
 });
 
 async function generateSpeech(text: string): Promise<Buffer> {
-  console.log("[DEBUG] Generating speech for text length:", text.length);
+  try {
+    console.log("[DEBUG] Starting speech generation");
+    console.log("[DEBUG] Text to convert:", text.substring(0, 100) + "...");
+    console.log("[DEBUG] Text length:", text.length);
 
-  const mp3Response = await openai.audio.speech.create({
-    model: "tts-1",
-    voice: "echo",
-    input: text,
-  });
+    const mp3Response = await openai.audio.speech.create({
+      model: "tts-1",
+      voice: "echo",
+      input: text,
+    });
 
-  const buffer = Buffer.from(await mp3Response.arrayBuffer());
-  console.log("[DEBUG] Generated speech buffer size:", buffer.length);
+    console.log("[DEBUG] Speech generation request successful");
 
-  return buffer;
+    const buffer = Buffer.from(await mp3Response.arrayBuffer());
+    console.log("[DEBUG] Generated speech buffer size:", buffer.length);
+    console.log("[DEBUG] Speech generation completed successfully");
+
+    return buffer;
+  } catch (error) {
+    console.error("[DEBUG] Speech generation error:", error);
+    throw new Error(`Failed to generate speech: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 router.post("/interview/start", async (req, res) => {
@@ -129,10 +139,15 @@ Keep the response under 60 seconds when spoken.`
       temperature: 0.7
     });
 
+    console.log("[DEBUG] Generated initial interview response");
     const response = completion.choices[0].message.content;
-    const speechBuffer = await generateSpeech(response);
+    console.log("[DEBUG] Response length:", response?.length);
+
+    console.log("[DEBUG] Generating speech for initial response");
+    const speechBuffer = await generateSpeech(response || "");
 
     const sessionId = Date.now().toString();
+    console.log("[DEBUG] Created session ID:", sessionId);
 
     // Store interview context
     interviewSessions.set(sessionId, {
@@ -142,7 +157,9 @@ Keep the response under 60 seconds when spoken.`
       analysis: null
     });
 
-    console.log("[DEBUG] Interview session created:", sessionId);
+    console.log("[DEBUG] Interview session created");
+    console.log("[DEBUG] Audio buffer size:", speechBuffer.length);
+
     res.json({
       sessionId,
       question: response,
@@ -150,6 +167,7 @@ Keep the response under 60 seconds when spoken.`
     });
   } catch (error) {
     console.error("[DEBUG] Interview start error:", error);
+    console.error("[DEBUG] Error details:", error instanceof Error ? error.stack : String(error));
     res.status(500).json({
       error: "Failed to start interview",
       details: error instanceof Error ? error.message : String(error)
@@ -159,7 +177,13 @@ Keep the response under 60 seconds when spoken.`
 
 router.post("/interview/evaluate", async (req, res) => {
   try {
+    console.log("[DEBUG] Starting answer evaluation");
     const { sessionId, answer } = req.body;
+
+    console.log("[DEBUG] Evaluation request details:", {
+      sessionId,
+      answerLength: answer?.length
+    });
 
     if (!sessionId || !answer) {
       return res.status(400).json({
@@ -170,11 +194,17 @@ router.post("/interview/evaluate", async (req, res) => {
 
     const session = interviewSessions.get(sessionId);
     if (!session) {
+      console.log("[DEBUG] Session not found:", sessionId);
       return res.status(404).json({
         error: "Session not found",
         details: "Interview session has expired or is invalid"
       });
     }
+
+    console.log("[DEBUG] Retrieved session:", {
+      historyLength: session.history.length,
+      currentQuestion: session.currentQuestion?.substring(0, 50) + "..."
+    });
 
     // Evaluate the answer
     const evaluation = await openai.chat.completions.create({
@@ -200,14 +230,24 @@ router.post("/interview/evaluate", async (req, res) => {
       temperature: 0.7
     });
 
+    console.log("[DEBUG] Got evaluation response");
     const evaluationResult = JSON.parse(evaluation.choices[0].message.content);
+    console.log("[DEBUG] Evaluation results:", {
+      completeness: evaluationResult.completeness,
+      clarity: evaluationResult.clarity,
+      technicalAccuracy: evaluationResult.technicalAccuracy
+    });
 
     // Generate appropriate follow-up or next question
     const nextQuestion = evaluationResult.completeness < 0.7 ? 
       evaluationResult.suggestedFollowUp : 
       evaluationResult.nextQuestion;
 
+    console.log("[DEBUG] Selected next question:", nextQuestion?.substring(0, 50) + "...");
+    console.log("[DEBUG] Generating speech for next question");
+
     const speechBuffer = await generateSpeech(nextQuestion);
+    console.log("[DEBUG] Generated speech buffer size:", speechBuffer.length);
 
     // Update session history
     session.history.push(
@@ -216,6 +256,8 @@ router.post("/interview/evaluate", async (req, res) => {
     );
     session.currentQuestion = nextQuestion;
 
+    console.log("[DEBUG] Updated session history. New length:", session.history.length);
+
     res.json({
       evaluation: evaluationResult,
       nextQuestion,
@@ -223,6 +265,7 @@ router.post("/interview/evaluate", async (req, res) => {
     });
   } catch (error) {
     console.error("[DEBUG] Answer evaluation error:", error);
+    console.error("[DEBUG] Error stack:", error instanceof Error ? error.stack : "No stack trace");
     res.status(500).json({
       error: "Failed to evaluate answer",
       details: error instanceof Error ? error.message : String(error)
