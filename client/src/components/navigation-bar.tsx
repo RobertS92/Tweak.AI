@@ -20,7 +20,7 @@ export default function NavigationBar() {
                 Dashboard
               </Button>
             </Link>
-            <Link href="/editor">
+            <Link href="/editor/new">
               <Button variant="ghost" className="flex items-center">
                 <FileEdit className="mr-2 h-4 w-4" />
                 Tweak Resume
@@ -32,10 +32,10 @@ export default function NavigationBar() {
                 Resume Builder
               </Button>
             </Link>
-            <Link href="/job-search">
+            <Link href="/interview-prep">
               <Button variant="ghost" className="flex items-center">
                 <Briefcase className="mr-2 h-4 w-4" />
-                Job Search
+                Interview Prep
               </Button>
             </Link>
           </nav>
