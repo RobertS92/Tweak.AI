@@ -12,6 +12,35 @@ const openai = new OpenAI({
 // Store interview contexts
 const interviewSessions = new Map();
 
+async function generateSpeech(text: string): Promise<Buffer> {
+  try {
+    console.log("[DEBUG] Starting speech generation");
+    if (!text || text.trim().length === 0) {
+      throw new Error("Cannot generate speech from empty text");
+    }
+
+    console.log("[DEBUG] Text to convert:", text.substring(0, 100) + "...");
+    console.log("[DEBUG] Text length:", text.length);
+
+    const mp3Response = await openai.audio.speech.create({
+      model: "tts-1",
+      voice: "echo",
+      input: text.trim(),
+    });
+
+    console.log("[DEBUG] Speech generation request successful");
+
+    const buffer = Buffer.from(await mp3Response.arrayBuffer());
+    console.log("[DEBUG] Generated speech buffer size:", buffer.length);
+    console.log("[DEBUG] Speech generation completed successfully");
+
+    return buffer;
+  } catch (error) {
+    console.error("[DEBUG] Speech generation error:", error);
+    throw new Error(`Failed to generate speech: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 router.post("/interview/analyze", async (req, res) => {
   try {
     console.log("[DEBUG] Starting job description analysis");
@@ -76,30 +105,6 @@ router.post("/interview/analyze", async (req, res) => {
   }
 });
 
-async function generateSpeech(text: string): Promise<Buffer> {
-  try {
-    console.log("[DEBUG] Starting speech generation");
-    console.log("[DEBUG] Text to convert:", text.substring(0, 100) + "...");
-    console.log("[DEBUG] Text length:", text.length);
-
-    const mp3Response = await openai.audio.speech.create({
-      model: "tts-1",
-      voice: "echo",
-      input: text,
-    });
-
-    console.log("[DEBUG] Speech generation request successful");
-
-    const buffer = Buffer.from(await mp3Response.arrayBuffer());
-    console.log("[DEBUG] Generated speech buffer size:", buffer.length);
-    console.log("[DEBUG] Speech generation completed successfully");
-
-    return buffer;
-  } catch (error) {
-    console.error("[DEBUG] Speech generation error:", error);
-    throw new Error(`Failed to generate speech: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
 
 router.post("/interview/start", async (req, res) => {
   try {
@@ -219,7 +224,7 @@ router.post("/interview/evaluate", async (req, res) => {
   "technicalAccuracy": number (0-1),
   "missingPoints": ["point1", "point2"],
   "suggestedFollowUp": "follow-up question if answer is incomplete",
-  "nextQuestion": "next question if answer is complete"
+  "nextQuestion": "next main question if answer is complete and satisfactory"
 }`
         },
         {
@@ -238,10 +243,15 @@ router.post("/interview/evaluate", async (req, res) => {
       technicalAccuracy: evaluationResult.technicalAccuracy
     });
 
-    // Generate appropriate follow-up or next question
-    const nextQuestion = evaluationResult.completeness < 0.7 ? 
-      evaluationResult.suggestedFollowUp : 
-      evaluationResult.nextQuestion;
+    // Determine next question based on evaluation
+    let nextQuestion = evaluationResult.completeness < 0.7 
+      ? evaluationResult.suggestedFollowUp 
+      : evaluationResult.nextQuestion;
+
+    // Ensure we have a valid question
+    if (!nextQuestion || nextQuestion.trim().length === 0) {
+      nextQuestion = "Thank you for your answer. Let's move on to the next question. Could you tell me about a challenging project you've worked on recently?";
+    }
 
     console.log("[DEBUG] Selected next question:", nextQuestion?.substring(0, 50) + "...");
     console.log("[DEBUG] Generating speech for next question");

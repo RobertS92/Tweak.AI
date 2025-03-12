@@ -1,0 +1,51 @@
+ing should have at least 1 character', 'input': '', 'ctx': {'min_length': 1}}]
+    at Function.generate (/home/runner/workspace/node_modules/openai/src/error.ts:72:14)
+    at OpenAI.makeStatusError (/home/runner/workspace/node_modules/openai/src/core.ts:443:21)
+    at OpenAI.makeRequest (/home/runner/workspace/node_modules/openai/src/core.ts:507:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async generateSpeech (/home/runner/workspace/server/routes/interview-ai.ts:85:25)
+    at async <anonymous> (/home/runner/workspace/server/routes/interview-ai.ts:249:26) {
+  status: 400,
+  headers: {
+    'access-control-expose-headers': 'X-Request-ID',
+    'alt-svc': 'h3=":443"; ma=86400',
+    'cf-cache-status': 'DYNAMIC',
+    'cf-ray': '91f0ef83eca3df25-SEA',
+    connection: 'keep-alive',
+    'content-length': '257',
+    'content-type': 'application/json',
+    date: 'Wed, 12 Mar 2025 05:36:44 GMT',
+    'openai-organization': 'user-84emsomucedptm9djwfsd3rs',
+    'openai-processing-ms': '144',
+    'openai-version': '2020-10-01',
+    server: 'cloudflare',
+    'set-cookie': '__cf_bm=y2n7.uH3v9IByykBw1hqps83Uh9SjHT.W0djMbK0n3c-1741757804-1.0.1.1-jeCEYr8JTrgzXYgIQXnkv7hPVgS8kKt9eCQS3Nrw7LmAD033cEhV_O3fJL79Xk5sKP5Yvz2euDpWVNFfbKwjhIaUztBqdJEP6sgOhPTv7rc; path=/; expires=Wed, 12-Mar-25 06:06:44 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None, _cfuvid=aj4mjq5BKA6t3k41McLB.jYIG.kfbADjpFVV5yMk7IE-1741757804403-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None',
+    'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+    via: 'envoy-router-656974f9c8-7t8r5',
+    'x-content-type-options': 'nosniff',
+    'x-envoy-upstream-service-time': '119',
+    'x-ratelimit-limit-requests': '5000',
+    'x-ratelimit-remaining-requests': '4999',
+    'x-ratelimit-reset-requests': '12ms',
+    'x-request-id': 'req_cb287e1c77c3215e5718881ec1e185cb'
+  },
+  request_id: 'req_cb287e1c77c3215e5718881ec1e185cb',
+  error: {
+    message: "[{'type': 'string_too_short', 'loc': ('body', 'input'), 'msg': 'String should have at least 1 character', 'input': '', 'ctx': {'min_length': 1}}]",
+    type: 'invalid_request_error',
+    param: null,
+    code: null
+  },
+  code: null,
+  param: null,
+  type: 'invalid_request_error'
+}
+[DEBUG] Answer evaluation error: Error: Failed to generate speech: 400 [{'type': 'string_too_short', 'loc': ('body', 'input'), 'msg': 'String should have at least 1 character', 'input': '', 'ctx': {'min_length': 1}}]
+    at generateSpeech (/home/runner/workspace/server/routes/interview-ai.ts:100:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/home/runner/workspace/server/routes/interview-ai.ts:249:26)
+[DEBUG] Error stack: Error: Failed to generate speech: 400 [{'type': 'string_too_short', 'loc': ('body', 'input'), 'msg': 'String should have at least 1 character', 'input': '', 'ctx': {'min_length': 1}}]
+    at generateSpeech (/home/runner/workspace/server/routes/interview-ai.ts:100:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async <anonymous> (/home/runner/workspace/server/routes/interview-ai.ts:249:26)
+5:36:44 AM [express] POST /api/interview/evaluate 500 in 6988ms :: {"error":"Failed to evaluate answ…
