@@ -154,19 +154,63 @@ IMPORTANT:
   try {
     const parsedData = JSON.parse(response.choices[0].message.content);
 
-    // Validate parsed data
-    console.log("[DEBUG] Parsed Data Statistics:");
-    console.log("[DEBUG] Personal Info Fields:", Object.entries(parsedData.personalInfo)
-      .filter(([_, value]) => value && String(value).trim().length > 0)
-      .map(([key]) => key));
-
-    parsedData.sections.forEach(section => {
-      console.log(`[DEBUG] Section '${section.id}':`, {
-        hasContent: section.content ? "Yes" : "No",
-        items: section.items?.length || 0,
-        categories: section.categories?.length || 0
-      });
+    // Debug Personal Information
+    console.log("\n[DEBUG] Personal Information Parsing:");
+    const personalInfo = parsedData.personalInfo;
+    Object.entries(personalInfo).forEach(([field, value]) => {
+      console.log(`[DEBUG] ${field}: ${value ? '✓ Found' : '✗ Empty'} ${value ? `(${value})` : ''}`);
     });
+
+    // Debug Sections
+    console.log("\n[DEBUG] Sections Parsing:");
+    parsedData.sections.forEach(section => {
+      console.log(`\n[DEBUG] Section: ${section.id}`);
+      console.log(`[DEBUG] Title: ${section.title}`);
+
+      if (section.content) {
+        console.log(`[DEBUG] Content: ✓ Found (${section.content.length} chars)`);
+      }
+
+      if (section.items && section.items.length > 0) {
+        console.log(`[DEBUG] Items: ${section.items.length} found`);
+        section.items.forEach((item, index) => {
+          console.log(`\n[DEBUG] Item ${index + 1}:`);
+          Object.entries(item).forEach(([field, value]) => {
+            if (Array.isArray(value)) {
+              console.log(`[DEBUG]   ${field}: ${value.length} entries`);
+            } else {
+              console.log(`[DEBUG]   ${field}: ${value ? '✓' : '✗'} ${value || ''}`);
+            }
+          });
+        });
+      }
+
+      if (section.categories) {
+        console.log(`\n[DEBUG] Categories:`);
+        section.categories.forEach(category => {
+          console.log(`[DEBUG] ${category.name}: ${category.skills.length} skills`);
+          console.log(`[DEBUG] Skills: ${category.skills.join(', ')}`);
+        });
+      }
+    });
+
+    // Validate required fields
+    const missingFields = [];
+    if (!personalInfo.name) missingFields.push('name');
+    if (!personalInfo.email) missingFields.push('email');
+    if (!personalInfo.phone) missingFields.push('phone');
+
+    if (missingFields.length > 0) {
+      console.log(`\n[DEBUG] Warning: Missing required fields: ${missingFields.join(', ')}`);
+    }
+
+    // Overall statistics
+    console.log("\n[DEBUG] Parsing Statistics:");
+    console.log(`[DEBUG] Personal Info Fields: ${Object.values(personalInfo).filter(Boolean).length}/${Object.keys(personalInfo).length}`);
+    console.log(`[DEBUG] Total Sections: ${parsedData.sections.length}`);
+    console.log(`[DEBUG] Work Experience Items: ${parsedData.sections.find(s => s.id === 'work-experience')?.items?.length || 0}`);
+    console.log(`[DEBUG] Education Items: ${parsedData.sections.find(s => s.id === 'education')?.items?.length || 0}`);
+    console.log(`[DEBUG] Total Skills: ${parsedData.sections.find(s => s.id === 'skills')?.categories?.reduce((acc, cat) => acc + cat.skills.length, 0) || 0}`);
 
     return parsedData;
   } catch (error) {
@@ -181,9 +225,9 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
     console.log("[DEBUG] Starting resume parsing process");
 
     if (!req.file) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "No file uploaded",
-        details: "Please select a file to upload" 
+        details: "Please select a file to upload"
       });
     }
 
