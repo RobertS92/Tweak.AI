@@ -12,13 +12,16 @@ export default function InterviewPrep() {
   const [transcript, setTranscript] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [sessionId, setSessionId] = useState<string>("");
+  const [currentQuestion, setCurrentQuestion] = useState("");
   const [feedback, setFeedback] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [interviewStarted, setInterviewStarted] = useState(false);
 
   // Initialize speech recognition
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRecognition();
-  
+
   recognition.continuous = true;
   recognition.interimResults = true;
 
@@ -58,7 +61,29 @@ export default function InterviewPrep() {
       return;
     }
 
+    setIsAnalyzing(true);
+
     try {
+      // First analyze the job description
+      const analysisResponse = await fetch('/api/interview/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jobDescription,
+          companyName
+        }),
+      });
+
+      if (!analysisResponse.ok) {
+        throw new Error('Failed to analyze job description');
+      }
+
+      const analysisData = await analysisResponse.json();
+      console.log("[DEBUG] Job analysis:", analysisData);
+
+      // Start the interview session
       const response = await fetch('/api/interview/start', {
         method: 'POST',
         headers: {
@@ -74,8 +99,12 @@ export default function InterviewPrep() {
         throw new Error('Failed to start interview');
       }
 
+      const data = await response.json();
+      setSessionId(data.sessionId);
+      setCurrentQuestion(data.question);
       setInterviewStarted(true);
       setTranscript("");
+
       toast({
         title: "Interview Started",
         description: "The AI interviewer will now ask you questions. Click the microphone to start answering.",
@@ -86,6 +115,8 @@ export default function InterviewPrep() {
         description: "Failed to start the interview. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -100,15 +131,14 @@ export default function InterviewPrep() {
     }
 
     try {
-      const response = await fetch('/api/interview/feedback', {
+      const response = await fetch('/api/interview/respond', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          answer: transcript,
-          jobDescription,
-          companyName
+          sessionId,
+          answer: transcript
         }),
       });
 
@@ -117,7 +147,7 @@ export default function InterviewPrep() {
       }
 
       const data = await response.json();
-      setFeedback(data.feedback);
+      setCurrentQuestion(data.feedback);
       setTranscript("");
     } catch (error) {
       toast({
@@ -163,7 +193,9 @@ export default function InterviewPrep() {
               />
             </div>
             {!interviewStarted && (
-              <Button onClick={startInterview}>Start Interview</Button>
+              <Button onClick={startInterview} disabled={isAnalyzing}>
+                {isAnalyzing ? "Analyzing..." : "Start Interview"}
+              </Button>
             )}
           </CardContent>
         </Card>
@@ -174,10 +206,17 @@ export default function InterviewPrep() {
               <CardTitle>Interview Session</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {currentQuestion && (
+                <div className="bg-muted p-4 rounded-lg">
+                  <h3 className="font-medium mb-2">Interviewer:</h3>
+                  <p className="whitespace-pre-wrap">{currentQuestion}</p>
+                </div>
+              )}
+
               <div className="min-h-[100px] p-4 bg-muted rounded-lg">
                 {transcript || "Your answer will appear here as you speak..."}
               </div>
-              
+
               <div className="flex gap-4">
                 <Button
                   variant={isRecording ? "destructive" : "default"}
@@ -200,13 +239,6 @@ export default function InterviewPrep() {
                   Submit Answer
                 </Button>
               </div>
-
-              {feedback && (
-                <div className="p-4 bg-muted rounded-lg">
-                  <h3 className="font-medium mb-2">Feedback:</h3>
-                  <p className="whitespace-pre-wrap">{feedback}</p>
-                </div>
-              )}
             </CardContent>
           </Card>
         )}
