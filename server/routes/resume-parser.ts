@@ -68,7 +68,7 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
       size: req.file.size
     });
 
-    let fileContent = "";
+    let fileContent: string;
     try {
       const buffer = req.file.buffer;
       const fileType = await fileTypeFromBuffer(buffer);
@@ -114,24 +114,33 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
           {
             role: "system",
             content: `You are a resume parsing expert. Extract all information into a structured format, focusing on:
-1. Contact information (name, email, phone, location)
+1. Personal information (name, email, phone, location, website, etc.)
 2. Work experience entries (must include job titles, companies, dates)
 3. Education history (must include degrees, institutions, dates)
-4. Skills and other relevant sections
+4. Skills (both technical and soft skills)
+5. Certifications and achievements
+6. Projects (if any)
 
-Format response as a JSON object with exact structure provided in the user message.
-Return ONLY the JSON object, no additional text.`
+Parse even partial or unclear information:
+- Maintain consistent structure
+- Use empty arrays/strings for missing sections
+- Format dates consistently
+- Keep original text within sections for analysis`
           },
           {
             role: "user",
-            content: `Parse this resume text into this exact JSON structure:
+            content: `Parse this resume into the exact JSON structure below:
 
 {
-  "name": "",
-  "email": "",
-  "phone": "",
-  "location": "",
-  "linkedin": "",
+  "personalInfo": {
+    "name": "",
+    "email": "",
+    "phone": "",
+    "location": "",
+    "website": "",
+    "linkedin": "",
+    "objective": ""
+  },
   "sections": [
     {
       "id": "summary",
@@ -144,10 +153,12 @@ Return ONLY the JSON object, no additional text.`
       "items": [
         {
           "title": "",
-          "subtitle": "",
-          "date": "",
+          "company": "",
+          "location": "",
+          "startDate": "",
+          "endDate": "",
           "description": "",
-          "bullets": []
+          "achievements": []
         }
       ]
     },
@@ -156,18 +167,55 @@ Return ONLY the JSON object, no additional text.`
       "title": "Education",
       "items": [
         {
-          "title": "",
-          "subtitle": "",
-          "date": "",
-          "description": "",
-          "bullets": []
+          "degree": "",
+          "institution": "",
+          "location": "",
+          "startDate": "",
+          "endDate": "",
+          "gpa": "",
+          "courses": []
         }
       ]
     },
     {
       "id": "skills",
       "title": "Skills",
-      "content": ""
+      "categories": [
+        {
+          "name": "Technical Skills",
+          "skills": []
+        },
+        {
+          "name": "Soft Skills",
+          "skills": []
+        }
+      ]
+    },
+    {
+      "id": "certifications",
+      "title": "Certifications",
+      "items": [
+        {
+          "name": "",
+          "issuer": "",
+          "date": "",
+          "description": "",
+          "url": ""
+        }
+      ]
+    },
+    {
+      "id": "projects",
+      "title": "Projects",
+      "items": [
+        {
+          "name": "",
+          "description": "",
+          "technologies": [],
+          "url": "",
+          "date": ""
+        }
+      ]
     }
   ]
 }
@@ -199,7 +247,7 @@ ${chunks[0]}`
             messages: [
               {
                 role: "system",
-                content: "Extract additional work experience and education entries from this resume chunk, maintaining the same JSON structure. Return ONLY the JSON object."
+                content: "Extract additional information from this resume chunk, maintaining the same JSON structure. Pay special attention to work experience, education, and certifications."
               },
               {
                 role: "user",
@@ -216,6 +264,7 @@ ${chunks[0]}`
 
           try {
             const chunkData = JSON.parse(chunkResponse.choices[0].message.content);
+            // Merge section data
             for (const section of parsedData.sections) {
               const additionalSection = chunkData.sections?.find((s: any) => s.id === section.id);
               if (additionalSection?.items?.length) {
@@ -230,22 +279,37 @@ ${chunks[0]}`
         }
       }
 
+      // Analyze sections for suggestions
+      const sectionAnalysis = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert resume reviewer. Analyze each section and provide specific, actionable improvements. Format suggestions in a clear, readable way with bullet points and examples where relevant.
+
+Focus on:
+- Content completeness
+- Impact and achievement focus
+- Modern resume best practices
+- ATS optimization
+- Industry-specific improvements`
+          },
+          {
+            role: "user",
+            content: `Analyze this resume data and provide section-by-section suggestions:
+${JSON.stringify(parsedData, null, 2)}`
+          }
+        ],
+        temperature: 0.7,
+      });
+
+      if (sectionAnalysis.choices[0].message.content) {
+        parsedData.analysis = sectionAnalysis.choices[0].message.content;
+      }
+
     } catch (error) {
       console.error("[DEBUG] OpenAI parsing error:", error);
       throw new Error(`Failed to parse resume: ${error instanceof Error ? error.message : String(error)}`);
-    }
-
-    // Ensure all required sections exist with default values
-    const requiredSections = ['summary', 'experience', 'education', 'skills'];
-    for (const sectionId of requiredSections) {
-      if (!parsedData.sections.find((s: any) => s.id === sectionId)) {
-        parsedData.sections.push({
-          id: sectionId,
-          title: sectionId.charAt(0).toUpperCase() + sectionId.slice(1),
-          content: '',
-          items: []
-        });
-      }
     }
 
     console.log("[DEBUG] Successfully parsed resume");
