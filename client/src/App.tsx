@@ -18,6 +18,7 @@ function Router() {
       <main className="flex-1">
         <Switch>
           <Route path="/" component={Home} />
+          <Route path="/editor" component={ResumeEditor} />
           <Route path="/editor/:id" component={ResumeEditor} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/upload" component={ResumeUpload} />
