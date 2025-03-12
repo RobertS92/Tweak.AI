@@ -78,7 +78,7 @@ ${userQuery || "Please analyze this section and suggest specific improvements."}
       details: error instanceof Error ? error.message : String(error),
     });
   } finally {
-    console.log("[DEBUG] AI Assistant request completed for section:", sectionId);
+    console.log("[DEBUG] AI Assistant request completed for section:", req.body?.sectionId || "unknown");
   }
 });
 
