@@ -202,6 +202,12 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
       }
 
       const data = await response.json();
+      console.log("[DEBUG] Parsed resume data:", data);
+
+      // Verify data structure before updating state
+      if (!data.sections || !Array.isArray(data.sections)) {
+        throw new Error("Invalid data structure received from parser");
+      }
 
       // Update personal info
       setPersonalInfo({
@@ -212,7 +218,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
         linkedin: data.linkedin || "",
       });
 
-      // Update sections
+      // Update sections with proper item initialization
       setSections(
         data.sections.map((section: ResumeSection) => ({
           ...section,
@@ -226,10 +232,10 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
       setAiMessage(
         "Resume parsed successfully. Select any section to get AI suggestions for improvements.",
       );
+
       toast({
         title: "Resume Parsed Successfully",
-        description:
-          "All sections have been populated. Review and edit as needed.",
+        description: "All sections have been populated. Review and edit as needed.",
       });
     } catch (error) {
       console.error("Error parsing resume:", error);
