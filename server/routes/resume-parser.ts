@@ -52,28 +52,132 @@ function cleanTextContent(text: string): string {
   return text;
 }
 
-async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  console.log("[DEBUG] Starting PDF text extraction");
+async function parseResume(content: string) {
+  console.log("[DEBUG] Starting resume parsing with OpenAI");
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [
+      {
+        role: "system",
+        content: `You are a resume parsing expert. Extract information into JSON format with exactly this structure:
+{
+  "personalInfo": {
+    "name": "",
+    "email": "",
+    "phone": "",
+    "location": "",
+    "website": "",
+    "linkedin": "",
+    "objective": ""
+  },
+  "sections": [
+    {
+      "id": "professional-summary",
+      "title": "Professional Summary",
+      "content": ""
+    },
+    {
+      "id": "work-experience",
+      "title": "Work Experience",
+      "items": [
+        {
+          "title": "",
+          "company": "",
+          "location": "",
+          "startDate": "",
+          "endDate": "",
+          "description": "",
+          "achievements": []
+        }
+      ]
+    },
+    {
+      "id": "education",
+      "title": "Education",
+      "items": [
+        {
+          "degree": "",
+          "institution": "",
+          "location": "",
+          "startDate": "",
+          "endDate": "",
+          "gpa": "",
+          "courses": []
+        }
+      ]
+    },
+    {
+      "id": "skills",
+      "title": "Skills",
+      "categories": [
+        {
+          "name": "Technical Skills",
+          "skills": []
+        },
+        {
+          "name": "Soft Skills",
+          "skills": []
+        }
+      ]
+    },
+    {
+      "id": "certifications",
+      "title": "Certifications",
+      "items": [
+        {
+          "name": "",
+          "issuer": "",
+          "date": "",
+          "expiry": "",
+          "id": "",
+          "url": ""
+        }
+      ]
+    },
+    {
+      "id": "projects",
+      "title": "Projects",
+      "items": [
+        {
+          "name": "",
+          "description": "",
+          "technologies": [],
+          "url": "",
+          "startDate": "",
+          "endDate": ""
+        }
+      ]
+    }
+  ]
+}
+
+IMPORTANT: Return ONLY the JSON object, no additional text or explanation.
+Keep section IDs exactly as shown above for frontend compatibility.
+Format dates as YYYY-MM.
+Include all sections even if empty.`
+      },
+      {
+        role: "user",
+        content: `Parse this resume text into the specified JSON structure:\n\n${content}`
+      }
+    ],
+    temperature: 0.1,
+  });
+
+  if (!response.choices[0].message.content) {
+    throw new Error("No content in OpenAI response");
+  }
 
   try {
-    const pdfSignature = buffer.toString('ascii', 0, 5);
-    if (pdfSignature !== '%PDF-') {
-      throw new Error('Invalid PDF format');
-    }
-
-    const data = await pdfParse(buffer, {
-      max: 0,
-      version: 'v2.0.550'
-    });
-
-    if (!data || !data.text || data.text.trim().length === 0) {
-      throw new Error('No text content extracted from PDF');
-    }
-
-    return cleanTextContent(data.text);
+    const parsedData = JSON.parse(response.choices[0].message.content);
+    console.log("[DEBUG] Successfully parsed resume");
+    console.log("[DEBUG] Found sections:", parsedData.sections.map(s => s.id));
+    return parsedData;
   } catch (error) {
-    console.error('PDF parsing error:', error);
-    throw new Error('Unable to extract text from PDF. Please try uploading a different file format or copy-paste the content directly.');
+    console.error("[DEBUG] JSON parse error:", error);
+    console.log("[DEBUG] Raw response:", response.choices[0].message.content);
+    throw new Error("Failed to parse OpenAI response as JSON");
   }
 }
 
@@ -103,7 +207,8 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
       console.log("[DEBUG] Detected file type:", mime);
 
       if (mime === "application/pdf") {
-        fileContent = await extractTextFromPDF(buffer);
+        const pdfData = await pdfParse(buffer);
+        fileContent = cleanTextContent(pdfData.text);
       } else if (mime.includes("word")) {
         const result = await mammoth.extractRawText({ buffer });
         fileContent = cleanTextContent(result.value);
@@ -119,27 +224,8 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
       console.log("[DEBUG] Successfully extracted content, length:", fileContent.length);
       console.log("[DEBUG] Content preview:", fileContent.substring(0, 200));
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4",
-        messages: [
-          {
-            role: "system",
-            content: "You are a resume parsing expert. Extract all information into sections like contact details, summary, experience, education, skills, etc. Format all dates consistently and preserve the structure."
-          },
-          {
-            role: "user",
-            content: fileContent
-          }
-        ],
-        temperature: 0.1
-      });
-
-      if (!response.choices[0].message.content) {
-        throw new Error('Failed to analyze resume content');
-      }
-
-      const parsedContent = response.choices[0].message.content;
-      res.json({ content: parsedContent });
+      const parsedData = await parseResume(fileContent);
+      res.json(parsedData);
 
     } catch (error) {
       console.error("[DEBUG] Content processing error:", error);
