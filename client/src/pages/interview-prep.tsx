@@ -15,15 +15,8 @@ export default function InterviewPrep() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [interviewStarted, setInterviewStarted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [currentAudioData, setCurrentAudioData] = useState<string>("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Debug state
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
-
-  const addDebugLog = (message: string) => {
-    console.log("[DEBUG]", message);
-    setDebugLogs(prev => [...prev, `[${new Date().toISOString()}] ${message}`]);
-  };
 
   // Initialize speech recognition
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
@@ -31,16 +24,16 @@ export default function InterviewPrep() {
   useEffect(() => {
     // Initialize speech recognition
     if (window.SpeechRecognition || window.webkitSpeechRecognition) {
-      addDebugLog("Initializing speech recognition");
+      console.log("[DEBUG] Initializing speech recognition");
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const recognitionInstance = new SpeechRecognition();
       recognitionInstance.continuous = true;
       recognitionInstance.interimResults = true;
       recognitionInstance.lang = 'en-US';
       setRecognition(recognitionInstance);
-      addDebugLog("Speech recognition initialized successfully");
+      console.log("[DEBUG] Speech recognition initialized successfully");
     } else {
-      addDebugLog("Speech recognition not supported by browser");
+      console.log("[DEBUG] Speech recognition not supported by browser");
       toast({
         title: "Speech Recognition Not Available",
         description: "Your browser doesn't support speech recognition. Please use a modern browser like Chrome.",
@@ -49,16 +42,16 @@ export default function InterviewPrep() {
     }
 
     // Initialize audio element
-    addDebugLog("Initializing audio element");
+    console.log("[DEBUG] Initializing audio element");
     audioRef.current = new Audio();
     audioRef.current.onended = () => {
       setIsSpeaking(false);
-      addDebugLog("Audio playback completed");
+      console.log("[DEBUG] Audio playback completed");
     };
 
     // Cleanup
     return () => {
-      addDebugLog("Cleaning up speech recognition and audio");
+      console.log("[DEBUG] Cleaning up speech recognition and audio");
       if (recognition) recognition.stop();
       if (audioRef.current) audioRef.current.pause();
     };
@@ -67,43 +60,43 @@ export default function InterviewPrep() {
   useEffect(() => {
     if (recognition) {
       recognition.onstart = () => {
-        addDebugLog("Speech recognition started");
+        console.log("[DEBUG] Speech recognition started");
       };
 
       recognition.onend = () => {
-        addDebugLog("Speech recognition ended");
+        console.log("[DEBUG] Speech recognition ended");
         if (transcript.trim()) {
-          addDebugLog("Processing final transcript");
+          console.log("[DEBUG] Processing final transcript");
           evaluateAnswer();
         }
       };
 
       recognition.onresult = (event) => {
-        addDebugLog("Received speech recognition result");
+        console.log("[DEBUG] Received speech recognition result");
         let finalTranscript = '';
         let interimTranscript = '';
 
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
             finalTranscript += event.results[i][0].transcript;
-            addDebugLog(`Final transcript received: ${finalTranscript}`);
+            console.log(`[DEBUG] Final transcript received: ${finalTranscript}`);
           } else {
             interimTranscript += event.results[i][0].transcript;
-            addDebugLog(`Interim transcript: ${interimTranscript}`);
+            console.log(`[DEBUG] Interim transcript: ${interimTranscript}`);
           }
         }
 
         if (finalTranscript) {
           setTranscript((prev) => {
             const newTranscript = prev + finalTranscript;
-            addDebugLog(`Updated transcript length: ${newTranscript.length}`);
+            console.log(`[DEBUG] Updated transcript length: ${newTranscript.length}`);
             return newTranscript;
           });
         }
       };
 
       recognition.onerror = (event) => {
-        addDebugLog(`Speech recognition error: ${event.error}`);
+        console.log(`[DEBUG] Speech recognition error: ${event.error}`);
         toast({
           title: "Error",
           description: "There was an error with the speech recognition. Please try again.",
@@ -116,42 +109,41 @@ export default function InterviewPrep() {
 
   const playAudio = async (base64Audio: string) => {
     try {
-      addDebugLog("Starting audio playback");
+      console.log("[DEBUG] Starting audio playback");
       if (!audioRef.current) {
-        addDebugLog("Audio element not initialized");
+        console.log("[DEBUG] Audio element not initialized");
         return;
       }
 
       setIsSpeaking(true);
-      addDebugLog(`Creating audio blob from base64 string (length: ${base64Audio.length})`);
+      console.log(`[DEBUG] Creating audio blob from base64 string (length: ${base64Audio.length})`);
 
       const buffer = Buffer.from(base64Audio, 'base64');
-      addDebugLog(`Created buffer of size: ${buffer.length}`);
+      console.log(`[DEBUG] Created buffer of size: ${buffer.length}`);
 
       const blob = new Blob([buffer], { type: 'audio/mp3' });
-      addDebugLog(`Created blob of size: ${blob.size}`);
+      console.log(`[DEBUG] Created blob of size: ${blob.size}`);
 
       const url = URL.createObjectURL(blob);
-      addDebugLog(`Created object URL: ${url}`);
+      console.log(`[DEBUG] Created object URL: ${url}`);
 
       audioRef.current.src = url;
 
       try {
         await audioRef.current.play();
-        addDebugLog("Audio playback started successfully");
+        console.log("[DEBUG] Audio playback started successfully");
       } catch (playError) {
-        addDebugLog(`Audio playback failed: ${playError}`);
+        console.log(`[DEBUG] Audio playback failed: ${playError}`);
         throw playError;
       }
 
-      // Cleanup URL after playing
       audioRef.current.onended = () => {
-        addDebugLog("Audio playback completed");
+        console.log("[DEBUG] Audio playback completed");
         setIsSpeaking(false);
         URL.revokeObjectURL(url);
       };
     } catch (error) {
-      addDebugLog(`Audio playback error: ${error}`);
+      console.log(`[DEBUG] Audio playback error: ${error}`);
       console.error("Audio playback error:", error);
       setIsSpeaking(false);
       toast({
@@ -164,10 +156,10 @@ export default function InterviewPrep() {
 
   const startRecording = () => {
     if (!recognition) {
-      addDebugLog("Cannot start recording - recognition not initialized");
+      console.log("[DEBUG] Cannot start recording - recognition not initialized");
       return;
     }
-    addDebugLog("Starting recording");
+    console.log("[DEBUG] Starting recording");
     setIsRecording(true);
     setTranscript("");
     recognition.start();
@@ -175,17 +167,17 @@ export default function InterviewPrep() {
 
   const stopRecording = () => {
     if (!recognition) {
-      addDebugLog("Cannot stop recording - recognition not initialized");
+      console.log("[DEBUG] Cannot stop recording - recognition not initialized");
       return;
     }
-    addDebugLog("Stopping recording");
+    console.log("[DEBUG] Stopping recording");
     setIsRecording(false);
     recognition.stop();
   };
 
   const startInterview = async () => {
     if (!jobDescription) {
-      addDebugLog("Interview start failed - missing job description");
+      console.log("[DEBUG] Interview start failed - missing job description");
       toast({
         title: "Missing Information",
         description: "Please provide the job description.",
@@ -195,15 +187,13 @@ export default function InterviewPrep() {
     }
 
     setIsAnalyzing(true);
-    addDebugLog("Starting interview setup");
+    console.log("[DEBUG] Starting interview setup");
 
     try {
-      addDebugLog("Sending job description for analysis");
+      console.log("[DEBUG] Sending job description for analysis");
       const analysisResponse = await fetch('/api/interview/analyze', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobDescription }),
       });
 
@@ -212,14 +202,12 @@ export default function InterviewPrep() {
       }
 
       const analysisData = await analysisResponse.json();
-      addDebugLog("Job analysis completed successfully");
+      console.log("[DEBUG] Job analysis completed successfully");
 
-      addDebugLog("Starting interview session");
+      console.log("[DEBUG] Starting interview session");
       const response = await fetch('/api/interview/start', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobDescription }),
       });
 
@@ -228,14 +216,15 @@ export default function InterviewPrep() {
       }
 
       const data = await response.json();
-      addDebugLog(`Interview session created. Session ID: ${data.sessionId}`);
+      console.log(`[DEBUG] Interview session created. Session ID: ${data.sessionId}`);
 
       setSessionId(data.sessionId);
       setCurrentQuestion(data.question);
+      setCurrentAudioData(data.audio);
       setInterviewStarted(true);
       setTranscript("");
 
-      addDebugLog("Playing initial interview question");
+      console.log("[DEBUG] Playing initial interview question");
       await playAudio(data.audio);
 
       toast({
@@ -243,7 +232,7 @@ export default function InterviewPrep() {
         description: "The AI interviewer will now ask you questions. Speak naturally to respond.",
       });
     } catch (error) {
-      addDebugLog(`Interview start error: ${error}`);
+      console.log(`[DEBUG] Interview start error: ${error}`);
       toast({
         title: "Error",
         description: "Failed to start the interview. Please try again.",
@@ -256,17 +245,15 @@ export default function InterviewPrep() {
 
   const evaluateAnswer = async () => {
     if (!transcript.trim()) {
-      addDebugLog("No answer to evaluate");
+      console.log("[DEBUG] No answer to evaluate");
       return;
     }
 
     try {
-      addDebugLog("Sending answer for evaluation");
+      console.log("[DEBUG] Sending answer for evaluation");
       const response = await fetch('/api/interview/evaluate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
           answer: transcript
@@ -278,17 +265,18 @@ export default function InterviewPrep() {
       }
 
       const data = await response.json();
-      addDebugLog("Received evaluation response");
-      addDebugLog(`Completeness score: ${data.evaluation.completeness}`);
+      console.log("[DEBUG] Received evaluation response");
+      console.log(`[DEBUG] Completeness score: ${data.evaluation.completeness}`);
 
       setCurrentQuestion(data.nextQuestion);
+      setCurrentAudioData(data.audio);
       setTranscript("");
 
-      addDebugLog("Playing AI response");
+      console.log("[DEBUG] Playing AI response");
       await playAudio(data.audio);
 
     } catch (error) {
-      addDebugLog(`Answer evaluation error: ${error}`);
+      console.log(`[DEBUG] Answer evaluation error: ${error}`);
       toast({
         title: "Error",
         description: "Failed to get feedback. Please try again.",
@@ -346,12 +334,12 @@ export default function InterviewPrep() {
                         variant="ghost"
                         size="icon"
                         onClick={() => {
-                          if (audioRef.current && audioRef.current.src) {
-                            addDebugLog("Replaying current question");
-                            playAudio(audioRef.current.src);
+                          console.log("[DEBUG] Replaying current question");
+                          if (currentAudioData) {
+                            playAudio(currentAudioData);
                           }
                         }}
-                        disabled={isSpeaking}
+                        disabled={isSpeaking || !currentAudioData}
                       >
                         <Play className="h-4 w-4" />
                       </Button>
@@ -378,18 +366,6 @@ export default function InterviewPrep() {
                     <Mic className="h-6 w-6" />
                   )}
                 </Button>
-              </div>
-
-              {/* Debug Log Display */}
-              <div className="mt-8 p-4 bg-muted rounded-lg text-xs font-mono">
-                <h4 className="font-medium mb-2">Debug Logs:</h4>
-                <div className="max-h-40 overflow-y-auto">
-                  {debugLogs.map((log, index) => (
-                    <div key={index} className="py-1">
-                      {log}
-                    </div>
-                  ))}
-                </div>
               </div>
             </CardContent>
           </Card>
