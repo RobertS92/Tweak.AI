@@ -161,6 +161,11 @@ IMPORTANT:
   try {
     const parsedData = JSON.parse(response.choices[0].message.content);
 
+    // Filter out any personal-info section from the sections array
+    if (parsedData.sections && Array.isArray(parsedData.sections)) {
+      parsedData.sections = parsedData.sections.filter(section => section.id !== 'personal-info');
+    }
+
     // Debug Personal Information
     console.log("\n[DEBUG] Personal Information Parsing:");
     Object.entries(parsedData.personalInfo).forEach(([field, value]) => {
