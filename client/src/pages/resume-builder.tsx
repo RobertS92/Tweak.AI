@@ -231,8 +231,17 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
       // Create a map of existing sections by ID for proper merging
       const currentSections = new Map(sections.map(section => [section.id, section]));
       
+      // Filter out duplicate personal-info section if it's not the first one
+      const uniqueSections = data.sections.filter((section: ResumeSection, index: number, self: ResumeSection[]) => {
+        if (section.id === 'personal-info') {
+          // Keep only the first occurrence of personal-info
+          return self.findIndex(s => s.id === 'personal-info') === index;
+        }
+        return true;
+      });
+      
       // Map and merge sections from server data with proper structure
-      const updatedSections = data.sections.map((section: ResumeSection) => {
+      const updatedSections = uniqueSections.map((section: ResumeSection) => {
         // Get current section structure if it exists
         const currentSection = currentSections.get(section.id) || { 
           id: section.id, 

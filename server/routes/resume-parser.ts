@@ -142,7 +142,8 @@ IMPORTANT:
 4. Format dates consistently as YYYY-MM
 5. Parse skills into technical and soft skills categories
 6. Keep section IDs exactly as shown for frontend compatibility
-7. Include personal info fields both at top level AND in personalInfo object for compatibility`
+7. Include personal info fields ONLY in the personalInfo object
+8. Do NOT include personal-info in the sections array - it's already handled separately`
       },
       {
         role: "user",
@@ -300,7 +301,6 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
 
       // Make sure the sections array includes all required sections in the right order for the menu
       const requiredSections = [
-        'personal-info',
         'professional-summary', 
         'work-experience', 
         'education', 
