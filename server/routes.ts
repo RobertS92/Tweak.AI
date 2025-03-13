@@ -172,8 +172,6 @@ export async function registerRoutes(app: Express) {
   app.use(express.json({ limit: '50mb', strict: false }));
   app.use(express.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
   app.use(express.text({ limit: '50mb' }));
-  
-  // No need to return the server from here anymore
 
   // Resume routes
   app.post("/api/resumes", upload.single("resume"), async (req, res) => {
@@ -460,6 +458,5 @@ Return an optimized version that matches keywords and improves ATS score while m
     }
   });
 
-  const httpServer = createServer(app);
-  return httpServer;
+  // Routes configured successfully
 }

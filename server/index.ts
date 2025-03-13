@@ -55,17 +55,19 @@ const startServer = async (port: number): Promise<void> => {
   try {
     log(`[DEBUG] Attempting to start server on port ${port}...`);
 
-    // Register API routes first, before Vite/static middleware
-    log("[DEBUG] Registering routes...");
-    app.use("/api", resumeParserRouter);
-    app.use("/api", resumeAiAssistant);
-    app.use("/api", interviewAiRouter);
-
     // Create HTTP server
     const server = createServer(app);
 
-    // Then register other routes
+    // Register API routes first, before Vite/static middleware
+    log("[DEBUG] Registering routes...");
+    
+    // First, register the routes with the router
     await registerRoutes(app);
+    
+    // Then use the routers we imported
+    app.use("/api", resumeParserRouter);
+    app.use("/api", resumeAiAssistant);
+    app.use("/api", interviewAiRouter);
 
     // Error handling middleware
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
