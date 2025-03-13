@@ -458,5 +458,6 @@ Return an optimized version that matches keywords and improves ATS score while m
     }
   });
 
-  // Routes configured successfully
+  const httpServer = createServer(app);
+  return httpServer;
 }
