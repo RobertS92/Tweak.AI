@@ -298,9 +298,10 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
       ensureSection('projects', 'Projects', sections);
       ensureSection('certifications', 'Certifications', sections);
       ensureSection('personal-experience', 'Personal Experience', sections);
-      
+
       // Make sure the sections array includes all required sections in the right order for the menu
       const requiredSections = [
+        'personal-info',
         'professional-summary', 
         'work-experience', 
         'education', 
@@ -309,7 +310,7 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
         'certifications', 
         'personal-experience'
       ];
-      
+
       // Sort sections according to the required order
       sections.sort((a, b) => {
         const indexA = requiredSections.indexOf(a.id);
