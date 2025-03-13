@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import { createServer } from "http";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import resumeParserRouter from "./routes/resume-parser";
@@ -60,14 +61,18 @@ const startServer = async (port: number): Promise<void> => {
     app.use("/api", resumeAiAssistant);
     app.use("/api", interviewAiRouter);
 
-    // Then register other routes
-    const server = await registerRoutes(app);
+    // Create HTTP server
+    const server = createServer(app);
 
+    // Then register other routes
+    await registerRoutes(app);
+
+    // Error handling middleware
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";
+      console.error("[ERROR]", err);
       res.status(status).json({ message });
-      throw err;
     });
 
     // Register Vite/static middleware last
