@@ -593,9 +593,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
               </Card>
 
               {/* Resume Sections */}
-              {sections
-                .filter(section => section.id !== 'personal-info') // Filter out Personal Information section
-                .map((section) => (
+              {sections.map((section) => (
                 <Card key={section.id}>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>{section.title}</CardTitle>
