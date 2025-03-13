@@ -146,9 +146,7 @@ IMPORTANT:
 8. Do NOT include personal-info or Personal Information in the sections array - it's already handled separately
 9. Return personal information only in the top-level personalInfo object
 10. Ensure the sections array follows exactly this order: professional-summary, work-experience, education, skills, projects, certifications
-11. For education, always use "id": "education" and put each education entry as an item with degree/institution/date fields in the items array
-12. Never add Personal Information as a section in the sections array
-13. Always ensure "education" section has an items array, even if empty`
+11. Never add Personal Information as a section in the sections array`
       },
       {
         role: "user",
@@ -203,24 +201,6 @@ IMPORTANT:
     parsedData.sections.forEach(section => {
       console.log(`\n[DEBUG] Section: ${section.id}`);
       console.log(`[DEBUG] Title: ${section.title}`);
-      
-      // Ensure education section has proper structure
-      if (section.id === 'education' && !section.items) {
-        section.items = [];
-        // If there's content but no items, try to create an item from the content
-        if (section.content && section.content !== "No entries found in Education") {
-          section.items.push({
-            title: "Education",
-            institution: "",
-            location: "",
-            startDate: "",
-            endDate: "",
-            description: section.content
-          });
-          // Clear the content since we moved it to an item
-          section.content = "";
-        }
-      }}`);
 
       // Ensure each section has required fields based on type
       if (section.id === 'education' && !section.items) {

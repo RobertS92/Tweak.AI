@@ -248,14 +248,6 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
           title: section.title 
         };
         
-        // Log each section we're processing to debug
-        console.log(`[DEBUG] Section ID:`, section.id);
-        console.log(`[DEBUG] Section Content:`, section.content || "");
-        console.log(`[DEBUG] Content Length:`, section.content ? section.content.length : 0);
-        if (section.items) {
-          console.log(`[DEBUG] Has ${section.items.length} items`);
-        }
-        
         // Special handling for skills section with categories
         if (section.id === 'skills') {
           return {
