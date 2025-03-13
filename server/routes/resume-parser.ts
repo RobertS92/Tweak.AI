@@ -173,6 +173,26 @@ IMPORTANT:
       console.log(`\n[DEBUG] Section: ${section.id}`);
       console.log(`[DEBUG] Title: ${section.title}`);
 
+      // Ensure each section has required fields based on type
+      if (section.id === 'education' && !section.items) {
+        section.items = [];
+      }
+
+      if (section.id === 'skills' && !section.categories) {
+        section.categories = [
+          { name: "Technical Skills", skills: [] },
+          { name: "Soft Skills", skills: [] }
+        ];
+      }
+
+      if (['work-experience', 'projects', 'certifications'].includes(section.id) && !section.items) {
+        section.items = [];
+      }
+
+      if (['professional-summary', 'personal-info'].includes(section.id) && !section.content) {
+        section.content = "";
+      }
+
       if (section.content) {
         console.log(`[DEBUG] Content: ✓ Found (${section.content.length} chars)`);
       }

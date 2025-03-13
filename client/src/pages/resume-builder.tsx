@@ -18,11 +18,17 @@ interface SectionItem {
 }
 
 /** Interface for each resume section */
+interface SkillCategory {
+  name: string;
+  skills: string[];
+}
+
 interface ResumeSection {
   id: string;
   title: string;
   content?: string;
   items?: SectionItem[];
+  categories?: SkillCategory[];
 }
 
 export default function ResumeBuilder() {
@@ -47,12 +53,16 @@ export default function ResumeBuilder() {
 
   // Resume sections state with proper initialization
   const [sections, setSections] = useState<ResumeSection[]>([
-    { id: "summary", title: "Professional Summary", content: "" },
-    { id: "experience", title: "Work Experience", items: [] },
+    { id: "professional-summary", title: "Professional Summary", content: "" },
+    { id: "work-experience", title: "Work Experience", items: [] },
     { id: "education", title: "Education", items: [] },
-    { id: "skills", title: "Skills", content: "" },
+    { id: "skills", title: "Skills", categories: [
+      { name: "Technical Skills", skills: [] },
+      { name: "Soft Skills", skills: [] }
+    ] },
     { id: "projects", title: "Projects", items: [] },
     { id: "certifications", title: "Certifications", items: [] },
+    { id: "personal-info", title: "Personal Information", content: "" },
   ]);
 
   /**
@@ -218,16 +228,71 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
         linkedin: data.linkedin || "",
       });
 
-      // Update sections with proper item initialization
-      setSections(
-        data.sections.map((section: ResumeSection) => ({
+      // Create a map of existing sections by ID for proper merging
+      const currentSections = new Map(sections.map(section => [section.id, section]));
+      
+      // Map and merge sections from server data with proper structure
+      const updatedSections = data.sections.map((section: ResumeSection) => {
+        // Get current section structure if it exists
+        const currentSection = currentSections.get(section.id) || { 
+          id: section.id, 
+          title: section.title 
+        };
+        
+        // Special handling for skills section with categories
+        if (section.id === 'skills') {
+          return {
+            ...currentSection,
+            ...section,
+            categories: section.categories || [
+              { name: "Technical Skills", skills: [] },
+              { name: "Soft Skills", skills: [] }
+            ]
+          };
+        }
+        
+        // For item-based sections (work experience, education, projects, certifications)
+        if (section.items) {
+          return {
+            ...currentSection,
+            ...section,
+            items: section.items.map(item => ({
+              ...item,
+              bullets: item.bullets || [],
+            })),
+          };
+        }
+        
+        // For content-based sections (summary, personal info)
+        return {
+          ...currentSection,
           ...section,
-          items: section.items?.map((item) => ({
-            ...item,
-            bullets: item.bullets || [],
-          })),
-        })),
-      );
+          content: section.content || "",
+        };
+      });
+      
+      // Ensure all standard sections exist in the result
+      const standardSectionIds = [
+        'professional-summary',
+        'work-experience',
+        'education',
+        'skills',
+        'projects',
+        'certifications',
+        'personal-info'
+      ];
+      
+      // Add any missing sections
+      standardSectionIds.forEach(id => {
+        if (!updatedSections.find(section => section.id === id)) {
+          const defaultSection = sections.find(section => section.id === id);
+          if (defaultSection) {
+            updatedSections.push(defaultSection);
+          }
+        }
+      });
+      
+      setSections(updatedSections);
 
       setAiMessage(
         "Resume parsed successfully. Select any section to get AI suggestions for improvements.",
@@ -535,7 +600,56 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
                     )}
                   </CardHeader>
                   <CardContent>
-                    {section.items ? (
+                    {section.id === 'skills' && section.categories ? (
+                      <div className="space-y-6">
+                        {section.categories.map((category, catIndex) => (
+                          <div key={catIndex} className="space-y-2">
+                            <h3 className="text-base font-medium">{category.name}</h3>
+                            <div className="flex flex-wrap gap-2">
+                              {category.skills.map((skill, skillIndex) => (
+                                <div key={skillIndex} className="px-3 py-1 bg-gray-100 rounded-full text-sm flex items-center">
+                                  {skill}
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-5 w-5 ml-1"
+                                    onClick={() => {
+                                      const newSections = [...sections];
+                                      const skillsSection = newSections.find(s => s.id === 'skills');
+                                      if (skillsSection?.categories) {
+                                        skillsSection.categories[catIndex].skills = 
+                                          skillsSection.categories[catIndex].skills.filter((_, i) => i !== skillIndex);
+                                        setSections(newSections);
+                                      }
+                                    }}
+                                  >
+                                    <MinusCircle className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => {
+                                  const newSkill = prompt('Enter skill:');
+                                  if (newSkill) {
+                                    const newSections = [...sections];
+                                    const skillsSection = newSections.find(s => s.id === 'skills');
+                                    if (skillsSection?.categories) {
+                                      skillsSection.categories[catIndex].skills.push(newSkill);
+                                      setSections(newSections);
+                                    }
+                                  }
+                                }}
+                              >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add Skill
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : section.items ? (
                       <div className="space-y-4">
                         {section.items.map((item, index) => (
                           <div
