@@ -279,7 +279,31 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
       console.log("[DEBUG] Content preview:", fileContent.substring(0, 200));
 
       const parsedData = await parseResume(fileContent);
-      res.json(parsedData);
+      const personalInfo = parsedData.personalInfo;
+      const sections = parsedData.sections;
+
+
+      // Make sure all expected sections exist and have proper structure
+      const ensureSection = (id: string, title: string, sections: any[]) => {
+        const section = sections.find(s => s.id === id);
+        if (!section) {
+          sections.push({ id, title, items: [] });
+        } else if (id === 'education' || id === 'projects' || id === 'certifications') {
+          // Ensure items array exists for these sections
+          section.items = section.items || [];
+        }
+      };
+
+      // Ensure all required sections exist
+      ensureSection('education', 'Education', sections);
+      ensureSection('projects', 'Projects', sections);
+      ensureSection('certifications', 'Certifications', sections);
+
+      // Return the formatted data
+      return res.json({
+        personalInfo,
+        sections
+      });
 
     } catch (error) {
       console.error("[DEBUG] Content processing error:", error);

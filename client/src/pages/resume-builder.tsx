@@ -252,14 +252,15 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
         }
         
         // For item-based sections (work experience, education, projects, certifications)
-        if (section.items) {
+        if (section.id === 'work-experience' || section.id === 'education' || 
+            section.id === 'projects' || section.id === 'certifications') {
           return {
             ...currentSection,
             ...section,
-            items: section.items.map(item => ({
+            items: section.items ? section.items.map(item => ({
               ...item,
               bullets: item.bullets || [],
-            })),
+            })) : [],
           };
         }
         
