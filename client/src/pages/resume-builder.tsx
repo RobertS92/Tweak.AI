@@ -238,7 +238,10 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
       });
       
       // Map and merge sections from server data with proper structure
-      const updatedSections = filteredSections.map((section: ResumeSection) => {
+      // Double-check to filter out any personal-info sections
+      const properlyFilteredSections = filteredSections.filter((section: ResumeSection) => section.id !== 'personal-info');
+      
+      const updatedSections = properlyFilteredSections.map((section: ResumeSection) => {
         // Get current section structure if it exists
         const currentSection = currentSections.get(section.id) || { 
           id: section.id, 

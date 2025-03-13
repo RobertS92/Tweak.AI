@@ -143,8 +143,10 @@ IMPORTANT:
 5. Parse skills into technical and soft skills categories
 6. Keep section IDs exactly as shown for frontend compatibility
 7. Include personal info fields ONLY in the personalInfo object
-8. Do NOT include personal-info in the sections array - it's already handled separately by the application
-9. Return personal information only in the top-level personalInfo object`
+8. Do NOT include personal-info or Personal Information in the sections array - it's already handled separately
+9. Return personal information only in the top-level personalInfo object
+10. Ensure the sections array follows exactly this order: professional-summary, work-experience, education, skills, projects, certifications
+11. Never add Personal Information as a section in the sections array`
       },
       {
         role: "user",
@@ -163,7 +165,28 @@ IMPORTANT:
 
     // Filter out any personal-info section from the sections array
     if (parsedData.sections && Array.isArray(parsedData.sections)) {
-      parsedData.sections = parsedData.sections.filter(section => section.id !== 'personal-info');
+      // Ensure we completely remove any personal-info sections 
+      parsedData.sections = parsedData.sections.filter(section => 
+        section.id !== 'personal-info' && 
+        section.title !== 'Personal Information'
+      );
+      
+      // Also ensure sections are in the correct order by re-ordering if needed
+      const desiredOrder = [
+        'professional-summary',
+        'work-experience',
+        'education',
+        'skills',
+        'projects',
+        'certifications'
+      ];
+      
+      // Sort sections based on their position in the desired order array
+      parsedData.sections.sort((a, b) => {
+        const indexA = desiredOrder.indexOf(a.id);
+        const indexB = desiredOrder.indexOf(b.id);
+        return indexA - indexB;
+      });
     }
 
     // Debug Personal Information
