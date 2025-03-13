@@ -143,7 +143,8 @@ IMPORTANT:
 5. Parse skills into technical and soft skills categories
 6. Keep section IDs exactly as shown for frontend compatibility
 7. Include personal info fields ONLY in the personalInfo object
-8. Do NOT include personal-info in the sections array - it's already handled separately`
+8. Do NOT include personal-info in the sections array - it's already handled separately by the application
+9. Return personal information only in the top-level personalInfo object`
       },
       {
         role: "user",
