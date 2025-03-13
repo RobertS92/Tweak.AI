@@ -219,13 +219,13 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
         throw new Error("Invalid data structure received from parser");
       }
 
-      // Update personal info
+      // Update personal info from the personalInfo object, not top-level fields
       setPersonalInfo({
-        name: data.name || "",
-        email: data.email || "",
-        phone: data.phone || "",
-        location: data.location || "",
-        linkedin: data.linkedin || "",
+        name: data.personalInfo?.name || "",
+        email: data.personalInfo?.email || "",
+        phone: data.personalInfo?.phone || "", 
+        location: data.personalInfo?.location || "",
+        linkedin: data.personalInfo?.linkedin || "",
       });
 
       // Create a map of existing sections by ID for proper merging

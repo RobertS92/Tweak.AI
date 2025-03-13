@@ -163,8 +163,7 @@ IMPORTANT:
     console.log("\n[DEBUG] Personal Information Parsing:");
     Object.entries(parsedData.personalInfo).forEach(([field, value]) => {
       console.log(`[DEBUG] ${field}: ${value ? '✓ Found' : '✗ Empty'} ${value ? `(${value})` : ''}`);
-      // Copy to top level for backwards compatibility
-      parsedData[field] = value;
+      // No longer copying to top level - we'll only use personalInfo
     });
 
     // Debug Sections
@@ -294,12 +293,31 @@ router.post("/resume-parser", upload.single("file"), async (req, res) => {
         }
       };
 
-      // Ensure all required sections exist
+      // Ensure all required sections exist with proper structure
       ensureSection('education', 'Education', sections);
       ensureSection('projects', 'Projects', sections);
       ensureSection('certifications', 'Certifications', sections);
+      ensureSection('personal-experience', 'Personal Experience', sections);
+      
+      // Make sure the sections array includes all required sections in the right order for the menu
+      const requiredSections = [
+        'professional-summary', 
+        'work-experience', 
+        'education', 
+        'skills', 
+        'projects', 
+        'certifications', 
+        'personal-experience'
+      ];
+      
+      // Sort sections according to the required order
+      sections.sort((a, b) => {
+        const indexA = requiredSections.indexOf(a.id);
+        const indexB = requiredSections.indexOf(b.id);
+        return indexA - indexB;
+      });
 
-      // Return the formatted data
+      // Return the formatted data with only personalInfo (no top-level fields)
       return res.json({
         personalInfo,
         sections
