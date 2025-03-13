@@ -281,15 +281,14 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
         };
       });
       
-      // Ensure all standard sections exist in the result
+      // Ensure all standard sections exist in the result (excluding personal-info which is handled separately)
       const standardSectionIds = [
         'professional-summary',
         'work-experience',
         'education',
         'skills',
         'projects',
-        'certifications',
-        'personal-info'
+        'certifications'
       ];
       
       // Add any missing sections
