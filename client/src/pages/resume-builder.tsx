@@ -43,8 +43,6 @@ export default function ResumeBuilder() {
   const [aiInput, setAiInput] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiOutput, setAiOutput] = useState("");
-  const [aiSuggestion, setAiSuggestion] = useState("");
-  const [aiImprovements, setAiImprovements] = useState<string[]>([]);
 
   // Personal info state
   const [personalInfo, setPersonalInfo] = useState({
@@ -197,10 +195,8 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
         if (!response.ok) throw new Error("Failed to get AI suggestions");
 
         const data = await response.json();
-        const revision = data.revision || "No suggestions available.";
-        setAiMessage(revision);
-        setAiOutput(revision);
-        setAiSuggestion(revision);
+        setAiMessage(data.revision || "No suggestions available.");
+        setAiOutput(data.revision || "");
       } catch (error) {
         console.error("AI suggestion error:", error);
         toast({
@@ -230,10 +226,6 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
    */
   const handleSectionSelect = useCallback((sectionId: string) => {
     setActiveSection(sectionId);
-    // Clear any existing AI suggestions when switching sections
-    setAiSuggestion('');
-    setAiImprovements([]);
-    
     // Get section content first
     const section = sections.find(s => s.id === sectionId);
     const isEmpty = !section?.content || section.content.trim().length === 0;
