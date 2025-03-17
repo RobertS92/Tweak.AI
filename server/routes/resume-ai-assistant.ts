@@ -14,40 +14,39 @@ const openai = new OpenAI({
 function getFallbackMessage(sectionId: string): string {
   switch (sectionId) {
     case "professional-summary":
-      return `I notice your resume doesn't include a Professional Summary section. This is a crucial 3-4 sentence overview at the top of your resume that highlights your professional identity, key skills, and career achievements.
+      return `I notice your resume doesn't include a Professional Summary section. This brief introduction at the top of your resume highlights your professional identity and key qualifications.
 
-Professional Summary Template:
-First sentence: Your professional identity/title and years of experience
-Second sentence: 2-3 key skills or specialties relevant to your target role
-Third sentence: Notable achievements or qualifications that set you apart
-Optional fourth sentence: Career goals or what you're seeking
+Here's how to create an effective Professional Summary:
 
-Example:
-Results-driven Marketing Manager with 5+ years of experience developing digital campaigns for B2B technology companies. Skilled in content strategy, SEO optimization, and marketing analytics with proven success increasing conversion rates. Led campaigns that generated $2M+ in pipeline revenue while reducing CAC by 15%.
+• Keep it concise (3-4 sentences maximum)
+• Start with your professional title and years of experience
+• Highlight 2-3 key skills relevant to your target position
+• Include a notable achievement or qualification that sets you apart
+• Optional: briefly mention your career goals
 
-How would you like to present yourself professionally in your summary?`;
+Focus on your most impressive and relevant qualities that match what employers in your target field are seeking.
+
+Tell me a little about your professional background, target role, and key strengths, and I'll help write a compelling professional summary for you.`;
 
     case "work-experience":
-      return `I notice your resume doesn't include a Work Experience section. This is a critical section that demonstrates your professional background and how you've applied your skills in real-world settings.
+      return `I notice your resume doesn't include a Work Experience section. This critical section shows employers how you've applied your skills in professional settings.
 
-Work Experience Template (for each position):
-Job Title
-Company Name and Location
-Employment Dates (Month/Year to Month/Year or Present)
-3-5 bullet points describing accomplishments using this format:
-Action Verb + Task + Result/Impact (quantify when possible)
+Here's how to create an effective Work Experience section:
 
-Example:
-WORK EXPERIENCE
-Senior Software Developer
-Technovation Inc. - San Francisco, CA
-March 2020 - Present
-- Redesigned customer-facing API, reducing server load by 40% and improving response times by 30%
-- Led a team of 5 developers to deliver a new mobile application feature used by 25,000+ users
-- Implemented automated testing protocols that reduced bug reports by 35% in the first quarter
-- Collaborated with product and design teams to launch 3 major product updates ahead of schedule
+• List positions in reverse-chronological order (most recent first)
+• For each role include:
+  - Your job title
+  - Company name and location
+  - Dates of employment (month/year)
+• Use 3-5 bullet points per role that:
+  - Start with strong action verbs
+  - Focus on accomplishments rather than duties
+  - Include measurable results when possible
+  - Highlight relevant skills and responsibilities
 
-What professional roles have you held that you'd like to include in your resume?`;
+Tailor your descriptions to emphasize experience that relates to your target position.
+
+Tell me about your work history, including job titles, companies, dates, and key responsibilities or achievements, and I'll help craft effective job descriptions for your resume.`;
 
     case "education":
       return `I notice your resume doesn't include an Education section. This section provides important information about your academic background and qualifications.
@@ -67,7 +66,7 @@ Here's how to create an effective Education section:
 
 Keep this section concise and focused on education that's relevant to your career goals.
 
-What educational qualifications would you like to add to your resume?`;
+Tell me about your educational background, including degrees, institutions, graduation dates, and any notable achievements, and I'll help format this section for your resume.`;
 
     case "skills":
       return `I notice your resume doesn't include a Skills section. This section allows employers to quickly identify your specific capabilities relevant to the position.
@@ -84,7 +83,7 @@ Here's how to create an effective Skills section:
 
 Review job descriptions in your field to identify key skills employers are seeking.
 
-What key skills would you like to highlight in your resume?`;
+Tell me about your key technical, professional, and soft skills relevant to your target role, and I'll help organize them into an effective Skills section for your resume.`;
 
     case "projects":
       return `I notice your resume doesn't include a Projects section. This section helps demonstrate your practical skills and accomplishments, particularly valuable if you're early in your career or changing fields.
@@ -102,7 +101,7 @@ Here's how to create an effective Projects section:
 
 Focus on projects that are relevant to the positions you're applying for, whether they're professional, academic, volunteer, or personal initiatives.
 
-What types of projects would you like to include on your resume?`;
+Tell me about some relevant projects you've worked on, including their purpose, your role, and key outcomes, and I'll help format them effectively for your resume.`;
 
     case "certifications":
       return `I notice your resume doesn't include a Certifications section. Professional certifications can significantly strengthen your candidacy by demonstrating specialized knowledge and commitment to your field.
@@ -119,7 +118,7 @@ Here's how to create an effective Certifications section:
 
 Focus on certifications that are recognized in your industry and relevant to your target positions.
 
-Do you have any professional certifications or specialized training you'd like to include on your resume?`;
+Tell me about any professional certifications, courses, or specialized training you've completed, and I'll help format them properly for your resume.`;
 
     default:
       return "[No content provided]";
@@ -145,22 +144,35 @@ router.post("/resume-ai-assistant", async (req, res) => {
       userQuery,
     });
 
-    // Use the provided section content if it exists; otherwise, use the fallback message.
-    const effectiveSectionContent =
-      sectionContent && sectionContent.trim().length > 0
-        ? sectionContent
-        : getFallbackMessage(sectionId);
+    // Check if section content is empty
+    const isEmptySection = !sectionContent || sectionContent.trim().length === 0;
 
-    console.log("[DEBUG] Processing section:", sectionId);
+    // If section is empty, return the fallback message directly without sending to OpenAI
+    if (isEmptySection) {
+      return res.json({
+        revision: getFallbackMessage(sectionId),
+        improvements: [],
+      });
+    }
+
+    // Only proceed with OpenAI processing if there's actual content to revise
+    console.log("[DEBUG] Processing section with content:", sectionId);
     console.log(
       "[DEBUG] Content sample:",
-      effectiveSectionContent.substring(0, 100) + "..."
+      sectionContent.substring(0, 100) + "..."
     );
 
     const messages = [
       {
         role: "system",
         content: `You are a professional resume writing assistant. Your task is to produce a final revised version of the given resume section.
+        
+When analyzing professional summaries:
+- Check for clear articulation of professional identity and experience level
+- Ensure key skills relevant to target role are highlighted
+- Verify presence of notable achievements or qualifications
+- Suggest improvements to make language more impactful and concise
+- Ensure alignment with target position/industry
 
 When analyzing work experience:
 - Check impact and clarity of descriptions
@@ -173,12 +185,15 @@ When analyzing education:
 - Suggest relevant coursework to highlight
 - Recommend academic achievements to include
 
-When analyzing technical sections:
-- Ensure skills are clearly presented
-- Suggest industry-standard formatting
-- Recommend relevant certifications
-
-If the section is empty, provide clear guidance on what information to include based on its category.
+When analyzing skills sections:
+- Evaluate skills relevance to the specific job/industry mentioned by the user
+- Prioritize skills that match keywords from target job descriptions
+- Suggest reorganizing skills by importance to the target role
+- Recommend removing generic skills that don't add value for the specific position
+- Suggest adding industry-specific technical skills that may be missing
+- Check for appropriate balance between technical, professional, and soft skills based on job context
+- Ensure skills are presented with appropriate proficiency levels when relevant
+- Recommend modern or trending skills in the specified field that could strengthen the application
 
 Return your response as plain text (no HTML or markdown tags) in the following exact format:
 
@@ -191,7 +206,7 @@ The revised version must be written as a coherent, professionally formatted para
         role: "user",
         content: `I'm working on the "${sectionId}" section of my resume. Here's the current content:
 
-${effectiveSectionContent}
+${sectionContent}
 
 ${userQuery || "Please produce a revised version for this section."}`
       }
