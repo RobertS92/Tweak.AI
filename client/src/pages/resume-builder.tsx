@@ -184,6 +184,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
         console.log("[DEBUG] Section ID:", sectionId);
         console.log("[DEBUG] Section Content:", sectionContent);
         console.log("[DEBUG] Content Length:", sectionContent.length);
+        console.log("[DEBUG] User Query:", userQuery);
 
         const response = await fetch("/api/resume-ai-assistant", {
           method: "POST",
@@ -194,8 +195,13 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
         if (!response.ok) throw new Error("Failed to get AI suggestions");
 
         const data = await response.json();
-        setAiMessage(data.revision || "No suggestions available.");
-        setAiOutput(data.revision || "");
+        console.log("[DEBUG] AI Response Data:", data);
+
+        const revision = data.revision || "No suggestions available.";
+        console.log("[DEBUG] Setting message:", revision);
+
+        setAiMessage(revision);
+        setAiOutput(revision);
       } catch (error) {
         console.error("AI suggestion error:", error);
         toast({
@@ -228,7 +234,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
     // Get section content first
     const section = sections.find(s => s.id === sectionId);
     const isEmpty = !section?.content || section.content.trim().length === 0;
-    
+
     // Only get AI suggestions if section has content
     if (!isEmpty) {
       getAiSuggestions(sectionId);
