@@ -128,7 +128,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
   /**
    * Calls the AI assistant route.
    */
-  const handleAddAiContent = () => {
+  const handleApplyAiOutput = () => {
     if (!activeSection || !aiOutput) return;
 
     setSections(prev => prev.map(section => {
@@ -543,7 +543,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
             </div>
             {aiOutput && (
               <Button
-                onClick={handleAddAiContent}
+                onClick={handleApplyAiOutput}
                 className="mt-4 w-full bg-green-600 hover:bg-green-700"
               >
                 Apply AI Suggestions
