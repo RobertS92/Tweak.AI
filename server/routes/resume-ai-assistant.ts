@@ -271,9 +271,13 @@ Revised Version:
       sample: aiResponse.substring(0, 100) + "..."
     });
 
-    // Handle the response differently based on whether it contains a revision marker
-    let revisedText = aiResponse;
-    const marker = "Revised Version:";
+    // For content creation queries, wrap the response in the revision format
+    const revisedText = isContentCreationQuery ? 
+      `Revised Version:\n"${aiResponse}"` : 
+      aiResponse;
+
+    // Handle the response
+    const markerIndex = revisedText.indexOf("Revised Version:");rsion:";
     const markerIndex = aiResponse.indexOf(marker);
 
     if (markerIndex !== -1) {
