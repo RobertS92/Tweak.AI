@@ -226,6 +226,10 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
    */
   const handleSectionSelect = useCallback((sectionId: string) => {
     setActiveSection(sectionId);
+    // Clear any existing AI suggestions when switching sections
+    setAiSuggestion('');
+    setAiImprovements([]);
+    
     // Get section content first
     const section = sections.find(s => s.id === sectionId);
     const isEmpty = !section?.content || section.content.trim().length === 0;
