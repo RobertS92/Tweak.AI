@@ -1,0 +1,164 @@
+// 1. Changes to the ResumeBuilder Component (paste.txt / document 3)
+
+// First, the handleAddAiContent function needs improvement to properly handle different section types
+const handleAddAiContent = (content: string) => {
+  if (!activeSection || !content) return;
+
+  const section = sections.find(s => s.id === activeSection);
+  if (!section) return;
+
+  setSections(prevSections =>
+    prevSections.map(section => {
+      if (section.id === activeSection) {
+        // Handle different section types differently
+        if (section.content !== undefined) {
+          // For text-based sections (professional-summary)
+          return { ...section, content: section.content ? `${section.content}\n\n${content}` : content };
+        } 
+        else if (section.id === 'skills' && section.categories) {
+          // For skills section, try to parse skills from the content
+          const lines = content.split('\n').filter(line => line.trim());
+          const technicalSkills = [];
+          const softSkills = [];
+          
+          // Simple parsing - could be improved with AI assistance
+          let currentCategory = technicalSkills;
+          for (const line of lines) {
+            if (line.toLowerCase().includes('technical') || line.toLowerCase().includes('hard skills')) {
+              currentCategory = technicalSkills;
+              continue;
+            }
+            if (line.toLowerCase().includes('soft skills')) {
+              currentCategory = softSkills;
+              continue;
+            }
+            
+            // Extract skills from bullet points or comma-separated lists
+            const skillText = line.replace(/^[-•*]\s*/, '').trim();
+            if (skillText) {
+              if (skillText.includes(',')) {
+                currentCategory.push(...skillText.split(',').map(s => s.trim()).filter(s => s));
+              } else {
+                currentCategory.push(skillText);
+              }
+            }
+          }
+          
+          // Update categories with new skills
+          const updatedCategories = [...section.categories];
+          if (technicalSkills.length > 0) {
+            const techCatIndex = updatedCategories.findIndex(c => 
+              c.name.toLowerCase().includes('technical'));
+            if (techCatIndex >= 0) {
+              updatedCategories[techCatIndex] = {
+                ...updatedCategories[techCatIndex],
+                skills: [...new Set([...updatedCategories[techCatIndex].skills, ...technicalSkills])]
+              };
+            }
+          }
+          
+          if (softSkills.length > 0) {
+            const softCatIndex = updatedCategories.findIndex(c => 
+              c.name.toLowerCase().includes('soft'));
+            if (softCatIndex >= 0) {
+              updatedCategories[softCatIndex] = {
+                ...updatedCategories[softCatIndex],
+                skills: [...new Set([...updatedCategories[softCatIndex].skills, ...softSkills])]
+              };
+            }
+          }
+          
+          return { ...section, categories: updatedCategories };
+        }
+        else if (section.items) {
+          // For items-based sections (work-experience, education, projects, certifications)
+          // Try to parse the content into an item
+          const newItem: SectionItem = {
+            title: "",
+            subtitle: "",
+            date: "",
+            description: content,
+            bullets: []
+          };
+          
+          // Try to extract more structured information
+          const lines = content.split('\n').filter(line => line.trim());
+          for (const line of lines) {
+            if (line.toLowerCase().includes('position:') || line.toLowerCase().includes('title:')) {
+              newItem.title = line.split(':')[1]?.trim() || "";
+            }
+            else if (line.toLowerCase().includes('company:') || line.toLowerCase().includes('organization:')) {
+              newItem.subtitle = line.split(':')[1]?.trim() || "";
+            }
+            else if (line.toLowerCase().includes('date:')) {
+              newItem.date = line.split(':')[1]?.trim() || "";
+            }
+            else if (line.startsWith('•') || line.startsWith('-')) {
+              newItem.bullets.push(line.substring(1).trim());
+            }
+          }
+          
+          // If no structured info was found, use the content as description
+          if (!newItem.title && !newItem.subtitle && !newItem.date && newItem.bullets.length === 0) {
+            newItem.description = content;
+          } else if (newItem.bullets.length > 0) {
+            // If we extracted bullet points, clear the description
+            newItem.description = "";
+          }
+          
+          return { ...section, items: [...section.items, newItem] };
+        }
+      }
+      return section;
+    })
+  );
+
+  toast({
+    title: "Content Added",
+    description: "AI suggestion has been added to the section",
+  });
+};
+
+// 2. Changes to the AI Assistant area in the ResumeBuilder component
+// Replace the existing Apply Revision button with:
+
+{activeSection && aiMessage && (
+  <Button
+    variant="outline"
+    onClick={() => handleAddAiContent(extractRevisedVersion(aiMessage) || aiMessage)}
+    disabled={isAiLoading}
+  >
+    Add to Section
+  </Button>
+)}
+
+// 3. Update to the system prompt in the backend (paste-2.txt)
+// To better handle different sections, add a section about how to format responses:
+
+When generating content for empty sections after the user provides information:
+- For work experience entries, format as "Position: [title]\nCompany: [company]\nDate: [date range]\n• [achievement 1]\n• [achievement 2]"
+- For education entries, format as "Degree: [degree]\nInstitution: [institution]\nDate: [graduation date]\n• [achievement/honor]"
+- For skills, organize as "Technical Skills:\n• [skill 1]\n• [skill 2]\n\nSoft Skills:\n• [skill 3]\n• [skill 4]"
+- For projects, format as "Project: [title]\nDate: [date range]\nDescription: [brief description]\n• [detail 1]\n• [detail 2]"
+- For certifications, format as "Certification: [name]\nIssuing Organization: [organization]\nDate: [date]\nID: [credential ID if applicable]"
+
+// 4. Changes for the extractRevisedVersion function in ResumeBuilder
+// Update to handle cases where there's no "Revised Version:" marker
+
+const extractRevisedVersion = (text: string): string | undefined => {
+  const marker = "Revised Version:";
+  const index = text.indexOf(marker);
+  if (index !== -1) {
+    // Extract everything after the marker, then trim any quotes
+    return text.substring(index + marker.length).trim().replace(/^"|"$/g, "");
+  }
+  
+  // If there's no marker but the text appears to be formatted content (not just guidance),
+  // return the complete text for sections where AI has generated content in response to user input
+  if (text && !text.includes("I notice your resume doesn't include") && 
+      !text.includes("Here's how to create an effective")) {
+    return text;
+  }
+  
+  return undefined;
+};
