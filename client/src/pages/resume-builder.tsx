@@ -41,6 +41,7 @@ export default function ResumeBuilder() {
   const [aiMessage, setAiMessage] = useState("");
   const [aiInput, setAiInput] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
+const [aiMessage, setAiMessage] = useState("");
 
   // Personal info state
   const [personalInfo, setPersonalInfo] = useState({
@@ -492,7 +493,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
             </Button>
           </form>
           {/* Apply Revision button */}
-          {activeSection && aiMessage.includes("Revised Version:") && (
+          {activeSection && aiMessage?.includes("Revised Version:") && (
             <Button
               variant="outline"
               onClick={handleApplyRevision}
