@@ -273,18 +273,22 @@ Revised Version:
 
     const marker = "Revised Version:";
 
-    // For content creation queries, wrap the response in the revision format
+    // For content creation queries, format the response
     let revisedText = isContentCreationQuery ? 
-      `${marker}\n"${aiResponse}"` : 
+      `Revised Version:\n${aiResponse}` : 
       aiResponse;
 
-    // Handle the response
+    // Handle the response formatting
+    const marker = "Revised Version:";
     const markerIndex = revisedText.indexOf(marker);
 
     if (markerIndex !== -1) {
       revisedText = revisedText.substring(markerIndex + marker.length).trim();
-      // Remove surrounding quotes if present.
-      revisedText = revisedText.replace(/^"|"$/g, "");
+    }
+
+    // Ensure we're returning the actual AI response for content creation
+    if (isContentCreationQuery && !revisedText.includes("notice your resume")) {
+      revisedText = aiResponse;
     }
 
     return res.json({
