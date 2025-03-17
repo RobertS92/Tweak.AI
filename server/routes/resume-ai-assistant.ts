@@ -50,80 +50,74 @@ March 2020 - Present
 What professional roles have you held that you'd like to include in your resume?`;
 
     case "education":
-      return `I notice your resume doesn't include an Education section. Even with extensive work experience, education credentials remain important to many employers and should be included.
+      return `I notice your resume doesn't include an Education section. This section provides important information about your academic background and qualifications.
 
-Education Template:
-Degree/Certificate Name
-Institution Name and Location
-Graduation Date (or expected)
-GPA (if 3.0 or higher)
-Relevant coursework, honors, or academic achievements (optional)
+Here's how to create an effective Education section:
 
-Example:
-EDUCATION
-Bachelor of Business Administration, Marketing
-University of Texas - Austin, TX
-Graduated: May 2019 | GPA: 3.7
-Honors: Dean's List (6 semesters), Marketing Student of the Year 2019
+• List education in reverse-chronological order (most recent first)
+• For each entry include:
+  - Degree/certificate name
+  - Institution name and location
+  - Graduation date (or expected date)
+  - GPA if it's 3.0 or higher (optional)
+• You may also include:
+  - Relevant coursework
+  - Academic honors or awards
+  - Extracurricular activities that demonstrate relevant skills
+
+Keep this section concise and focused on education that's relevant to your career goals.
 
 What educational qualifications would you like to add to your resume?`;
 
     case "skills":
-      return `I notice your resume doesn't include a dedicated Skills section. This section allows recruiters to quickly identify your technical and professional capabilities relevant to the position.
+      return `I notice your resume doesn't include a Skills section. This section allows employers to quickly identify your specific capabilities relevant to the position.
 
-Skills Section Template:
-Technical Skills: List software, tools, programming languages, platforms
-Industry-Specific Skills: List specialized skills relevant to your field
-Transferable Skills: List 3-5 relevant soft skills (communication, leadership, etc.)
-Languages: List any additional languages with proficiency level
+Here's how to create an effective Skills section:
 
-Example:
-SKILLS
-Technical: Python, SQL, Tableau, Google Analytics, Adobe Creative Suite
-Marketing: SEO/SEM, A/B Testing, Content Strategy, Email Marketing, Social Media Management
-Soft Skills: Project Management, Cross-functional Collaboration, Client Relations
-Languages: English (Native), French (Intermediate)
+• Organize skills into logical categories (technical, professional, etc.)
+• List 8-12 skills that are most relevant to your target positions
+• Include a mix of:
+  - Technical skills (software, tools, programming languages)
+  - Industry-specific skills (specialized knowledge areas)
+  - Transferable skills (relevant soft skills)
+• Consider formatting as a simple list or using visualization for skill levels
+
+Review job descriptions in your field to identify key skills employers are seeking.
 
 What key skills would you like to highlight in your resume?`;
 
     case "projects":
-      return `I notice your resume doesn't include a Projects section. This can be particularly valuable for showcasing relevant skills and achievements, especially for those early in their career or transitioning to a new field.
+      return `I notice your resume doesn't include a Projects section. This section helps demonstrate your practical skills and accomplishments, particularly valuable if you're early in your career or changing fields.
 
-Projects Template (for each project):
-Project Name/Title
-Dates (optional)
-Brief description (1-2 sentences)
-2-3 bullet points highlighting:
-- Technologies/methods used
-- Your specific contributions
-- Results or impact
+Here's how to create an effective Projects section:
 
-Example:
-PROJECTS
-E-Commerce Analytics Dashboard | January - March 2023
-Self-initiated project to analyze customer behavior and sales patterns for an online retailer.
-- Built interactive dashboard using Python, Pandas and Tableau to visualize $1.2M in transaction data
-- Identified key customer segments and purchasing patterns that led to a 22% increase in targeted marketing ROI
-- Implemented automated reporting system that reduced weekly analysis time by 5 hours
+• Include 2-4 relevant projects that showcase skills related to your target role
+• For each project, provide:
+  - A clear title and timeframe
+  - A brief 1-2 sentence description explaining the purpose
+• Use bullet points to highlight:
+  - What you did (your role and contributions)
+  - How you did it (methods, tools, or technologies used)
+  - Results achieved (impact or outcomes if applicable)
 
-Do you have any relevant projects you'd like to include on your resume?`;
+Focus on projects that are relevant to the positions you're applying for, whether they're professional, academic, volunteer, or personal initiatives.
+
+What types of projects would you like to include on your resume?`;
 
     case "certifications":
-      return `I notice your resume doesn't include a Certifications section. Professional certifications demonstrate your commitment to skill development and can significantly strengthen your candidacy, especially for technical or specialized roles.
+      return `I notice your resume doesn't include a Certifications section. Professional certifications can significantly strengthen your candidacy by demonstrating specialized knowledge and commitment to your field.
 
-Certifications Template:
-Certification Name
-Issuing Organization
-Date Obtained (or valid through date if applicable)
-Credential ID/Verification details (optional)
+Here's how to create an effective Certifications section:
 
-Example:
-CERTIFICATIONS
-Project Management Professional (PMP) - Project Management Institute
-Obtained: September 2022 | Credential ID: 1234567
+• List certifications in order of relevance to your target role
+• For each certification include:
+  - Full name of the certification (avoid acronyms only)
+  - Issuing organization
+  - Date obtained or expiration date
+  - Credential ID or verification details (if applicable)
+• Include only current or active certifications unless a lapsed certification demonstrates relevant knowledge
 
-Certified Scrum Master (CSM) - Scrum Alliance
-Obtained: March 2021
+Focus on certifications that are recognized in your industry and relevant to your target positions.
 
 Do you have any professional certifications or specialized training you'd like to include on your resume?`;
 
