@@ -147,11 +147,16 @@ router.post("/resume-ai-assistant", async (req, res) => {
     // Check if section content is empty
     const isEmptySection = !sectionContent || sectionContent.trim().length === 0;
 
-    // If section is empty, return the fallback message directly without sending to OpenAI
-    if (isEmptySection && !userQuery) {
+    const defaultQuery = "Please analyze this section and suggest improvements.";
+    const hasCustomQuery = userQuery && userQuery.trim() !== "" && userQuery !== defaultQuery;
+
+    // If section is empty and there's no meaningful user query, return the fallback message
+    if (isEmptySection && !hasCustomQuery) {
+      console.log("[DEBUG] Returning fallback message for empty section:", sectionId);
       return res.json({
         revision: getFallbackMessage(sectionId),
         improvements: [],
+        isContentCreation: true
       });
     }
 
