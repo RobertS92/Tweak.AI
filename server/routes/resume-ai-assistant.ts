@@ -145,39 +145,43 @@ router.post("/resume-ai-assistant", async (req, res) => {
     });
 
     // Check if section content is empty
-    const isEmptySection = !sectionContent || sectionContent.trim().length === 0;
+    const isEmptySection =
+      !sectionContent || sectionContent.trim().length === 0;
 
-    // If section is empty, return the fallback message directly without sending to OpenAI
-    if (isEmptySection && !userQuery) {
+    // If this is an empty section with no meaningful query, return the fallback message
+    // This includes empty queries, blank queries, or the default analysis request
+    if (
+      isEmptySection &&
+      (!userQuery ||
+        userQuery.trim() === "" ||
+        userQuery === "Please analyze this section and suggest improvements.")
+    ) {
+      console.log(
+        "[DEBUG] Empty section with no meaningful query - returning fallback message",
+      );
       return res.json({
         revision: getFallbackMessage(sectionId),
         improvements: [],
       });
     }
 
-    // Determine if this is likely a content creation request based on user query
-    const isContentCreationQuery = userQuery && (
-      userQuery.toLowerCase().includes("create") ||
-      userQuery.toLowerCase().includes("write") ||
-      userQuery.toLowerCase().includes("generate") ||
-      userQuery.toLowerCase().includes("help me with") ||
-      userQuery.toLowerCase().includes("i am a") ||
-      userQuery.toLowerCase().includes("i have been") ||
-      userQuery.toLowerCase().includes("my experience") ||
-      userQuery.toLowerCase().includes("my background") ||
-      // If user is responding to our prompt to tell us about themselves
-      (isEmptySection && userQuery.length > 30)
-    );
+    // If there's a meaningful user query for an empty section, this is likely a
+    // response to our fallback prompt asking them to provide information
+    if (
+      isEmptySection &&
+      userQuery &&
+      userQuery.trim() !== "" &&
+      userQuery !== "Please analyze this section and suggest improvements."
+    ) {
+      console.log(
+        "[DEBUG] User query for empty section - likely responding to fallback prompt",
+      );
 
-    // Choose the appropriate system prompt based on whether this is a 
-    // content creation request or a conversation/analysis
-    let systemPrompt = "";
+      // This is a content creation request based on the user's response to our fallback
+      // Configure the system prompt for content creation
+      const systemPrompt = `You are a professional resume writing assistant who creates compelling resume content based on user input.
 
-    if (isContentCreationQuery) {
-      // For content creation requests
-      systemPrompt = `You are a professional resume writing assistant who creates compelling resume content based on user input.
-
-For the ${sectionId.replace(/-/g, ' ')} section, create professional, ATS-friendly content that highlights the user's qualifications effectively.
+For the ${sectionId.replace(/-/g, " ")} section, create professional, ATS-friendly content that highlights the user's qualifications effectively.
 
 When creating content:
 - Use concise, impactful language with strong action verbs
@@ -195,13 +199,54 @@ Format your output based on the section type:
 - For certifications: Use format "Certification: [name]\\nIssuing Organization: [organization]\\nDate: [date]\\nID: [credential ID if applicable]"
 
 Return ONLY the ready-to-use content with no explanations, introductions, or additional commentary.`;
-    } else {
-      // For analysis, revision, or conversation
-      systemPrompt = `You are a professional resume writing assistant. You have two main functions:
 
-1. ANALYZING AND REVISING CONTENT: If the user has provided resume content to review, analyze it and suggest improvements.
+      const messages = [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        {
+          role: "user",
+          content: `I'm working on the "${sectionId.replace(/-/g, " ")}" section of my resume. I haven't written anything yet, but here's my information: ${userQuery}`,
+        },
+      ];
 
-2. HAVING A CONVERSATION: If the user is asking a question or having a conversation about resume writing, respond conversationally.
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: messages as any,
+        temperature: 0.7,
+        max_tokens: 1500,
+      });
+
+      const aiResponse = completion.choices[0]?.message?.content || "";
+      console.log("[DEBUG] Content creation response received:", {
+        length: aiResponse.length,
+        sample: aiResponse.substring(0, 100) + "...",
+      });
+
+      return res.json({
+        revision: aiResponse,
+        isContentCreation: true,
+        improvements: [],
+      });
+    }
+
+    // For cases with existing content, use the normal analysis flow
+    // Determine if this is a content revision or conversation request
+    const isRevisionRequest =
+      !userQuery ||
+      userQuery === "Please analyze this section and suggest improvements." ||
+      userQuery.toLowerCase().includes("revise") ||
+      userQuery.toLowerCase().includes("improve") ||
+      userQuery.toLowerCase().includes("update") ||
+      userQuery.toLowerCase().includes("enhance") ||
+      userQuery.toLowerCase().includes("rewrite");
+
+    let systemPrompt = "";
+
+    if (isRevisionRequest) {
+      // For analysis and revision requests
+      systemPrompt = `You are a professional resume writing assistant. Your task is to produce a final revised version of the given resume section.
 
 When analyzing professional summaries:
 - Check for clear articulation of professional identity and experience level
@@ -229,29 +274,34 @@ When analyzing skills sections:
 - Suggest adding industry-specific technical skills that may be missing
 - Check for appropriate balance between technical, professional, and soft skills based on job context
 
-IMPORTANT: If the user is asking a question or seeking advice (rather than requesting a revision), respond conversationally without using the "Revised Version:" format.
-
-For CONTENT REVISIONS ONLY, format your response as:
+Return your response as plain text (no HTML or markdown tags) in the following exact format:
 
 Revised Version:
-"[Your revised text here]"`;
-    }
+"[Your revised text here]"
 
-    // Only proceed with OpenAI processing
-    console.log("[DEBUG] Processing with userQuery:", userQuery);
-    console.log("[DEBUG] Is content creation request:", isContentCreationQuery);
+The revised version must be written as a coherent, professionally formatted paragraph exactly as it should appear on the resume so that the user can copy and paste it directly.`;
+    } else {
+      // For conversation/question-answering
+      systemPrompt = `You are a professional resume writing assistant helping a user with their resume. The user is asking a question or seeking advice about the ${sectionId.replace(/-/g, " ")} section of their resume.
+
+Respond in a helpful, conversational manner. Provide practical advice relevant to resume writing best practices. Keep your response focused on their question and the specific section they're working on.
+
+You can see the content of their current ${sectionId.replace(/-/g, " ")} section, which you should reference when relevant to your answer. If they're asking about formatting or content recommendations, give them specific examples tailored to their situation.
+
+DO NOT format your response with "Revised Version:" - this is a conversation, not a content revision.`;
+    }
 
     const messages = [
       {
         role: "system",
-        content: systemPrompt
+        content: systemPrompt,
       },
       {
         role: "user",
-        content: userQuery 
-          ? `I'm working on the "${sectionId.replace(/-/g, ' ')}" section of my resume. ${isEmptySection ? "I haven't written anything yet." : "Here's the current content:\n\n" + sectionContent}\n\n${userQuery}`
-          : `Please analyze this ${sectionId.replace(/-/g, ' ')} section and suggest improvements:\n\n${sectionContent}`
-      }
+        content: userQuery
+          ? `I'm working on the "${sectionId.replace(/-/g, " ")}" section of my resume. Here's the current content:\n\n${sectionContent}\n\n${userQuery}`
+          : `Please analyze this ${sectionId.replace(/-/g, " ")} section and suggest improvements:\n\n${sectionContent}`,
+      },
     ];
 
     console.log("[DEBUG] Sending request to OpenAI");
@@ -259,14 +309,14 @@ Revised Version:
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: messages as any,
-      temperature: isContentCreationQuery ? 0.7 : 0.5,
+      temperature: isRevisionRequest ? 0.5 : 0.7,
       max_tokens: 1500,
     });
 
     const aiResponse = completion.choices[0]?.message?.content || "";
     console.log("[DEBUG] AI Response received:", {
       length: aiResponse.length,
-      sample: aiResponse.substring(0, 100) + "..."
+      sample: aiResponse.substring(0, 100) + "...",
     });
 
     // Handle the response differently based on whether it contains a revision marker
@@ -282,7 +332,7 @@ Revised Version:
 
     return res.json({
       revision: revisedText,
-      isContentCreation: isContentCreationQuery,
+      isContentCreation: false,
       hasRevisionMarker: markerIndex !== -1,
       improvements: [],
     });
@@ -295,7 +345,10 @@ Revised Version:
       details: errorMessage,
     });
   } finally {
-    console.log("[DEBUG] AI Assistant request completed for section:", sectionId);
+    console.log(
+      "[DEBUG] AI Assistant request completed for section:",
+      sectionId,
+    );
   }
 });
 
