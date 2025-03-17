@@ -14,17 +14,71 @@ const openai = new OpenAI({
 function getFallbackMessage(sectionId: string): string {
   switch (sectionId) {
     case "professional-summary":
-      return "No professional summary provided. Please include a brief overview of your skills, experience, and career goals.";
+      return `Your Professional Summary section is empty. Here's how to write an effective summary:
+• Start with your years of experience and primary field
+• Highlight 2-3 key achievements or specialties
+• Mention your most relevant skills and technologies
+• Include your career goals or what you're seeking
+• Keep it between 3-5 sentences
+
+Example: "Results-driven software engineer with 5 years of experience in full-stack development..."`;
+
     case "work-experience":
-      return "No work experience details provided. Please include your job title, company, employment dates (month and year), responsibilities, and achievements.";
+      return `Your Work Experience section is empty. For each position, include:
+• Job title and company name
+• Employment dates (MM/YYYY - MM/YYYY)
+• 3-5 bullet points of key responsibilities
+• Quantifiable achievements (e.g., "Increased efficiency by 25%")
+• Technologies and tools used
+• Team size and project scope where relevant
+
+Start with your most recent position and work backwards.`;
+
     case "education":
-      return "No education details provided. Please include your degree, institution, dates (month and year), and any relevant coursework or honors.";
+      return `Your Education section is empty. Include the following for each entry:
+• Degree name and major
+• Institution name and location
+• Graduation date or expected date
+• GPA (if 3.5 or above)
+• Relevant coursework
+• Academic honors or achievements
+• Any research projects or thesis work
+
+List your highest level of education first.`;
+
     case "skills":
-      return "No skills listed. Please include both technical and soft skills relevant to your career.";
+      return `Your Skills section is empty. Organize your skills into categories:
+• Technical Skills: Programming languages, frameworks, tools
+• Domain Knowledge: Industry-specific expertise
+• Soft Skills: Leadership, communication, problem-solving
+• Certifications: Include relevant technical certifications
+• Languages: List any language proficiencies
+
+Focus on skills most relevant to your target roles.`;
+
     case "projects":
-      return "No project details provided. Please include the project name, description, technologies used, and key achievements.";
+      return `Your Projects section is empty. For each project, include:
+• Project name and timeframe
+• Your role and team size
+• Technologies and tools used
+• Problem solved or project purpose
+• Key features implemented
+• Measurable outcomes or impact
+• Links to live demos or repositories
+
+Choose 2-4 projects that showcase different skills.`;
+
     case "certifications":
-      return "No certifications provided. Please include the certification name, issuing organization, and dates.";
+      return `Your Certifications section is empty. For each certification:
+• Certification name
+• Issuing organization
+• Date earned and expiration (if applicable)
+• Credential ID or verification link
+• Relevant skills demonstrated
+• Version or level (if applicable)
+
+List most relevant or recent certifications first.`;
+
     default:
       return "[No content provided]";
   }
