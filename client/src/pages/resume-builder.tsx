@@ -66,9 +66,7 @@ export default function ResumeBuilder() {
   ]);
 
   /**
-   * Collects the current section's text.
-   * Now includes `item.date` in the filter
-   * so that date-only entries are not discarded.
+   * Extracts the current section's text.
    */
   const getCurrentSectionContent = useCallback(() => {
     if (!activeSection) return "";
@@ -76,18 +74,15 @@ export default function ResumeBuilder() {
     const section = sections.find((s) => s.id === activeSection);
     if (!section) return "";
 
-    // If it's a simple text-based section
     if (section.content !== undefined) {
       return section.content || "";
-    }
-    // Otherwise, handle "items" sections like experience, etc.
-    else if (section.items && section.items.length > 0) {
+    } else if (section.items && section.items.length > 0) {
       const formattedItems = section.items
         .filter(
           (item) =>
             item.title ||
             item.subtitle ||
-            item.date || // <--- Added this
+            item.date ||
             item.description ||
             (item.bullets && item.bullets.length > 0),
         )
@@ -103,21 +98,33 @@ Company: ${item.subtitle}
 Date: ${item.date}
 ${item.description ? `Description: ${item.description}` : ""}
 ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
-`.trim();
+          `.trim();
         });
 
       if (formattedItems.length === 0) {
         return `No entries found in ${section.title}`;
       }
 
-      // Add section header and join all items
       return `${section.title.toUpperCase()}\n\n${formattedItems.join("\n\n==========\n\n")}`;
     }
     return "";
   }, [activeSection, sections]);
 
   /**
-   * Calls the AI assistant route
+   * Extracts the "Revised Version" portion from the AI output.
+   */
+  const extractRevisedVersion = (text: string): string => {
+    const marker = "Revised Version:";
+    const index = text.indexOf(marker);
+    if (index !== -1) {
+      // Extract everything after the marker, then trim any quotes
+      return text.substring(index + marker.length).trim().replace(/^"|"$/g, "");
+    }
+    return "";
+  };
+
+  /**
+   * Calls the AI assistant route.
    */
   const getAiSuggestions = useCallback(
     async (sectionId: string, userQuery?: string) => {
@@ -154,21 +161,18 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
     [getCurrentSectionContent, toast],
   );
 
-  /**
-   * If the user changes the active section, automatically
-   * fetch AI suggestions for it.
-   */
+  // Auto-fetch suggestions when activeSection changes.
   useEffect(() => {
     if (activeSection) {
       getAiSuggestions(
         activeSection,
-        "Please analyze this section and suggest improvements.",
+        "Please analyze this section and suggest improvements."
       );
     }
   }, [activeSection, getAiSuggestions]);
 
   /**
-   * Selects a section from the sidebar
+   * Handles section selection from the sidebar.
    */
   const handleSectionSelect = useCallback((sectionId: string) => {
     setActiveSection(sectionId);
@@ -187,7 +191,37 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
   };
 
   /**
-   * Handle file upload -> parse the resume
+   * Applies the revised version from the AI suggestions to the active section.
+   */
+  const handleApplyRevision = () => {
+    if (!activeSection) return;
+    const revisedText = extractRevisedVersion(aiMessage);
+    if (!revisedText) {
+      toast({
+        title: "Apply Revision Error",
+        description: "No revised version found in the suggestions.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Update the active section's content.
+    setSections(prevSections =>
+      prevSections.map(section =>
+        section.id === activeSection
+          ? { ...section, content: revisedText }
+          : section
+      )
+    );
+
+    toast({
+      title: "Revision Applied",
+      description: "The revised text has been applied to the section.",
+    });
+  };
+
+  /**
+   * Handles file upload -> parse the resume.
    */
   const handleFileUpload = async (file: File) => {
     if (!file) return;
@@ -214,41 +248,27 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
       const data = await response.json();
       console.log("[DEBUG] Parsed resume data:", data);
 
-      // Verify data structure before updating state
       if (!data.sections || !Array.isArray(data.sections)) {
         throw new Error("Invalid data structure received from parser");
       }
 
-      // Update personal info from the personalInfo object, not top-level fields
       setPersonalInfo({
         name: data.personalInfo?.name || "",
         email: data.personalInfo?.email || "",
-        phone: data.personalInfo?.phone || "", 
+        phone: data.personalInfo?.phone || "",
         location: data.personalInfo?.location || "",
         linkedin: data.personalInfo?.linkedin || "",
       });
 
-      // Create a map of existing sections by ID for proper merging
       const currentSections = new Map(sections.map(section => [section.id, section]));
-      
-      // Filter out personal-info section completely from the sections array
-      const filteredSections = data.sections.filter((section: ResumeSection) => {
-        // Remove all personal-info sections from the array
-        return section.id !== 'personal-info';
-      });
-      
-      // Map and merge sections from server data with proper structure
-      // Double-check to filter out any personal-info sections
+      const filteredSections = data.sections.filter((section: ResumeSection) => section.id !== 'personal-info');
       const properlyFilteredSections = filteredSections.filter((section: ResumeSection) => section.id !== 'personal-info');
-      
+
       const updatedSections = properlyFilteredSections.map((section: ResumeSection) => {
-        // Get current section structure if it exists
         const currentSection = currentSections.get(section.id) || { 
           id: section.id, 
           title: section.title 
         };
-        
-        // Special handling for skills section with categories
         if (section.id === 'skills') {
           return {
             ...currentSection,
@@ -259,10 +279,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
             ]
           };
         }
-        
-        // For item-based sections (work experience, education, projects, certifications)
-        if (section.id === 'work-experience' || section.id === 'education' || 
-            section.id === 'projects' || section.id === 'certifications') {
+        if (['work-experience', 'education', 'projects', 'certifications'].includes(section.id)) {
           return {
             ...currentSection,
             ...section,
@@ -272,16 +289,13 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
             })) : [],
           };
         }
-        
-        // For content-based sections (summary, personal info)
         return {
           ...currentSection,
           ...section,
           content: section.content || "",
         };
       });
-      
-      // Ensure all standard sections exist in the result (excluding personal-info which is handled separately)
+
       const standardSectionIds = [
         'professional-summary',
         'work-experience',
@@ -290,8 +304,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
         'projects',
         'certifications'
       ];
-      
-      // Add any missing sections
+
       standardSectionIds.forEach(id => {
         if (!updatedSections.find(section => section.id === id)) {
           const defaultSection = sections.find(section => section.id === id);
@@ -300,13 +313,10 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
           }
         }
       });
-      
+
       setSections(updatedSections);
 
-      setAiMessage(
-        "Resume parsed successfully. Select any section to get AI suggestions for improvements.",
-      );
-
+      setAiMessage("Resume parsed successfully. Select any section to get AI suggestions for improvements.");
       toast({
         title: "Resume Parsed Successfully",
         description: "All sections have been populated. Review and edit as needed.",
@@ -315,8 +325,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
       console.error("Error parsing resume:", error);
       toast({
         title: "Parsing Failed",
-        description:
-          "Unable to process your resume. Please try again or enter details manually.",
+        description: "Unable to process your resume. Please try again or enter details manually.",
         variant: "destructive",
       });
     } finally {
@@ -325,7 +334,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
   };
 
   /**
-   * Clears out the resume entirely
+   * Clears out the resume entirely.
    */
   const handleNewResume = () => {
     setPersonalInfo({
@@ -340,16 +349,14 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
         ...section,
         content: "",
         items: section.items ? [] : undefined,
-      })),
+      }))
     );
-    setAiMessage(
-      "Start by uploading a resume or entering your information manually.",
-    );
+    setAiMessage("Start by uploading a resume or entering your information manually.");
     setActiveSection(null);
   };
 
   /**
-   * Section item management functions
+   * Section item management functions.
    */
   const addSectionItem = (sectionId: string) => {
     setSections((prev) =>
@@ -370,7 +377,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
           };
         }
         return section;
-      }),
+      })
     );
   };
 
@@ -384,7 +391,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
           };
         }
         return section;
-      }),
+      })
     );
   };
 
@@ -402,11 +409,11 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
           return { ...section, items: newItems };
         }
         return section;
-      }),
+      })
     );
   };
 
-  // Render the sidebar buttons
+  // Render the sidebar buttons.
   const renderSidebarButtons = () =>
     sections.map((section) => (
       <button
@@ -416,7 +423,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
           "w-full text-left px-4 py-2 rounded-md transition-colors relative",
           activeSection === section.id
             ? "bg-primary text-primary-foreground"
-            : "hover:bg-muted",
+            : "hover:bg-muted"
         )}
       >
         {section.title}
@@ -426,7 +433,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
       </button>
     ));
 
-  // Render the AI Assistant area
+  // Render the AI Assistant area.
   const renderAiAssistant = () => (
     <Card className="h-[30vh] mt-6">
       <CardHeader className="py-3">
@@ -464,25 +471,37 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
             </div>
           </div>
         </ScrollArea>
-        <form onSubmit={handleAiChat} className="p-4 border-t flex gap-2">
-          <Input
-            placeholder={
-              activeSection
-                ? "Ask for suggestions or improvements..."
-                : "Select a section first..."
-            }
-            value={aiInput}
-            onChange={(e) => setAiInput(e.target.value)}
-            disabled={!activeSection || isAiLoading}
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={isAiLoading || !activeSection || !aiInput.trim()}
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
+        <div className="p-4 border-t flex flex-col gap-2">
+          <form onSubmit={handleAiChat} className="flex gap-2">
+            <Input
+              placeholder={
+                activeSection
+                  ? "Ask for suggestions or improvements..."
+                  : "Select a section first..."
+              }
+              value={aiInput}
+              onChange={(e) => setAiInput(e.target.value)}
+              disabled={!activeSection || isAiLoading}
+            />
+            <Button
+              type="submit"
+              size="icon"
+              disabled={isAiLoading || !activeSection || !aiInput.trim()}
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </form>
+          {/* Apply Revision button */}
+          {activeSection && aiMessage.includes("Revised Version:") && (
+            <Button
+              variant="outline"
+              onClick={handleApplyRevision}
+              disabled={isAiLoading}
+            >
+              Apply Revision
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -761,7 +780,6 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
                                 )
                               }
                             />
-                            {/* Bullet points */}
                             <div className="space-y-2">
                               {(item.bullets || []).map(
                                 (bullet, bulletIndex) => (

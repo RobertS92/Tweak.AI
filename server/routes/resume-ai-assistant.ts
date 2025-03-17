@@ -10,6 +10,26 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Helper function: returns a fallback message based on section id.
+function getFallbackMessage(sectionId: string): string {
+  switch (sectionId) {
+    case "professional-summary":
+      return "No professional summary provided. Please include a brief overview of your skills, experience, and career goals.";
+    case "work-experience":
+      return "No work experience details provided. Please include your job title, company, employment dates (month and year), responsibilities, and achievements.";
+    case "education":
+      return "No education details provided. Please include your degree, institution, dates (month and year), and any relevant coursework or honors.";
+    case "skills":
+      return "No skills listed. Please include both technical and soft skills relevant to your career.";
+    case "projects":
+      return "No project details provided. Please include the project name, description, technologies used, and key achievements.";
+    case "certifications":
+      return "No certifications provided. Please include the certification name, issuing organization, and dates.";
+    default:
+      return "[No content provided]";
+  }
+}
+
 router.post("/resume-ai-assistant", async (req, res) => {
   let sectionId = "unknown";
   console.log("[DEBUG] Starting AI assistant request processing");
@@ -29,22 +49,22 @@ router.post("/resume-ai-assistant", async (req, res) => {
       userQuery,
     });
 
-    // Validate input
-    if (!sectionContent) {
-      console.log("[DEBUG] Missing section content");
-      return res.status(400).json({
-        error: "No content provided",
-        details: "Please provide content to analyze"
-      });
-    }
+    // Use the provided section content if it exists; otherwise, use the fallback message.
+    const effectiveSectionContent =
+      sectionContent && sectionContent.trim().length > 0
+        ? sectionContent
+        : getFallbackMessage(sectionId);
 
     console.log("[DEBUG] Processing section:", sectionId);
-    console.log("[DEBUG] Content sample:", sectionContent.substring(0, 100) + "...");
+    console.log(
+      "[DEBUG] Content sample:",
+      effectiveSectionContent.substring(0, 100) + "..."
+    );
 
     const messages = [
       {
         role: "system",
-        content: `You are a professional resume writing assistant. Analyze the content and provide clear, actionable feedback.
+        content: `You are a professional resume writing assistant. Your task is to produce a final revised version of the given resume section.
 
 When analyzing work experience:
 - Check impact and clarity of descriptions
@@ -62,21 +82,22 @@ When analyzing technical sections:
 - Suggest industry-standard formatting
 - Recommend relevant certifications
 
-Format your response in a clear, readable way:
-• Use bullet points for suggestions
-• Include specific examples
-• Group related recommendations
-• Make it easy to copy and implement changes
+If the section is empty, provide clear guidance on what information to include based on its category.
 
-If a section is empty, provide clear guidance on what information to include.`
+Return your response as plain text (no HTML or markdown tags) in the following exact format:
+
+Revised Version:
+"[Your revised text here]"
+
+The revised version must be written as a coherent, professionally formatted paragraph exactly as it should appear on the resume so that the user can copy and paste it directly.`
       },
       {
         role: "user",
         content: `I'm working on the "${sectionId}" section of my resume. Here's the current content:
 
-${sectionContent || "[No content provided]"}
+${effectiveSectionContent}
 
-${userQuery || "Please analyze this section and suggest specific improvements."}`
+${userQuery || "Please produce a revised version for this section."}`
       }
     ];
 
@@ -86,28 +107,28 @@ ${userQuery || "Please analyze this section and suggest specific improvements."}
       model: "gpt-4",
       messages: messages as any,
       temperature: 0.7,
-      max_tokens: 1000,
+      max_tokens: 1500,
     });
 
-    const suggestions = completion.choices[0]?.message?.content || "";
-
+    const aiResponse = completion.choices[0]?.message?.content || "";
     console.log("[DEBUG] AI Response received:", {
-      length: suggestions.length,
-      sample: suggestions.substring(0, 100) + "..."
+      length: aiResponse.length,
+      sample: aiResponse.substring(0, 100) + "..."
     });
 
-    const formattedSuggestions = suggestions.split('\n').map(line => {
-      if (line.startsWith('•')) {
-        return `<li>${line.substring(1).trim()}</li>`;
-      }
-      if (line.trim().endsWith(':')) {
-        return `<h3>${line.trim()}</h3>`;
-      }
-      return `<p>${line}</p>`;
-    }).join('\n');
+    // Extract the revised version by removing the marker if present.
+    // Expected format: Revised Version: "[Your revised text here]"
+    const marker = "Revised Version:";
+    let revisedText = aiResponse;
+    const markerIndex = aiResponse.indexOf(marker);
+    if (markerIndex !== -1) {
+      revisedText = aiResponse.substring(markerIndex + marker.length).trim();
+      // Remove surrounding quotes if present.
+      revisedText = revisedText.replace(/^"|"$/g, "");
+    }
 
     return res.json({
-      suggestions: formattedSuggestions,
+      revision: revisedText,
       improvements: [],
     });
   } catch (error) {
