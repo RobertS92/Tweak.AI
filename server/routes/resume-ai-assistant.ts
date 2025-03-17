@@ -283,7 +283,7 @@ Revised Version:
     }
 
     return res.json({
-      revision: revisedText,
+      revision: revisedText.toLowerCase().includes(sectionId.replace(/-/g, ' ')) ? revisedText : getFallbackMessage(sectionId),
       isContentCreation: isContentCreationQuery,
       hasRevisionMarker: markerIndex !== -1,
       improvements: [],
