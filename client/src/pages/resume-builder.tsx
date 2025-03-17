@@ -41,7 +41,6 @@ export default function ResumeBuilder() {
   const [aiMessage, setAiMessage] = useState("");
   const [aiInput, setAiInput] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
-const [aiMessage, setAiMessage] = useState("");
 
   // Personal info state
   const [personalInfo, setPersonalInfo] = useState({
