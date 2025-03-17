@@ -226,7 +226,15 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
    */
   const handleSectionSelect = useCallback((sectionId: string) => {
     setActiveSection(sectionId);
-  }, []);
+    // Get section content first
+    const section = sections.find(s => s.id === sectionId);
+    const isEmpty = !section?.content || section.content.trim().length === 0;
+    
+    // Only get AI suggestions if section has content
+    if (!isEmpty) {
+      getAiSuggestions(sectionId);
+    }
+  }, [sections]);
 
   /**
    * Submits a direct AI query (user typed something).
