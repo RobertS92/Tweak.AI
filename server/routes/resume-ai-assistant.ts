@@ -148,25 +148,61 @@ router.post("/resume-ai-assistant", async (req, res) => {
     const isEmptySection = !sectionContent || sectionContent.trim().length === 0;
 
     // If section is empty, return the fallback message directly without sending to OpenAI
-    if (isEmptySection) {
+    if (isEmptySection && !userQuery) {
       return res.json({
         revision: getFallbackMessage(sectionId),
         improvements: [],
       });
     }
 
-    // Only proceed with OpenAI processing if there's actual content to revise
-    console.log("[DEBUG] Processing section with content:", sectionId);
-    console.log(
-      "[DEBUG] Content sample:",
-      sectionContent.substring(0, 100) + "..."
+    // Determine if this is likely a content creation request based on user query
+    const isContentCreationQuery = userQuery && (
+      userQuery.toLowerCase().includes("create") ||
+      userQuery.toLowerCase().includes("write") ||
+      userQuery.toLowerCase().includes("generate") ||
+      userQuery.toLowerCase().includes("help me with") ||
+      userQuery.toLowerCase().includes("i am a") ||
+      userQuery.toLowerCase().includes("i have been") ||
+      userQuery.toLowerCase().includes("my experience") ||
+      userQuery.toLowerCase().includes("my background") ||
+      // If user is responding to our prompt to tell us about themselves
+      (isEmptySection && userQuery.length > 30)
     );
 
-    const messages = [
-      {
-        role: "system",
-        content: `You are a professional resume writing assistant. Your task is to produce a final revised version of the given resume section.
-        
+    // Choose the appropriate system prompt based on whether this is a 
+    // content creation request or a conversation/analysis
+    let systemPrompt = "";
+
+    if (isContentCreationQuery) {
+      // For content creation requests
+      systemPrompt = `You are a professional resume writing assistant who creates compelling resume content based on user input.
+
+For the ${sectionId.replace(/-/g, ' ')} section, create professional, ATS-friendly content that highlights the user's qualifications effectively.
+
+When creating content:
+- Use concise, impactful language with strong action verbs
+- Incorporate relevant keywords for the user's industry
+- Format the content appropriately for the section type
+- Focus on achievements and results where possible
+- Keep the tone professional and confident
+
+Format your output based on the section type:
+- For professional summaries: Write a concise 3-4 sentence paragraph
+- For work experience entries: Use format "Position: [title]\\nCompany: [company]\\nDate: [date range]\\n• [achievement 1]\\n• [achievement 2]"
+- For education entries: Use format "Degree: [degree]\\nInstitution: [institution]\\nDate: [graduation date]\\n• [achievement/honor]"
+- For skills: Organize as "Technical Skills:\\n• [skill 1]\\n• [skill 2]\\n\\nSoft Skills:\\n• [skill 3]\\n• [skill 4]"
+- For projects: Use format "Project: [title]\\nDate: [date range]\\nDescription: [brief description]\\n• [detail 1]\\n• [detail 2]"
+- For certifications: Use format "Certification: [name]\\nIssuing Organization: [organization]\\nDate: [date]\\nID: [credential ID if applicable]"
+
+Return ONLY the ready-to-use content with no explanations, introductions, or additional commentary.`;
+    } else {
+      // For analysis, revision, or conversation
+      systemPrompt = `You are a professional resume writing assistant. You have two main functions:
+
+1. ANALYZING AND REVISING CONTENT: If the user has provided resume content to review, analyze it and suggest improvements.
+
+2. HAVING A CONVERSATION: If the user is asking a question or having a conversation about resume writing, respond conversationally.
+
 When analyzing professional summaries:
 - Check for clear articulation of professional identity and experience level
 - Ensure key skills relevant to target role are highlighted
@@ -192,23 +228,29 @@ When analyzing skills sections:
 - Recommend removing generic skills that don't add value for the specific position
 - Suggest adding industry-specific technical skills that may be missing
 - Check for appropriate balance between technical, professional, and soft skills based on job context
-- Ensure skills are presented with appropriate proficiency levels when relevant
-- Recommend modern or trending skills in the specified field that could strengthen the application
 
-Return your response as plain text (no HTML or markdown tags) in the following exact format:
+IMPORTANT: If the user is asking a question or seeking advice (rather than requesting a revision), respond conversationally without using the "Revised Version:" format.
+
+For CONTENT REVISIONS ONLY, format your response as:
 
 Revised Version:
-"[Your revised text here]"
+"[Your revised text here]"`;
+    }
 
-The revised version must be written as a coherent, professionally formatted paragraph exactly as it should appear on the resume so that the user can copy and paste it directly.`
+    // Only proceed with OpenAI processing
+    console.log("[DEBUG] Processing with userQuery:", userQuery);
+    console.log("[DEBUG] Is content creation request:", isContentCreationQuery);
+
+    const messages = [
+      {
+        role: "system",
+        content: systemPrompt
       },
       {
         role: "user",
-        content: `I'm working on the "${sectionId}" section of my resume. Here's the current content:
-
-${sectionContent}
-
-${userQuery || "Please produce a revised version for this section."}`
+        content: userQuery 
+          ? `I'm working on the "${sectionId.replace(/-/g, ' ')}" section of my resume. ${isEmptySection ? "I haven't written anything yet." : "Here's the current content:\n\n" + sectionContent}\n\n${userQuery}`
+          : `Please analyze this ${sectionId.replace(/-/g, ' ')} section and suggest improvements:\n\n${sectionContent}`
       }
     ];
 
@@ -217,7 +259,7 @@ ${userQuery || "Please produce a revised version for this section."}`
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: messages as any,
-      temperature: 0.7,
+      temperature: isContentCreationQuery ? 0.7 : 0.5,
       max_tokens: 1500,
     });
 
@@ -227,11 +269,11 @@ ${userQuery || "Please produce a revised version for this section."}`
       sample: aiResponse.substring(0, 100) + "..."
     });
 
-    // Extract the revised version by removing the marker if present.
-    // Expected format: Revised Version: "[Your revised text here]"
-    const marker = "Revised Version:";
+    // Handle the response differently based on whether it contains a revision marker
     let revisedText = aiResponse;
+    const marker = "Revised Version:";
     const markerIndex = aiResponse.indexOf(marker);
+
     if (markerIndex !== -1) {
       revisedText = aiResponse.substring(markerIndex + marker.length).trim();
       // Remove surrounding quotes if present.
@@ -240,6 +282,8 @@ ${userQuery || "Please produce a revised version for this section."}`
 
     return res.json({
       revision: revisedText,
+      isContentCreation: isContentCreationQuery,
+      hasRevisionMarker: markerIndex !== -1,
       improvements: [],
     });
   } catch (error) {

@@ -1,0 +1,302 @@
+// These are the key functions to modify in the ResumeBuilder component
+
+/**
+ * Improved handleAddAiContent function to better handle different section types
+ */
+const handleAddAiContent = (content: string) => {
+  if (!activeSection || !content) return;
+
+  const section = sections.find(s => s.id === activeSection);
+  if (!section) return;
+
+  setSections(prevSections =>
+    prevSections.map(section => {
+      if (section.id === activeSection) {
+        // Handle different section types differently
+        if (section.content !== undefined) {
+          // For text-based sections (professional-summary)
+          return { ...section, content: section.content ? `${section.content}\n\n${content}` : content };
+        } 
+        else if (section.id === 'skills' && section.categories) {
+          // For skills section, try to parse skills from the content
+          const lines = content.split('\n').filter(line => line.trim());
+          let technicalSkills: string[] = [];
+          let softSkills: string[] = [];
+          
+          // Simple parsing - could be improved
+          let currentCategory = technicalSkills;
+          let isTechnical = true;
+          
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            
+            // Skip empty lines
+            if (!trimmedLine) continue;
+            
+            // Check for category headers
+            if (trimmedLine.toLowerCase().includes('technical') || 
+                trimmedLine.toLowerCase().includes('hard skills')) {
+              isTechnical = true;
+              continue;
+            }
+            if (trimmedLine.toLowerCase().includes('soft skills') || 
+                trimmedLine.toLowerCase().includes('transferable')) {
+              isTechnical = false;
+              continue;
+            }
+            
+            // Extract skills from bullet points or lines
+            let skillText = trimmedLine.replace(/^[•\-*]\s*/, '').trim();
+            if (!skillText) continue;
+            
+            // Handle comma-separated lists
+            if (skillText.includes(',')) {
+              const skills = skillText.split(',').map(s => s.trim()).filter(Boolean);
+              if (isTechnical) {
+                technicalSkills.push(...skills);
+              } else {
+                softSkills.push(...skills);
+              }
+            } else {
+              if (isTechnical) {
+                technicalSkills.push(skillText);
+              } else {
+                softSkills.push(skillText);
+              }
+            }
+          }
+          
+          // If no skills were categorized, try to extract all skills as technical
+          if (technicalSkills.length === 0 && softSkills.length === 0) {
+            // Try to extract all as technical skills
+            const allSkills = content.split(/[\n,]/)
+              .map(s => s.replace(/^[•\-*]\s*/, '').trim())
+              .filter(Boolean);
+            technicalSkills = allSkills;
+          }
+          
+          // Update categories with new skills
+          const updatedCategories = [...section.categories];
+          if (technicalSkills.length > 0) {
+            const techCatIndex = updatedCategories.findIndex(c => 
+              c.name.toLowerCase().includes('technical'));
+            if (techCatIndex >= 0) {
+              updatedCategories[techCatIndex] = {
+                ...updatedCategories[techCatIndex],
+                skills: [...new Set([...updatedCategories[techCatIndex].skills, ...technicalSkills])]
+              };
+            }
+          }
+          
+          if (softSkills.length > 0) {
+            const softCatIndex = updatedCategories.findIndex(c => 
+              c.name.toLowerCase().includes('soft'));
+            if (softCatIndex >= 0) {
+              updatedCategories[softCatIndex] = {
+                ...updatedCategories[softCatIndex],
+                skills: [...new Set([...updatedCategories[softCatIndex].skills, ...softSkills])]
+              };
+            }
+          }
+          
+          return { ...section, categories: updatedCategories };
+        }
+        else if (section.items) {
+          // For items-based sections (work-experience, education, projects, certifications)
+          // Try to parse the content into a structured item
+          const newItem: SectionItem = {
+            title: "",
+            subtitle: "",
+            date: "",
+            description: "",
+            bullets: []
+          };
+          
+          // Try to extract structured information
+          const lines = content.split('\n');
+          let currentField: 'title' | 'subtitle' | 'date' | 'description' | 'bullets' | null = null;
+          
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine) continue;
+            
+            // Check if this is a header line
+            if (trimmedLine.toLowerCase().startsWith('position:') || 
+                trimmedLine.toLowerCase().startsWith('title:') || 
+                trimmedLine.toLowerCase().startsWith('project:') ||
+                trimmedLine.toLowerCase().startsWith('degree:') ||
+                trimmedLine.toLowerCase().startsWith('certification:')) {
+              newItem.title = trimmedLine.split(':')[1]?.trim() || "";
+              currentField = 'title';
+            }
+            else if (trimmedLine.toLowerCase().startsWith('company:') || 
+                     trimmedLine.toLowerCase().startsWith('organization:') ||
+                     trimmedLine.toLowerCase().startsWith('institution:') ||
+                     trimmedLine.toLowerCase().startsWith('issuing organization:')) {
+              newItem.subtitle = trimmedLine.split(':')[1]?.trim() || "";
+              currentField = 'subtitle';
+            }
+            else if (trimmedLine.toLowerCase().startsWith('date:')) {
+              newItem.date = trimmedLine.split(':')[1]?.trim() || "";
+              currentField = 'date';
+            }
+            else if (trimmedLine.toLowerCase().startsWith('description:')) {
+              newItem.description = trimmedLine.split(':')[1]?.trim() || "";
+              currentField = 'description';
+            }
+            // Check for bullet points
+            else if (trimmedLine.startsWith('•') || trimmedLine.startsWith('-') || trimmedLine.startsWith('*')) {
+              newItem.bullets.push(trimmedLine.substring(1).trim());
+              currentField = 'bullets';
+            }
+            // Continue a previous field
+            else if (currentField) {
+              if (currentField === 'bullets') {
+                newItem.bullets.push(trimmedLine);
+              } else if (currentField === 'description') {
+                newItem.description += ' ' + trimmedLine;
+              }
+            }
+            // If no match for structured format, treat as description
+            else {
+              if (newItem.description) {
+                newItem.description += ' ' + trimmedLine;
+              } else {
+                newItem.description = trimmedLine;
+              }
+            }
+          }
+          
+          // If we couldn't parse structured data, put the whole content in description
+          if (!newItem.title && !newItem.subtitle && !newItem.date && newItem.bullets.length === 0) {
+            newItem.description = content;
+          }
+          
+          return { ...section, items: [...section.items, newItem] };
+        }
+      }
+      return section;
+    })
+  );
+
+  toast({
+    title: "Content Added",
+    description: "AI suggestion has been added to the section",
+  });
+};
+
+/**
+ * Improved version of getAiSuggestions
+ */
+const getAiSuggestions = useCallback(
+  async (sectionId: string, userQuery?: string) => {
+    if (!sectionId) return;
+
+    setIsAiLoading(true);
+    try {
+      const sectionContent = getCurrentSectionContent();
+      console.log("[DEBUG] Section ID:", sectionId);
+      console.log("[DEBUG] Section Content:", sectionContent);
+      console.log("[DEBUG] User Query:", userQuery);
+
+      const response = await fetch("/api/resume-ai-assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sectionId, sectionContent, userQuery }),
+      });
+
+      if (!response.ok) throw new Error("Failed to get AI suggestions");
+
+      const data = await response.json();
+      console.log("[DEBUG] AI Response:", data);
+      
+      // Set the AI message
+      setAiMessage(data.revision || "No suggestions available.");
+    } catch (error) {
+      console.error("AI suggestion error:", error);
+      toast({
+        title: "AI Assistant Error",
+        description: "Failed to get AI suggestions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
+  },
+  [getCurrentSectionContent, toast],
+);
+
+/**
+ * Improved AI Assistant render function
+ */
+const renderAiAssistant = () => (
+  <Card className="h-[30vh] mt-6">
+    <CardHeader className="py-3">
+      <CardTitle className="flex items-center gap-2">
+        <svg
+          className="w-5 h-5 text-blue-500"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+        AI Assistant
+        {isAiLoading && (
+          <span className="text-sm text-muted-foreground ml-2">
+            (Thinking...)
+          </span>
+        )}
+        {activeSection && (
+          <span className="text-sm text-muted-foreground ml-2">
+            - {sections.find((s) => s.id === activeSection)?.title}
+          </span>
+        )}
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="p-0 h-[calc(30vh-4rem)] flex flex-col">
+      <ScrollArea className="flex-grow p-4">
+        <div className="space-y-4">
+          <div className="bg-muted rounded-lg p-4 whitespace-pre-wrap">
+            {aiMessage ||
+              (activeSection
+                ? "Analyzing your content..."
+                : "Select a section to get AI assistance and suggestions.")}
+          </div>
+        </div>
+      </ScrollArea>
+      <div className="p-4 border-t flex flex-col gap-2">
+        <form onSubmit={handleAiChat} className="flex gap-2">
+          <Input
+            placeholder={
+              activeSection
+                ? "Ask for suggestions or tell me about your background..."
+                : "Select a section first..."
+            }
+            value={aiInput}
+            onChange={(e) => setAiInput(e.target.value)}
+            disabled={!activeSection || isAiLoading}
+          />
+          <Button
+            type="submit"
+            size="icon"
+            disabled={isAiLoading || !activeSection || !aiInput.trim()}
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
+        
+        {/* Add to Section button */}
+        {activeSection && aiMessage && !isAiLoading && (
+          <Button
+            variant="outline"
+            onClick={() => handleAddAiContent(aiMessage)}
+          >
+            Add to Section
+          </Button>
+        )}
+      </div>
+    </CardContent>
+  </Card>
+);
