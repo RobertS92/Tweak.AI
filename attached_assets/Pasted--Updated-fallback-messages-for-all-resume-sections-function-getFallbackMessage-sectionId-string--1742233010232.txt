@@ -1,0 +1,114 @@
+// Updated fallback messages for all resume sections
+function getFallbackMessage(sectionId: string): string {
+  switch (sectionId) {
+    case "professional-summary":
+      return `I notice your resume doesn't include a Professional Summary section. This brief introduction at the top of your resume highlights your professional identity and key qualifications.
+
+Here's how to create an effective Professional Summary:
+
+• Keep it concise (3-4 sentences maximum)
+• Start with your professional title and years of experience
+• Highlight 2-3 key skills relevant to your target position
+• Include a notable achievement or qualification that sets you apart
+• Optional: briefly mention your career goals
+
+Focus on your most impressive and relevant qualities that match what employers in your target field are seeking.
+
+How would you like to present yourself professionally in your summary?`;
+
+    case "work-experience":
+      return `I notice your resume doesn't include a Work Experience section. This critical section shows employers how you've applied your skills in professional settings.
+
+Here's how to create an effective Work Experience section:
+
+• List positions in reverse-chronological order (most recent first)
+• For each role include:
+  - Your job title
+  - Company name and location
+  - Dates of employment (month/year)
+• Use 3-5 bullet points per role that:
+  - Start with strong action verbs
+  - Focus on accomplishments rather than duties
+  - Include measurable results when possible
+  - Highlight relevant skills and responsibilities
+
+Tailor your descriptions to emphasize experience that relates to your target position.
+
+What professional roles have you held that you'd like to include in your resume?`;
+
+    case "education":
+      return `I notice your resume doesn't include an Education section. This section provides important information about your academic background and qualifications.
+
+Here's how to create an effective Education section:
+
+• List education in reverse-chronological order (most recent first)
+• For each entry include:
+  - Degree/certificate name
+  - Institution name and location
+  - Graduation date (or expected date)
+  - GPA if it's 3.0 or higher (optional)
+• You may also include:
+  - Relevant coursework
+  - Academic honors or awards
+  - Extracurricular activities that demonstrate relevant skills
+
+Keep this section concise and focused on education that's relevant to your career goals.
+
+What educational qualifications would you like to add to your resume?`;
+
+    case "skills":
+      return `I notice your resume doesn't include a Skills section. This section allows employers to quickly identify your specific capabilities relevant to the position.
+
+Here's how to create an effective Skills section:
+
+• Organize skills into logical categories (technical, professional, etc.)
+• List 8-12 skills that are most relevant to your target positions
+• Include a mix of:
+  - Technical skills (software, tools, programming languages)
+  - Industry-specific skills (specialized knowledge areas)
+  - Transferable skills (relevant soft skills)
+• Consider formatting as a simple list or using visualization for skill levels
+
+Review job descriptions in your field to identify key skills employers are seeking.
+
+What key skills would you like to highlight in your resume?`;
+
+    case "projects":
+      return `I notice your resume doesn't include a Projects section. This section helps demonstrate your practical skills and accomplishments, particularly valuable if you're early in your career or changing fields.
+
+Here's how to create an effective Projects section:
+
+• Include 2-4 relevant projects that showcase skills related to your target role
+• For each project, provide:
+  - A clear title and timeframe
+  - A brief 1-2 sentence description explaining the purpose
+• Use bullet points to highlight:
+  - What you did (your role and contributions)
+  - How you did it (methods, tools, or technologies used)
+  - Results achieved (impact or outcomes if applicable)
+
+Focus on projects that are relevant to the positions you're applying for, whether they're professional, academic, volunteer, or personal initiatives.
+
+What types of projects would you like to include on your resume?`;
+
+    case "certifications":
+      return `I notice your resume doesn't include a Certifications section. Professional certifications can significantly strengthen your candidacy by demonstrating specialized knowledge and commitment to your field.
+
+Here's how to create an effective Certifications section:
+
+• List certifications in order of relevance to your target role
+• For each certification include:
+  - Full name of the certification (avoid acronyms only)
+  - Issuing organization
+  - Date obtained or expiration date
+  - Credential ID or verification details (if applicable)
+• Include only current or active certifications unless a lapsed certification demonstrates relevant knowledge
+
+Focus on certifications that are recognized in your industry and relevant to your target positions.
+
+Do you have any professional certifications or specialized training you'd like to include on your resume?`;
+
+    default:
+      return "[No content provided]";
+  }
+}
