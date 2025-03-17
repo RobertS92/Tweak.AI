@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Download } from "lucide-react";
+import { FileText, Download, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ResumePreviewProps {
@@ -15,6 +15,7 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
   const [showContent, setShowContent] = React.useState(false);
   const [isDownloading, setIsDownloading] = React.useState(false);
   const { toast } = useToast();
+  const [section, setSection] = React.useState(''); // Hypothetical section state
 
   const cleanResumeContent = (htmlContent: string) => {
     if (!htmlContent) return '';
@@ -78,6 +79,13 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
     }
   };
 
+  const onAddToSection = (contentToAdd: string | undefined) => {
+    if (contentToAdd) {
+      // Update the section state -  This is a placeholder, adapt to your actual state management
+      setSection(prevSection => prevSection + contentToAdd); 
+    }
+  };
+
   return (
     <div className="space-y-8">
       <Card className="bg-white shadow-lg">
@@ -106,12 +114,20 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
               <Download className="w-5 h-5" />
               {isDownloading ? "Downloading..." : "Download PDF"}
             </Button>
+            <Button
+              onClick={() => onAddToSection(analysis?.enhancedContent)}
+              disabled={!analysis?.enhancedContent}
+              className="py-3 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
+            >
+              <Plus className="w-5 h-5" />
+              Add to Section
+            </Button>
           </div>
         </CardContent>
       </Card>
 
       {showContent && analysis?.enhancedContent && (
-        <div className="bg-white rounded-lg shadow-lg overflow-y-auto max-h-[80vh]"> {/*Added overflow-y-auto and max-h for scrolling*/}
+        <div className="bg-white rounded-lg shadow-lg overflow-y-auto max-h-[80vh]">
           <style>
             {`
               .resume-content {
@@ -167,9 +183,9 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
               }
             `}
           </style>
-          <div className="resume-content" >
-            <div dangerouslySetInnerHTML={{ 
-              __html: cleanResumeContent(analysis.enhancedContent) 
+          <div className="resume-content">
+            <div dangerouslySetInnerHTML={{
+              __html: cleanResumeContent(analysis.enhancedContent)
             }} />
           </div>
         </div>

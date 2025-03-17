@@ -15,6 +15,7 @@ interface SectionItem {
   date: string;
   description: string;
   bullets: string[];
+  content?: string; // Added content property
 }
 
 /** Interface for each resume section */
@@ -144,7 +145,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
         });
 
         if (!response.ok) throw new Error("Failed to get AI suggestions");
-        
+
         const data = await response.json();
         setAiMessage(data.revision || "No suggestions available.");
       } catch (error) {
@@ -219,6 +220,28 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
       description: "The revised text has been applied to the section.",
     });
   };
+
+  const handleAddAiContent = (content: string) => {
+    if (!activeSection) return;
+
+    const updatedSections = sections.map(section => {
+      if (section.id === activeSection) {
+        if (section.content !== undefined) {
+          return { ...section, content: section.content + "\n" + content }; // Append content
+        } else if (section.items) {
+          return { ...section, items: [...(section.items || []), { content }] };
+        }
+      }
+      return section;
+    });
+
+    setSections(updatedSections);
+    toast({
+      title: "Content Added",
+      description: "AI suggestion has been added to the section",
+    });
+  };
+
 
   /**
    * Handles file upload -> parse the resume.
@@ -495,10 +518,10 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
           {activeSection && aiMessage?.includes("Revised Version:") && (
             <Button
               variant="outline"
-              onClick={handleApplyRevision}
+              onClick={() => handleAddAiContent(extractRevisedVersion(aiMessage))} // Use handleAddAiContent
               disabled={isAiLoading}
             >
-              Apply Revision
+              Add to Section
             </Button>
           )}
         </div>
