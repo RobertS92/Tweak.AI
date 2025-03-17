@@ -55,7 +55,6 @@ export default function ResumeBuilder() {
 
   // Resume sections state with proper initialization
   const [sections, setSections] = useState<ResumeSection[]>([
-    { id: "personal-info", title: "Personal Information", content: "" },
     { id: "professional-summary", title: "Professional Summary", content: "" },
     { id: "work-experience", title: "Work Experience", items: [] },
     { id: "education", title: "Education", items: [] },
