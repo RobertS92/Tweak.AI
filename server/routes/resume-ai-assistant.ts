@@ -14,70 +14,118 @@ const openai = new OpenAI({
 function getFallbackMessage(sectionId: string): string {
   switch (sectionId) {
     case "professional-summary":
-      return `Your Professional Summary section is empty. Here's how to write an effective summary:
-• Start with your years of experience and primary field
-• Highlight 2-3 key achievements or specialties
-• Mention your most relevant skills and technologies
-• Include your career goals or what you're seeking
-• Keep it between 3-5 sentences
+      return `I notice your resume doesn't include a Professional Summary section. This is a crucial 3-4 sentence overview at the top of your resume that highlights your professional identity, key skills, and career achievements.
 
-Example: "Results-driven software engineer with 5 years of experience in full-stack development..."`;
+Professional Summary Template:
+First sentence: Your professional identity/title and years of experience
+Second sentence: 2-3 key skills or specialties relevant to your target role
+Third sentence: Notable achievements or qualifications that set you apart
+Optional fourth sentence: Career goals or what you're seeking
+
+Example:
+Results-driven Marketing Manager with 5+ years of experience developing digital campaigns for B2B technology companies. Skilled in content strategy, SEO optimization, and marketing analytics with proven success increasing conversion rates. Led campaigns that generated $2M+ in pipeline revenue while reducing CAC by 15%.
+
+How would you like to present yourself professionally in your summary?`;
 
     case "work-experience":
-      return `Your Work Experience section is empty. For each position, include:
-• Job title and company name
-• Employment dates (MM/YYYY - MM/YYYY)
-• 3-5 bullet points of key responsibilities
-• Quantifiable achievements (e.g., "Increased efficiency by 25%")
-• Technologies and tools used
-• Team size and project scope where relevant
+      return `I notice your resume doesn't include a Work Experience section. This is a critical section that demonstrates your professional background and how you've applied your skills in real-world settings.
 
-Start with your most recent position and work backwards.`;
+Work Experience Template (for each position):
+Job Title
+Company Name and Location
+Employment Dates (Month/Year to Month/Year or Present)
+3-5 bullet points describing accomplishments using this format:
+Action Verb + Task + Result/Impact (quantify when possible)
+
+Example:
+WORK EXPERIENCE
+Senior Software Developer
+Technovation Inc. - San Francisco, CA
+March 2020 - Present
+- Redesigned customer-facing API, reducing server load by 40% and improving response times by 30%
+- Led a team of 5 developers to deliver a new mobile application feature used by 25,000+ users
+- Implemented automated testing protocols that reduced bug reports by 35% in the first quarter
+- Collaborated with product and design teams to launch 3 major product updates ahead of schedule
+
+What professional roles have you held that you'd like to include in your resume?`;
 
     case "education":
-      return `Your Education section is empty. Include the following for each entry:
-• Degree name and major
-• Institution name and location
-• Graduation date or expected date
-• GPA (if 3.5 or above)
-• Relevant coursework
-• Academic honors or achievements
-• Any research projects or thesis work
+      return `I notice your resume doesn't include an Education section. Even with extensive work experience, education credentials remain important to many employers and should be included.
 
-List your highest level of education first.`;
+Education Template:
+Degree/Certificate Name
+Institution Name and Location
+Graduation Date (or expected)
+GPA (if 3.0 or higher)
+Relevant coursework, honors, or academic achievements (optional)
+
+Example:
+EDUCATION
+Bachelor of Business Administration, Marketing
+University of Texas - Austin, TX
+Graduated: May 2019 | GPA: 3.7
+Honors: Dean's List (6 semesters), Marketing Student of the Year 2019
+
+What educational qualifications would you like to add to your resume?`;
 
     case "skills":
-      return `Your Skills section is empty. Organize your skills into categories:
-• Technical Skills: Programming languages, frameworks, tools
-• Domain Knowledge: Industry-specific expertise
-• Soft Skills: Leadership, communication, problem-solving
-• Certifications: Include relevant technical certifications
-• Languages: List any language proficiencies
+      return `I notice your resume doesn't include a dedicated Skills section. This section allows recruiters to quickly identify your technical and professional capabilities relevant to the position.
 
-Focus on skills most relevant to your target roles.`;
+Skills Section Template:
+Technical Skills: List software, tools, programming languages, platforms
+Industry-Specific Skills: List specialized skills relevant to your field
+Transferable Skills: List 3-5 relevant soft skills (communication, leadership, etc.)
+Languages: List any additional languages with proficiency level
+
+Example:
+SKILLS
+Technical: Python, SQL, Tableau, Google Analytics, Adobe Creative Suite
+Marketing: SEO/SEM, A/B Testing, Content Strategy, Email Marketing, Social Media Management
+Soft Skills: Project Management, Cross-functional Collaboration, Client Relations
+Languages: English (Native), French (Intermediate)
+
+What key skills would you like to highlight in your resume?`;
 
     case "projects":
-      return `Your Projects section is empty. For each project, include:
-• Project name and timeframe
-• Your role and team size
-• Technologies and tools used
-• Problem solved or project purpose
-• Key features implemented
-• Measurable outcomes or impact
-• Links to live demos or repositories
+      return `I notice your resume doesn't include a Projects section. This can be particularly valuable for showcasing relevant skills and achievements, especially for those early in their career or transitioning to a new field.
 
-Choose 2-4 projects that showcase different skills.`;
+Projects Template (for each project):
+Project Name/Title
+Dates (optional)
+Brief description (1-2 sentences)
+2-3 bullet points highlighting:
+- Technologies/methods used
+- Your specific contributions
+- Results or impact
+
+Example:
+PROJECTS
+E-Commerce Analytics Dashboard | January - March 2023
+Self-initiated project to analyze customer behavior and sales patterns for an online retailer.
+- Built interactive dashboard using Python, Pandas and Tableau to visualize $1.2M in transaction data
+- Identified key customer segments and purchasing patterns that led to a 22% increase in targeted marketing ROI
+- Implemented automated reporting system that reduced weekly analysis time by 5 hours
+
+Do you have any relevant projects you'd like to include on your resume?`;
 
     case "certifications":
-      return `Your Certifications section is empty. For each certification:
-• Certification name
-• Issuing organization
-• Date earned and expiration (if applicable)
-• Credential ID or verification link
-• Relevant skills demonstrated
-• Version or level (if applicable)
+      return `I notice your resume doesn't include a Certifications section. Professional certifications demonstrate your commitment to skill development and can significantly strengthen your candidacy, especially for technical or specialized roles.
 
-List most relevant or recent certifications first.`;
+Certifications Template:
+Certification Name
+Issuing Organization
+Date Obtained (or valid through date if applicable)
+Credential ID/Verification details (optional)
+
+Example:
+CERTIFICATIONS
+Project Management Professional (PMP) - Project Management Institute
+Obtained: September 2022 | Credential ID: 1234567
+
+Certified Scrum Master (CSM) - Scrum Alliance
+Obtained: March 2021
+
+Do you have any professional certifications or specialized training you'd like to include on your resume?`;
 
     default:
       return "[No content provided]";
