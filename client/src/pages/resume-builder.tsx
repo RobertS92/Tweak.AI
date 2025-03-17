@@ -42,6 +42,7 @@ export default function ResumeBuilder() {
   const [aiMessage, setAiMessage] = useState("");
   const [aiInput, setAiInput] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiOutput, setAiOutput] = useState("");
 
   // Personal info state
   const [personalInfo, setPersonalInfo] = useState({
@@ -127,6 +128,53 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
   /**
    * Calls the AI assistant route.
    */
+  const handleAddAiContent = () => {
+    if (!activeSection || !aiOutput) return;
+
+    setSections(prev => prev.map(section => {
+      if (section.id !== activeSection) return section;
+
+      // Handle different section types
+      if (section.id === 'skills' && section.categories) {
+        // Parse skills from AI output and add to appropriate category
+        const skills = aiOutput.split(',').map(s => s.trim());
+        return {
+          ...section,
+          categories: section.categories.map(cat => ({
+            ...cat,
+            skills: [...new Set([...cat.skills, ...skills])]
+          }))
+        };
+      } else if (section.items) {
+        // For sections with items (work, education, projects)
+        const newItem: SectionItem = {
+          title: "",
+          subtitle: "",
+          date: "",
+          description: aiOutput,
+          bullets: []
+        };
+        return {
+          ...section,
+          items: [...section.items, newItem]
+        };
+      } else {
+        // For sections with direct content
+        return {
+          ...section,
+          content: section.content ? section.content + "\n" + aiOutput : aiOutput
+        };
+      }
+    }));
+
+    // Clear AI output after adding
+    setAiOutput("");
+    toast({
+      title: "Content Added",
+      description: "AI suggestions have been added to the selected section."
+    });
+  };
+
   const getAiSuggestions = useCallback(
     async (sectionId: string, userQuery?: string) => {
       if (!sectionId) return;
@@ -145,6 +193,10 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
         });
 
         if (!response.ok) throw new Error("Failed to get AI suggestions");
+
+        const data = await response.json();
+        setAiMessage(data.revision);
+        setAiOutput(data.revision););
 
         const data = await response.json();
         setAiMessage(data.revision || "No suggestions available.");
@@ -492,6 +544,14 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
                   ? "Analyzing your content..."
                   : "Select a section to get AI assistance and suggestions.")}
             </div>
+            {aiOutput && (
+              <Button
+                onClick={handleAddAiContent}
+                className="mt-4 w-full bg-green-600 hover:bg-green-700"
+              >
+                Apply AI Suggestions
+              </Button>
+            )}
           </div>
         </ScrollArea>
         <div className="p-4 border-t flex flex-col gap-2">
