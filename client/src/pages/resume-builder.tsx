@@ -43,6 +43,7 @@ export default function ResumeBuilder() {
   const [aiInput, setAiInput] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiOutput, setAiOutput] = useState("");
+  const [aiSuggestion, setAiSuggestion] = useState("");
 
   // Personal info state
   const [personalInfo, setPersonalInfo] = useState({
@@ -195,8 +196,10 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
         if (!response.ok) throw new Error("Failed to get AI suggestions");
 
         const data = await response.json();
-        setAiMessage(data.revision || "No suggestions available.");
-        setAiOutput(data.revision || "");
+        const revision = data.revision || "No suggestions available.";
+        setAiMessage(revision);
+        setAiOutput(revision);
+        setAiSuggestion(revision);
       } catch (error) {
         console.error("AI suggestion error:", error);
         toast({
