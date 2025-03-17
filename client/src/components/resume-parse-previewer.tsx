@@ -22,8 +22,9 @@ export default function ResumeParsePreviewer({
   content, 
   highlights, 
   isAnalyzing,
-  onHighlightClick 
-}: ResumeParsePreviewer) {
+  onHighlightClick,
+  onAddAiContent
+}: ResumeParsePreviewer & { onAddAiContent?: (content: string) => void }) {
   const [previewText, setPreviewText] = useState<string>(content);
   const [activeHighlight, setActiveHighlight] = useState<string | null>(null);
 

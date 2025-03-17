@@ -515,10 +515,10 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
             </Button>
           </form>
           {/* Apply Revision button */}
-          {activeSection && aiMessage?.includes("Revised Version:") && (
+          {activeSection && (
             <Button
               variant="outline"
-              onClick={() => handleAddAiContent(extractRevisedVersion(aiMessage))} // Use handleAddAiContent
+              onClick={() => handleAddAiContent(extractRevisedVersion(aiMessage) || aiMessage)}
               disabled={isAiLoading}
             >
               Add to Section
