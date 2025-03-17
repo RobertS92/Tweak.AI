@@ -273,13 +273,14 @@ Revised Version:
 
     const marker = "Revised Version:";
 
+    const marker = "Revised Version:";
+
     // For content creation queries, format the response
     let revisedText = isContentCreationQuery ? 
-      `Revised Version:\n${aiResponse}` : 
+      `${marker}\n${aiResponse}` : 
       aiResponse;
 
     // Handle the response formatting
-    const marker = "Revised Version:";
     const markerIndex = revisedText.indexOf(marker);
 
     if (markerIndex !== -1) {
