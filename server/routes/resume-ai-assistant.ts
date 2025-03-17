@@ -281,13 +281,11 @@ Revised Version:
     // Handle the response formatting
     const markerIndex = revisedText.indexOf(marker);
 
-    if (markerIndex !== -1) {
-      revisedText = revisedText.substring(markerIndex + marker.length).trim();
-    }
-
-    // Ensure we're returning the actual AI response for content creation
-    if (isContentCreationQuery && !revisedText.includes("notice your resume")) {
+    // For content creation with professional summary, return the AI response directly
+    if (isContentCreationQuery && sectionId === 'professional-summary' && userQuery.toLowerCase().includes('write a professional summary')) {
       revisedText = aiResponse;
+    } else if (markerIndex !== -1) {
+      revisedText = revisedText.substring(markerIndex + marker.length).trim();
     }
 
     return res.json({
