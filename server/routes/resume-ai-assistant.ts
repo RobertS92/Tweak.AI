@@ -277,8 +277,7 @@ Revised Version:
       aiResponse;
 
     // Handle the response
-    const markerIndex = revisedText.indexOf("Revised Version:");rsion:";
-    const markerIndex = aiResponse.indexOf(marker);
+    const markerIndex = revisedText.indexOf("Revised Version:");
 
     if (markerIndex !== -1) {
       revisedText = aiResponse.substring(markerIndex + marker.length).trim();
