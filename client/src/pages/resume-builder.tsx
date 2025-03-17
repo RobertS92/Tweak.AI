@@ -146,10 +146,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
         if (!response.ok) throw new Error("Failed to get AI suggestions");
         
         const data = await response.json();
-        setAiMessage(data.revision || "No suggestions available."););
-
-        const data = await response.json();
-        setAiMessage(data.suggestions);
+        setAiMessage(data.revision || "No suggestions available.");
       } catch (error) {
         console.error("AI suggestion error:", error);
         toast({
