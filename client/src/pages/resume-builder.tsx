@@ -188,7 +188,32 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
 
     const userMessage = aiInput;
     setAiInput("");
-    await getAiSuggestions(activeSection, userMessage);
+    setIsAiLoading(true);
+    try {
+      const response = await fetch("/api/resume-ai-assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sectionId: activeSection,
+          sectionContent: getCurrentSectionContent(),
+          userQuery: userMessage,
+        }),
+      });
+      
+      if (!response.ok) throw new Error("Failed to get AI suggestions");
+      
+      const data = await response.json();
+      setAiMessage(data.revision || "No suggestions available.");
+    } catch (error) {
+      console.error("AI suggestion error:", error);
+      toast({
+        title: "AI Assistant Error",
+        description: "Failed to get AI suggestions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   /**
