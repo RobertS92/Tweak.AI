@@ -114,14 +114,16 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
               <Download className="w-5 h-5" />
               {isDownloading ? "Downloading..." : "Download PDF"}
             </Button>
-            <Button
-              onClick={() => onAddToSection(analysis?.enhancedContent)}
-              disabled={!analysis?.enhancedContent}
-              className="py-3 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
-            >
-              <Plus className="w-5 h-5" />
-              Add to Section
-            </Button>
+            <div className="flex justify-between items-center mt-2">
+              <Button
+                onClick={() => onAddToSection(analysis?.enhancedContent)}
+                disabled={!analysis?.enhancedContent}
+                className="py-3 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 w-full"
+              >
+                <Plus className="w-5 h-5" />
+                Add to Section
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

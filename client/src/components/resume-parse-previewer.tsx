@@ -69,8 +69,9 @@ export default function ResumeParsePreviewer({
         <ScrollArea className="h-[calc(100vh-20rem)] w-full">
           <div className="p-4">
             <div 
-              className="font-mono whitespace-pre-wrap text-sm resume-preview"
+              className="font-mono whitespace-pre-wrap text-sm resume-preview break-words"
               dangerouslySetInnerHTML={{ __html: previewText }}
+              style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
               onClick={(e) => {
                 const target = e.target as HTMLElement;
                 if (target.classList.contains('highlight')) {
