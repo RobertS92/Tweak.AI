@@ -271,16 +271,18 @@ Revised Version:
       sample: aiResponse.substring(0, 100) + "..."
     });
 
+    const marker = "Revised Version:";
+
     // For content creation queries, wrap the response in the revision format
-    const revisedText = isContentCreationQuery ? 
-      `Revised Version:\n"${aiResponse}"` : 
+    let revisedText = isContentCreationQuery ? 
+      `${marker}\n"${aiResponse}"` : 
       aiResponse;
 
     // Handle the response
-    const markerIndex = revisedText.indexOf("Revised Version:");
+    const markerIndex = revisedText.indexOf(marker);
 
     if (markerIndex !== -1) {
-      revisedText = aiResponse.substring(markerIndex + marker.length).trim();
+      revisedText = revisedText.substring(markerIndex + marker.length).trim();
       // Remove surrounding quotes if present.
       revisedText = revisedText.replace(/^"|"$/g, "");
     }
