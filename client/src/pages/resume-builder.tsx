@@ -514,17 +514,19 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
               <Send className="h-4 w-4" />
             </Button>
           </form>
-          {/* Apply Revision button */}
-          {activeSection && (
+        </div>
+        {/* Apply Revision button - positioned at top right */}
+        {activeSection && aiMessage && !isAiLoading && (
+          <div className="absolute top-4 right-4">
             <Button
               variant="outline"
+              size="sm"
               onClick={() => handleAddAiContent(extractRevisedVersion(aiMessage) || aiMessage)}
-              disabled={isAiLoading}
             >
               Add to Section
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
