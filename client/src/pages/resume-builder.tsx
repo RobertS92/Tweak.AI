@@ -44,6 +44,7 @@ export default function ResumeBuilder() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiOutput, setAiOutput] = useState("");
   const [aiSuggestion, setAiSuggestion] = useState("");
+  const [aiImprovements, setAiImprovements] = useState<string[]>([]);
 
   // Personal info state
   const [personalInfo, setPersonalInfo] = useState({
