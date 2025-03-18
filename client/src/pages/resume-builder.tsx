@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Upload, Plus, Download, Send, MinusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import MobileResumeChat from "@/components/mobile-resume-chat";
 
 /** Interface for section items */
 interface SectionItem {
@@ -33,6 +34,7 @@ interface ResumeSection {
 }
 
 export default function ResumeBuilder() {
+  const [isMobile, setIsMobile] = useState(false);
   const { toast } = useToast();
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -600,6 +602,22 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
       </CardContent>
     </Card>
   );
+
+  // Check for mobile screen size
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // Standard mobile breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // If mobile, render the chat interface
+  if (isMobile) {
+    return <MobileResumeChat />;
+  }
 
   return (
     <div className="min-h-screen bg-background p-6">
