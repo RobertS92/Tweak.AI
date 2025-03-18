@@ -10,12 +10,13 @@ import ResumeUpload from "@/components/resume-upload";
 import ResumeBuilder from "@/pages/resume-builder";
 import InterviewPrep from "@/pages/interview-prep";
 import NavigationBar from "@/components/navigation-bar";
+import MobileNavigation from "@/components/mobile-navigation";
 
 function Router() {
   return (
     <div className="min-h-screen flex flex-col">
       <NavigationBar />
-      <main className="flex-1">
+      <main className="flex-1 pb-16 md:pb-0"> {/* Add padding bottom for mobile nav */}
         <Switch>
           <Route path="/" component={Home} />
           <Route path="/editor" component={ResumeEditor} />
@@ -27,6 +28,7 @@ function Router() {
           <Route component={NotFound} />
         </Switch>
       </main>
+      <MobileNavigation />
     </div>
   );
 }
