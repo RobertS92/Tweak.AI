@@ -33,21 +33,21 @@ export default function MobileResumeChat() {
   const generateResumeMutation = useMutation({
     mutationFn: async (content: string) => {
       console.log("[DEBUG] Starting resume generation with content length:", content.length);
-      
+
       const formattedContent = {
         content: content.trim(),
         format: 'conversational',
         type: 'generate'
       };
-      
+
       console.log("[DEBUG] Formatted request payload:", formattedContent);
-      
+
       try {
         const response = await apiRequest("POST", "/api/resumes/generate", formattedContent);
         console.log("[DEBUG] Resume generation raw response:", response);
         const responseText = await response.text();
         console.log("[DEBUG] Resume generation response text:", responseText);
-        
+
         if (!response.ok) {
           console.error("[DEBUG] Resume generation failed with status:", response.status);
           console.error("[DEBUG] Error details:", responseText);
@@ -57,24 +57,6 @@ export default function MobileResumeChat() {
         return JSON.parse(responseText);
       } catch (error) {
         console.error("[DEBUG] Resume generation critical error:", error);
-        throw error;
-      }
-
-      try {
-        const response = await apiRequest("POST", "/api/resumes/generate", formattedContent);
-        console.log("[DEBUG] Resume generation response status:", response.status);
-        
-        const responseData = await response.json();
-        console.log("[DEBUG] Resume generation response data:", responseData);
-
-        if (!response.ok) {
-          console.error("[DEBUG] Resume generation failed:", responseData);
-          throw new Error(responseData.message || 'Failed to generate resume');
-        }
-
-        return responseData;
-      } catch (error) {
-        console.error("[DEBUG] Resume generation error:", error);
         throw error;
       }
     },
