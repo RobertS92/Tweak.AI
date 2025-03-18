@@ -37,9 +37,17 @@ const matchResponseSchema = z.object({
 
 export async function matchJob(resumeContent: string, jobDescription: string) {
   try {
+    // Input validation
+    if (!resumeContent?.trim() || !jobDescription?.trim()) {
+      throw new Error("Resume content and job description are required");
+    }
+
     console.log("[DEBUG] Starting job matching analysis");
     console.log("[DEBUG] Resume length:", resumeContent.length);
     console.log("[DEBUG] Job description length:", jobDescription.length);
+
+    const sanitizedJobDesc = jobDescription.replace(/\r\n/g, '\n').trim();
+    const sanitizedResume = resumeContent.replace(/\r\n/g, '\n').trim();
 
     const response = await openai.chat.completions.create({
       model: "gpt-4",
@@ -63,33 +71,24 @@ export async function matchJob(resumeContent: string, jobDescription: string) {
       "score": number (0-100),
       "yearsMatch": boolean,
       "roleAlignmentScore": number (0-1),
-      "industrySimilarity": number (0-1),
-      "careerProgressionMatch": boolean
+      "industrySimilarity": number (0-1)
     },
     "educationalBackground": {
       "score": number (0-100),
       "degreeMatch": boolean,
-      "fieldRelevance": number (0-1),
-      "certificationsValue": number (0-1)
+      "fieldRelevance": number (0-1)
     },
     "technicalProficiency": {
       "score": number (0-100),
       "toolsMatch": string[],
-      "technicalSkillsGap": string[],
-      "proficiencyLevel": string
-    },
-    "softSkillsFit": {
-      "score": number (0-100),
-      "culturalAlignment": number (0-1),
-      "communicationScore": number (0-1),
-      "leadershipMatch": boolean
+      "technicalSkillsGap": string[]
     }
   }
 }`
         },
         {
           role: "user",
-          content: `Resume Content:\n${resumeContent}\n\nJob Description:\n${jobDescription}`
+          content: `Resume Content:\n${sanitizedResume}\n\nJob Description:\n${sanitizedJobDesc}`
         }
       ],
       temperature: 0.7,
@@ -99,119 +98,94 @@ export async function matchJob(resumeContent: string, jobDescription: string) {
       throw new Error("No analysis received from OpenAI");
     }
 
-    console.log("Raw OpenAI response:", response.choices[0].message.content);
-
     console.log("[DEBUG] Raw OpenAI response:", response.choices[0].message.content);
-    
-    const result = JSON.parse(response.choices[0].message.content);
+
+    let result;
+    try {
+      result = JSON.parse(response.choices[0].message.content);
+    } catch (parseError) {
+      console.error("[DEBUG] JSON parse error:", parseError);
+      throw new Error("Failed to parse OpenAI response");
+    }
+
     console.log("[DEBUG] Parsed JSON result:", result);
-    
+
     console.log("[DEBUG] Attempting to validate response against schema");
     console.log("[DEBUG] Schema structure:", Object.keys(matchResponseSchema.shape));
     console.log("[DEBUG] Response structure:", Object.keys(result));
-    
-    try {
-      const validatedResult = matchResponseSchema.parse(result);
-      console.log("[DEBUG] Validation successful");
-      console.log("[DEBUG] Validated result:", validatedResult);
-    } catch (error) {
-      console.error("[DEBUG] Schema validation failed:", error);
-      if (error instanceof z.ZodError) {
-        error.errors.forEach((err) => {
-          console.error(`[DEBUG] Validation error at path ${err.path.join('.')}: ${err.message}`);
-        });
-      }
-      throw error;
-    }
 
-    // Calculate weighted total score using AI-provided component scores
-    const totalScore = 
-      (validatedResult.analysis.skillMatching.score * 0.3) +
-      (validatedResult.analysis.experienceRelevance.score * 0.25) +
-      (validatedResult.analysis.educationalBackground.score * 0.15) +
-      (validatedResult.analysis.technicalProficiency.score * 0.20) +
-      (validatedResult.analysis.softSkillsFit.score * 0.10);
+    const validatedResult = matchResponseSchema.parse(result);
+    console.log("[DEBUG] Validation successful");
+    console.log("[DEBUG] Validated result:", validatedResult);
 
-    return {
-      ...validatedResult,
-      matchScore: Math.round(totalScore)
-    };
+    return validatedResult;
   } catch (error) {
     console.error("Job matching analysis failed:", error);
     if (error instanceof z.ZodError) {
       console.error("Validation error:", error.errors);
     }
-    throw new Error("Failed to analyze job match");
+    throw error;
   }
 }
 
 export async function tweakResume(resumeContent: string, jobDescription: string) {
   try {
+    // Input validation
+    if (!resumeContent?.trim() || !jobDescription?.trim()) {
+      throw new Error("Resume content and job description are required");
+    }
+
+    const sanitizedJobDesc = jobDescription.replace(/\r\n/g, '\n').trim();
+    const sanitizedResume = resumeContent.replace(/\r\n/g, '\n').trim();
+
     const response = await openai.chat.completions.create({
       model: "gpt-4",
+      response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
-          content: `You are an expert ATS optimization specialist. Enhance the provided resume to better match the job description while maintaining authenticity. Focus on:
-
-1. Keyword Optimization
-   - Match critical job requirements
-   - Use industry-standard terminology
-   - Maintain natural language flow
-
-2. ATS-Friendly Formatting
-   - Clear section headers
-   - Standard section ordering
-   - Consistent bullet point formatting
-   - Proper spacing and hierarchy
-
-3. Experience Enhancement
-   - Highlight relevant achievements
-   - Quantify results where possible
-   - Use action verbs
-   - Focus on transferable skills
-
-4. Skills Alignment
-   - Prioritize matching technical skills
-   - Include both hard and soft skills
-   - Add missing key competencies if user possesses them
-
-Format the response in HTML with proper semantic structure and return a JSON object:
+          content: `You are an expert ATS optimization specialist. Enhance the provided resume to better match the job description while maintaining authenticity. Return a JSON response with this exact structure:
 {
-  "enhancedContent": "<div class='resume'><div class='section'>...(HTML formatted resume content)...</div></div>",
+  "enhancedContent": "The optimized resume content with HTML formatting",
   "improvements": ["List of specific improvements made"],
-  "keywordMatches": ["Matched keywords"],
-  "formattingImprovements": ["Formatting changes made"]
+  "keywordMatches": ["List of matched keywords"],
+  "formattingImprovements": ["List of formatting changes"]
 }`
         },
         {
           role: "user",
-          content: `Resume Content:\n${resumeContent}\n\nJob Description:\n${jobDescription}`
+          content: `Resume Content:\n${sanitizedResume}\n\nJob Description:\n${sanitizedJobDesc}`
         }
       ],
-      temperature: 0.3, // Lower temperature for more consistent formatting
+      temperature: 0.3,
     });
 
     if (!response.choices[0].message.content) {
       throw new Error("No optimization received from OpenAI");
     }
 
-    console.log("Raw tweak response:", response.choices[0].message.content);
+    console.log("[DEBUG] Raw tweak response:", response.choices[0].message.content);
 
+    let result;
     try {
-      const result = JSON.parse(response.choices[0].message.content);
-      return {
-        enhancedContent: result.enhancedContent || resumeContent,
-        improvements: result.improvements || [],
-        keywordMatches: result.keywordMatches || [],
-        formattingImprovements: result.formattingImprovements || []
-      };
+      result = JSON.parse(response.choices[0].message.content);
     } catch (parseError) {
-      console.error("Failed to parse OpenAI response:", parseError);
+      console.error("[DEBUG] JSON parse error:", parseError);
       throw new Error("Failed to parse optimization response");
     }
+
+    if (!result.enhancedContent) {
+      throw new Error("Missing enhanced content in response");
+    }
+
+    return {
+      enhancedContent: result.enhancedContent,
+      improvements: result.improvements || [],
+      keywordMatches: result.keywordMatches || [],
+      formattingImprovements: result.formattingImprovements || []
+    };
   } catch (error) {
     console.error("Resume tweaking failed:", error);
-    throw new Error("Failed to tweak resume");
+    throw error;
   }
 }

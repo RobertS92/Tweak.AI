@@ -264,16 +264,15 @@ export async function registerRoutes(app: Express) {
       const resumeId = parseInt(req.params.id);
       const { jobDescription } = req.body;
 
-      // Validate inputs
+      // Input validation with detailed error messages
       if (!jobDescription || typeof jobDescription !== 'string') {
         return res.status(400).json({
-          message: "Invalid job description format. Please provide a text description.",
-          details: "Job description must be a non-empty string"
+          message: "Invalid job description format",
+          details: "Job description must be provided as a text string"
         });
       }
 
-      // Trim and validate length
-      const cleanJobDescription = jobDescription.trim();
+      const cleanJobDescription = jobDescription.replace(/\r\n/g, '\n').trim();
       if (cleanJobDescription.length === 0) {
         return res.status(400).json({
           message: "Job description cannot be empty",
@@ -281,12 +280,18 @@ export async function registerRoutes(app: Express) {
         });
       }
 
+      console.log("[DEBUG] Processing resume tweak request");
+      console.log("[DEBUG] Job description length:", cleanJobDescription.length);
+
       const resume = await storage.getResume(resumeId);
       if (!resume) {
-        return res.status(404).json({ message: "Resume not found" });
+        return res.status(404).json({ 
+          message: "Resume not found",
+          details: "The requested resume could not be found" 
+        });
       }
 
-      console.log("Starting resume optimization with job description length:", cleanJobDescription.length);
+      console.log("[DEBUG] Found resume, starting optimization");
 
       // Enhanced optimization using OpenAI
       const optimizationResponse = await openai.chat.completions.create({
@@ -307,6 +312,7 @@ ${resume.content}
 Return an optimized version that matches keywords and improves ATS score while maintaining truthfulness.`
           }
         ],
+        response_format: { type: "json_object" },
         temperature: 0.3
       });
 
@@ -314,7 +320,7 @@ Return an optimized version that matches keywords and improves ATS score while m
         throw new Error("No optimization response received");
       }
 
-      console.log("Raw optimization response received");
+      console.log("[DEBUG] Received optimization response");
 
       try {
         const optimization = JSON.parse(optimizationResponse.choices[0].message.content.trim());
@@ -340,13 +346,18 @@ Return an optimized version that matches keywords and improves ATS score while m
           }
         });
 
-        res.json(optimization);
+        res.json({
+          optimizedContent: optimization.optimizedContent,
+          changes: optimization.changes || [],
+          keywordMatches: optimization.keywordMatches || [],
+          formatImprovements: optimization.formatImprovements || []
+        });
       } catch (parseError) {
-        console.error("Failed to parse optimization response:", parseError);
+        console.error("[DEBUG] Failed to parse optimization response:", parseError);
         throw new Error("Invalid response format from optimization service");
       }
     } catch (error) {
-      console.error("Resume optimization error:", error);
+      console.error("[DEBUG] Resume optimization error:", error);
       res.status(500).json({
         message: "Failed to optimize resume",
         details: error instanceof Error ? error.message : "Unknown error occurred"
