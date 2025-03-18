@@ -32,9 +32,14 @@ export default function MobileResumeChat() {
 
   const generateResumeMutation = useMutation({
     mutationFn: async (content: string) => {
-      const response = await apiRequest("POST", "/api/resumes/generate", {
-        content
-      });
+      // Ensure the content is properly formatted
+      const formattedContent = {
+        content: content.trim(),
+        format: 'conversational',
+        type: 'generate'
+      };
+
+      const response = await apiRequest("POST", "/api/resumes/generate", formattedContent);
 
       if (!response.ok) {
         const error = await response.json();
@@ -44,6 +49,10 @@ export default function MobileResumeChat() {
       return response.json();
     },
     onSuccess: (data) => {
+      if (!data.content) {
+        throw new Error("No resume content received");
+      }
+
       setGeneratedResume(data.content);
       setMessages(prev => [...prev, {
         type: 'ai',
@@ -55,9 +64,10 @@ export default function MobileResumeChat() {
       });
     },
     onError: (error: Error) => {
+      console.error("Resume generation error:", error);
       toast({
         title: "Generation Failed",
-        description: error.message || "Failed to generate resume. Please try again.",
+        description: error.message || "Failed to generate resume. Please provide more detailed information about your experience.",
         variant: "destructive"
       });
     }
@@ -112,7 +122,7 @@ export default function MobileResumeChat() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
+
       setMessages(prev => [...prev, {
         type: 'ai',
         content: "I've started the download for you. Is there anything else you'd like me to help you with?"
@@ -162,7 +172,7 @@ export default function MobileResumeChat() {
               onChange={handleFileUpload}
               accept=".pdf,.doc,.docx,.txt"
             />
-            
+
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -172,7 +182,7 @@ export default function MobileResumeChat() {
               >
                 <Upload className="h-4 w-4" />
               </Button>
-              
+
               <Textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -181,7 +191,7 @@ export default function MobileResumeChat() {
                 rows={1}
                 disabled={isGenerating}
               />
-              
+
               <Button
                 size="icon"
                 onClick={handleSubmit}
@@ -194,7 +204,7 @@ export default function MobileResumeChat() {
                 )}
               </Button>
             </div>
-            
+
             {generatedResume && (
               <Button
                 variant="outline"
