@@ -7,43 +7,33 @@ const openai = new OpenAI({
 
 const matchResponseSchema = z.object({
   matchScore: z.number(),
-  missingKeywords: z.array(z.string()),
-  suggestedEdits: z.array(z.string()),
-  suggestedRoles: z.array(z.string()).optional(),
+  missingKeywords: z.array(z.string()).optional(),
+  suggestedEdits: z.array(z.string()).optional(),
   analysis: z.object({
     skillMatching: z.object({
       score: z.number(),
       matchedSkills: z.array(z.string()),
       missingSkills: z.array(z.string()),
       relatedSkills: z.array(z.string())
-    }),
+    }).optional(),
     experienceRelevance: z.object({
       score: z.number(),
       yearsMatch: z.boolean(),
       roleAlignmentScore: z.number(),
-      industrySimilarity: z.number(),
-      careerProgressionMatch: z.boolean()
-    }),
+      industrySimilarity: z.number()
+    }).optional(),
     educationalBackground: z.object({
       score: z.number(),
       degreeMatch: z.boolean(),
-      fieldRelevance: z.number(),
-      certificationsValue: z.number()
-    }),
+      fieldRelevance: z.number()
+    }).optional(),
     technicalProficiency: z.object({
       score: z.number(),
       toolsMatch: z.array(z.string()),
-      technicalSkillsGap: z.array(z.string()),
-      proficiencyLevel: z.string()
-    }),
-    softSkillsFit: z.object({
-      score: z.number(),
-      culturalAlignment: z.number(),
-      communicationScore: z.number(),
-      leadershipMatch: z.boolean()
-    })
-  })
-});
+      technicalSkillsGap: z.array(z.string())
+    }).optional()
+  }).optional()
+}).strict();
 
 export async function matchJob(resumeContent: string, jobDescription: string) {
   try {
