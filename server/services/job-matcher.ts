@@ -37,6 +37,10 @@ const matchResponseSchema = z.object({
 
 export async function matchJob(resumeContent: string, jobDescription: string) {
   try {
+    console.log("[DEBUG] Starting job matching analysis");
+    console.log("[DEBUG] Resume length:", resumeContent.length);
+    console.log("[DEBUG] Job description length:", jobDescription.length);
+
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       response_format: { type: "json_object" },
@@ -97,8 +101,13 @@ export async function matchJob(resumeContent: string, jobDescription: string) {
 
     console.log("Raw OpenAI response:", response.choices[0].message.content);
 
+    console.log("[DEBUG] Raw OpenAI response:", response.choices[0].message.content);
+    
     const result = JSON.parse(response.choices[0].message.content);
+    console.log("[DEBUG] Parsed JSON result:", result);
+    
     const validatedResult = matchResponseSchema.parse(result);
+    console.log("[DEBUG] Validated result:", validatedResult);
 
     // Calculate weighted total score using AI-provided component scores
     const totalScore = 

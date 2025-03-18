@@ -102,6 +102,9 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
 
   const matchMutation = useMutation({
     mutationFn: async () => {
+      console.log("[DEBUG] Starting job match request");
+      console.log("[DEBUG] Job description length:", jobDescription.length);
+      
       const jobResponse = await apiRequest("POST", "/api/jobs", {
         title: "Job Match",
         description: jobDescription,
@@ -114,10 +117,19 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
 
       const job = await jobResponse.json();
 
+      console.log("[DEBUG] Job created:", job);
+      
       const matchResponse = await apiRequest(
         "POST",
         `/api/jobs/${job.id}/match/${resumeId}`
       );
+      
+      console.log("[DEBUG] Match response:", matchResponse);
+      
+      if (!matchResponse.ok) {
+        console.error("[DEBUG] Match failed:", await matchResponse.text());
+        throw new Error("Failed to match job");
+      }
 
       if (!matchResponse.ok) {
         const error = await matchResponse.json();
