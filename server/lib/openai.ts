@@ -144,11 +144,23 @@ export async function matchJobDescription(
   jobDescription: string
 ): Promise<JobMatch> {
   const response = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "gpt-4",
     messages: [
       {
         role: "system",
-        content: "Compare the resume to the job description and provide a match score and specific improvements. Return the response in JSON format."
+        content: `Analyze the resume against the job description and return a JSON response with this exact structure:
+{
+  "matchScore": number,
+  "missingKeywords": string[],
+  "suggestedEdits": string[],
+  "analysis": {
+    "skillMatching": {
+      "score": number,
+      "matchedSkills": string[],
+      "missingSkills": string[]
+    }
+  }
+}`
       },
       {
         role: "user",
@@ -163,7 +175,12 @@ export async function matchJobDescription(
     throw new Error("Failed to get job match from OpenAI");
   }
 
-  return JSON.parse(result) as JobMatch;
+  try {
+    return JSON.parse(result) as JobMatch;
+  } catch (error) {
+    console.error("Failed to parse OpenAI response:", error);
+    throw new Error("Invalid response format from AI");
+  }
 }
 
 export async function generateCoverLetter(
