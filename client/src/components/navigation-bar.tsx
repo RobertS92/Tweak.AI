@@ -2,9 +2,9 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, FileEdit, FileText, Briefcase } from "lucide-react";
 
-export default function NavigationBar() {
+export default function NavigationBar({ className }: { className?: string }) {
   return (
-    <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <nav className={cn("border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60", className)}>
       <div className="container flex h-14 items-center">
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
