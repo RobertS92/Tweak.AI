@@ -294,12 +294,12 @@ export async function registerRoutes(app: Express) {
       console.log("[DEBUG] Found resume, starting optimization");
 
       // Enhanced optimization using OpenAI
-      const optimizationResponse = await openai.chat.completions.create({
+      const response = await openai.chat.completions.create({
         model: "gpt-4",
         messages: [
           {
             role: "system",
-            content: 'You are an expert ATS optimization specialist. Format your response as a valid JSON object with specific fields. Example format: {"optimizedContent": "...", "changes": ["..."], "matchScore": 85, "keywordMatches": ["..."], "missingKeywords": ["..."], "formatImprovements": ["..."]}. Use proper JSON escaping for any special characters in strings.'
+            content: 'You are an expert ATS optimization specialist. Your response must be a valid JSON string that can be parsed. Use this exact format: {"optimizedContent": "...", "changes": ["..."], "matchScore": 85, "keywordMatches": ["..."], "missingKeywords": ["..."], "formatImprovements": ["..."]}. Escape special characters properly.'
           },
           {
             role: "user",
@@ -309,21 +309,20 @@ ${cleanJobDescription}
 Current Resume:
 ${resume.content}
 
-Return an optimized version that matches keywords and improves ATS score while maintaining truthfulness.`
+Return an optimized version that matches keywords and improves ATS score while maintaining truthfulness. Return ONLY valid JSON.`
           }
         ],
-        response_format: { type: "json_object" },
         temperature: 0.3
       });
 
-      if (!optimizationResponse.choices[0].message.content) {
+      if (!response.choices[0].message.content) {
         throw new Error("No optimization response received");
       }
 
       console.log("[DEBUG] Received optimization response");
 
       try {
-        const optimization = JSON.parse(optimizationResponse.choices[0].message.content.trim());
+        const optimization = JSON.parse(response.choices[0].message.content.trim());
 
         if (!optimization.optimizedContent) {
           throw new Error("Missing optimized content in response");
