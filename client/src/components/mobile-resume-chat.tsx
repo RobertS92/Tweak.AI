@@ -41,6 +41,24 @@ export default function MobileResumeChat() {
       };
       
       console.log("[DEBUG] Formatted request payload:", formattedContent);
+      
+      try {
+        const response = await apiRequest("POST", "/api/resumes/generate", formattedContent);
+        console.log("[DEBUG] Resume generation raw response:", response);
+        const responseText = await response.text();
+        console.log("[DEBUG] Resume generation response text:", responseText);
+        
+        if (!response.ok) {
+          console.error("[DEBUG] Resume generation failed with status:", response.status);
+          console.error("[DEBUG] Error details:", responseText);
+          throw new Error(`Generation failed: ${responseText}`);
+        }
+
+        return JSON.parse(responseText);
+      } catch (error) {
+        console.error("[DEBUG] Resume generation critical error:", error);
+        throw error;
+      }
 
       try {
         const response = await apiRequest("POST", "/api/resumes/generate", formattedContent);
