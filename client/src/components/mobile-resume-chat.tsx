@@ -184,7 +184,7 @@ export default function MobileResumeChat() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] p-4"> {/*Added padding here */}
+    <div className="flex flex-col h-[calc(100vh-4rem)] p-4"> {/* Added padding here */}
       <Card className="flex-1 flex flex-col">
         <CardContent className="flex-1 flex flex-col p-4 gap-4">
           <ScrollArea className="flex-1 pr-4">
@@ -251,8 +251,10 @@ export default function MobileResumeChat() {
             </div>
 
             {generatedResume && (
-              {/* Display the styled resume */}
-              <div dangerouslySetInnerHTML={{ __html: generatedResume }} />
+              <div 
+                className="mt-4 border rounded-lg p-4"
+                dangerouslySetInnerHTML={{ __html: generatedResume }} 
+              />
             )}
           </div>
         </CardContent>
