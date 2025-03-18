@@ -39,12 +39,13 @@ export async function matchJob(resumeContent: string, jobDescription: string) {
   try {
     const response = await openai.chat.completions.create({
       model: "gpt-4",
+      response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
-          content: `You are an expert ATS and job matching specialist. Analyze the resume against the job description and provide a detailed JSON response with the following structure:
+          content: `You are an expert ATS and job matching specialist. Analyze the resume against the job description and provide a detailed JSON response with this exact structure:
 {
-  "matchScore": number (0-100),
+  "matchScore": number,
   "missingKeywords": string[],
   "suggestedEdits": string[],
   "analysis": {
