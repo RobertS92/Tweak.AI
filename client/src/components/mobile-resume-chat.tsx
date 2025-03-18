@@ -251,7 +251,8 @@ export default function MobileResumeChat() {
             </div>
 
             {generatedResume && (
-              <div dangerouslySetInnerHTML={{ __html: generatedResume }} /> {/*Added to display the styled resume */}
+              {/* Display the styled resume */}
+              <div dangerouslySetInnerHTML={{ __html: generatedResume }} />
             )}
           </div>
         </CardContent>
