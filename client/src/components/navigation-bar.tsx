@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, FileEdit, FileText, Briefcase } from "lucide-react";
 
