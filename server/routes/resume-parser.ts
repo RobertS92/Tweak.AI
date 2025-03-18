@@ -266,6 +266,8 @@ IMPORTANT:
 }
 
 router.post("/resume-parser", upload.single("file"), async (req, res) => {
+  console.log("[DEBUG] Resume parser request received");
+  console.log("[DEBUG] Request body:", req.body);
   try {
     console.log("[DEBUG] Starting resume parsing process");
 
