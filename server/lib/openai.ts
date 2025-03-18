@@ -175,12 +175,20 @@ export async function matchJobDescription(
     throw new Error("Failed to get job match from OpenAI");
   }
 
-  try {
-    return JSON.parse(result) as JobMatch;
-  } catch (error) {
-    console.error("Failed to parse OpenAI response:", error);
-    throw new Error("Invalid response format from AI");
-  }
+  console.log("[DEBUG] OpenAI raw response structure:", {
+      model: response.model,
+      choices: response.choices.length,
+      rawContent: response.choices[0].message.content
+    });
+
+    try {
+      const parsedContent = JSON.parse(response.choices[0].message.content);
+      console.log("[DEBUG] Parsed OpenAI response:", parsedContent);
+      return parsedContent as JobMatch;
+    } catch (error) {
+      console.error("[DEBUG] Failed to parse OpenAI response as JSON:", error);
+      throw new Error("Invalid JSON response from OpenAI");
+    }
 }
 
 export async function generateCoverLetter(

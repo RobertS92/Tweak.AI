@@ -106,8 +106,23 @@ export async function matchJob(resumeContent: string, jobDescription: string) {
     const result = JSON.parse(response.choices[0].message.content);
     console.log("[DEBUG] Parsed JSON result:", result);
     
-    const validatedResult = matchResponseSchema.parse(result);
-    console.log("[DEBUG] Validated result:", validatedResult);
+    console.log("[DEBUG] Attempting to validate response against schema");
+    console.log("[DEBUG] Schema structure:", Object.keys(matchResponseSchema.shape));
+    console.log("[DEBUG] Response structure:", Object.keys(result));
+    
+    try {
+      const validatedResult = matchResponseSchema.parse(result);
+      console.log("[DEBUG] Validation successful");
+      console.log("[DEBUG] Validated result:", validatedResult);
+    } catch (error) {
+      console.error("[DEBUG] Schema validation failed:", error);
+      if (error instanceof z.ZodError) {
+        error.errors.forEach((err) => {
+          console.error(`[DEBUG] Validation error at path ${err.path.join('.')}: ${err.message}`);
+        });
+      }
+      throw error;
+    }
 
     // Calculate weighted total score using AI-provided component scores
     const totalScore = 
