@@ -364,6 +364,63 @@ Return an optimized version that matches keywords and improves ATS score while m
     }
   });
 
+  // Add resume generation endpoint after existing resume routes
+  app.post("/api/resumes/generate", async (req, res) => {
+    try {
+      const { content, format, type } = req.body;
+
+      if (!content || typeof content !== 'string') {
+        return res.status(400).json({
+          message: "Invalid content format",
+          details: "Content must be provided as text"
+        });
+      }
+
+      console.log("[DEBUG] Starting resume generation from content length:", content.length);
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert resume writer. Create a professional resume in HTML format based on the provided information. Use appropriate semantic HTML tags and structure the content properly. Focus on:
+1. Professional Summary
+2. Work Experience
+3. Education
+4. Skills
+5. Certifications (if mentioned)
+
+Format the sections with proper HTML tags (<section>, <h2>, <p>, <ul>, <li>) and include appropriate classes for styling.`
+          },
+          {
+            role: "user",
+            content: content
+          }
+        ],
+        temperature: 0.7,
+      });
+
+      if (!response.choices[0].message.content) {
+        throw new Error("No content generated");
+      }
+
+      const generatedContent = response.choices[0].message.content;
+
+      // Return the generated resume content
+      res.json({
+        content: generatedContent,
+        message: "Resume generated successfully"
+      });
+
+    } catch (error) {
+      console.error("[DEBUG] Resume generation error:", error);
+      res.status(500).json({
+        message: "Failed to generate resume",
+        details: error instanceof Error ? error.message : "Unknown error occurred"
+      });
+    }
+  });
+
   // Update the PDF download route
   app.post("/api/resumes/download-pdf", async (req, res) => {
     if (!req.body.content) {

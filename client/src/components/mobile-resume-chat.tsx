@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Send, Upload, Download, Loader2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 
 interface Message {
   type: 'user' | 'ai';
@@ -43,17 +42,31 @@ export default function MobileResumeChat() {
       console.log("[DEBUG] Formatted request payload:", formattedContent);
 
       try {
-        const response = await apiRequest("POST", "/api/resumes/generate", formattedContent);
-        console.log("[DEBUG] Resume generation response status:", response.status);
+        const response = await fetch('/api/resumes/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(formattedContent)
+        });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error("[DEBUG] Resume generation failed:", errorText);
-          throw new Error(errorText);
+        // Check if response is JSON
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          // Handle non-JSON response
+          const text = await response.text();
+          console.error("[DEBUG] Received non-JSON response:", text);
+          throw new Error("Invalid response format from server");
         }
 
         const data = await response.json();
         console.log("[DEBUG] Resume generation response:", data);
+
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to generate resume");
+        }
+
         return data;
       } catch (error) {
         console.error("[DEBUG] Resume generation critical error:", error);
@@ -79,7 +92,7 @@ export default function MobileResumeChat() {
       console.error("Resume generation error:", error);
       toast({
         title: "Generation Failed",
-        description: error.message || "Failed to generate resume. Please provide more detailed information about your experience.",
+        description: error.message || "Failed to generate resume. Please provide more information about your experience.",
         variant: "destructive"
       });
     }
