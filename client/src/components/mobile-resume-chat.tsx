@@ -66,7 +66,27 @@ export default function MobileResumeChat() {
         if (!response.ok) {
           throw new Error(data.message || "Failed to generate resume");
         }
-
+        if (data.content) {
+          // Transform the content into a professionally styled HTML
+          data.content = `
+            <div class="resume-preview p-4 bg-white rounded-lg shadow">
+              <style>
+                .resume-preview {
+                  font-family: 'Arial', sans-serif;
+                  line-height: 1.6;
+                  max-width: 800px;
+                  margin: 0 auto;
+                }
+                .resume-preview h1 { font-size: 24px; font-weight: bold; color: #2C3E50; margin-bottom: 4px; }
+                .resume-preview h2 { font-size: 18px; color: #34495E; margin-bottom: 12px; }
+                .resume-preview .contact { font-size: 14px; color: #7F8C8D; margin-bottom: 16px; }
+                .resume-preview .section { margin: 16px 0; }
+                .resume-preview .section-title { font-size: 16px; font-weight: bold; color: #2C3E50; border-bottom: 2px solid #3498DB; padding-bottom: 4px; margin-bottom: 8px; }
+              </style>
+              ${data.content}
+            </div>
+          `;
+        }
         return data;
       } catch (error) {
         console.error("[DEBUG] Resume generation critical error:", error);
@@ -164,7 +184,7 @@ export default function MobileResumeChat() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] p-4">
+    <div className="flex flex-col h-[calc(100vh-4rem)] p-4"> {/*Added padding here */}
       <Card className="flex-1 flex flex-col">
         <CardContent className="flex-1 flex flex-col p-4 gap-4">
           <ScrollArea className="flex-1 pr-4">
@@ -231,14 +251,7 @@ export default function MobileResumeChat() {
             </div>
 
             {generatedResume && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => handleSubmit()}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download Resume
-              </Button>
+              <div dangerouslySetInnerHTML={{ __html: generatedResume }} /> {/*Added to display the styled resume */}
             )}
           </div>
         </CardContent>
