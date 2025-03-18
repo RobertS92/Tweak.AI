@@ -264,10 +264,29 @@ export async function registerRoutes(app: Express) {
       const resumeId = parseInt(req.params.id);
       const { jobDescription } = req.body;
 
+      // Validate inputs
+      if (!jobDescription || typeof jobDescription !== 'string') {
+        return res.status(400).json({
+          message: "Invalid job description format. Please provide a text description.",
+          details: "Job description must be a non-empty string"
+        });
+      }
+
+      // Trim and validate length
+      const cleanJobDescription = jobDescription.trim();
+      if (cleanJobDescription.length === 0) {
+        return res.status(400).json({
+          message: "Job description cannot be empty",
+          details: "Please provide a valid job description"
+        });
+      }
+
       const resume = await storage.getResume(resumeId);
       if (!resume) {
         return res.status(404).json({ message: "Resume not found" });
       }
+
+      console.log("Starting resume optimization with job description length:", cleanJobDescription.length);
 
       // Enhanced optimization using OpenAI
       const optimizationResponse = await openai.chat.completions.create({
@@ -281,7 +300,7 @@ export async function registerRoutes(app: Express) {
             role: "user",
             content: `Here is the job description and resume to optimize:
 Job Description:
-${jobDescription}
+${cleanJobDescription}
 Current Resume:
 ${resume.content}
 
@@ -295,10 +314,14 @@ Return an optimized version that matches keywords and improves ATS score while m
         throw new Error("No optimization response received");
       }
 
-      console.log("Raw optimization response:", optimizationResponse.choices[0].message.content);
+      console.log("Raw optimization response received");
 
       try {
         const optimization = JSON.parse(optimizationResponse.choices[0].message.content.trim());
+
+        if (!optimization.optimizedContent) {
+          throw new Error("Missing optimized content in response");
+        }
 
         // Update the resume with optimized content and detailed analysis
         await storage.updateResume(resumeId, {
@@ -320,11 +343,14 @@ Return an optimized version that matches keywords and improves ATS score while m
         res.json(optimization);
       } catch (parseError) {
         console.error("Failed to parse optimization response:", parseError);
-        throw new Error("Invalid response format from optimization");
+        throw new Error("Invalid response format from optimization service");
       }
     } catch (error) {
       console.error("Resume optimization error:", error);
-      res.status(500).json({ message: "Failed to optimize resume" });
+      res.status(500).json({
+        message: "Failed to optimize resume",
+        details: error instanceof Error ? error.message : "Unknown error occurred"
+      });
     }
   });
 
