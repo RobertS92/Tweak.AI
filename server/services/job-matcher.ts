@@ -144,17 +144,28 @@ export async function tweakResume(resumeContent: string, jobDescription: string)
       messages: [
         {
           role: "system",
-          content: `You are an expert ATS optimization specialist. Enhance the provided resume to better match the job description while maintaining authenticity. Return a JSON response with this exact structure:
+          content: `You are an expert ATS optimization specialist. Enhance the provided resume to better match the job description while maintaining authenticity and truthfulness. Keep all original contact information and structure. Include these sections in order if present in original:
+1. Personal Information
+2. Professional Summary
+3. Work Experience
+4. Skills
+5. Education
+6. Projects (if any)
+7. Certifications (if any)
+
+Return a JSON response with this exact structure:
 {
-  "enhancedContent": "The optimized resume content with HTML formatting",
+  "enhancedContent": "The complete optimized resume content preserving all sections",
   "improvements": ["List of specific improvements made"],
   "keywordMatches": ["List of matched keywords"],
   "formattingImprovements": ["List of formatting changes"]
-}`
+}
+
+Important: Maintain all original sections and information, only enhance content to better match job requirements. Do not fabricate experience or credentials.`
         },
         {
           role: "user",
-          content: `Resume Content:\n${sanitizedResume}\n\nJob Description:\n${sanitizedJobDesc}`
+          content: `Resume Content:\n${sanitizedResume}\n\nJob Description:\n${sanitizedJobDesc}\n\nEnhance this resume to better match the job requirements while preserving all original sections and truthfulness.`
         }
       ],
       temperature: 0.3,
