@@ -304,11 +304,12 @@ Return your analysis with specific suggestions.`;
         messages[0].content = systemPrompt;
         revisedText = aiResponse;
       }
-    // For content creation with professional summary, return the AI response directly
-    else if (isContentCreationQuery && sectionId === 'professional-summary' && userQuery.toLowerCase().includes('write a professional summary')) {
-      revisedText = aiResponse;
-    } else if (markerIndex !== -1) {
-      revisedText = revisedText.substring(markerIndex + marker.length).trim();
+      // For content creation with professional summary, return the AI response directly
+      else if (isContentCreationQuery && sectionId === 'professional-summary' && userQuery.toLowerCase().includes('write a professional summary')) {
+        revisedText = aiResponse;
+      } else if (markerIndex !== -1) {
+        revisedText = revisedText.substring(markerIndex + marker.length).trim();
+      }
     }
 
     return res.json({
