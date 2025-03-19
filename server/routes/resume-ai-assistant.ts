@@ -278,11 +278,24 @@ Revised Version:
       `${marker}\n${aiResponse}` : 
       aiResponse;
 
-    // Handle the response formatting
-    const markerIndex = revisedText.indexOf(marker);
-
-    // Special handling for work experience analysis
-    if (sectionId === 'work-experience' && !isContentCreationQuery) {
+    // Handle content creation from user text input
+    if (!sectionContent && userQuery && userQuery.length > 30) {
+      const systemPrompt = `Create professional resume content for the ${sectionId.replace(/-/g, ' ')} section based on the user's input. Format appropriately for:
+- Professional Summary: Clear 3-4 sentence overview
+- Work Experience: Position, company, dates, and bullet points
+- Education: Degree, institution, dates
+- Skills: Organized by category (Technical, Soft Skills)
+Return ONLY the formatted content.`;
+      
+      messages[0].content = systemPrompt;
+      revisedText = aiResponse;
+    }
+    // Handle the response formatting for existing content
+    else {
+      const markerIndex = revisedText.indexOf(marker);
+    
+      // Special handling for work experience analysis
+      if (sectionId === 'work-experience' && !isContentCreationQuery) {
       const systemPrompt = `Analyze this work experience section and provide specific improvements:
 - Suggest stronger action verbs
 - Identify missing quantifiable achievements
