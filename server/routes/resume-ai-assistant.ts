@@ -289,23 +289,21 @@ Return ONLY the formatted content.`;
       
       messages[0].content = systemPrompt;
       revisedText = aiResponse;
-    }
-    // Handle the response formatting for existing content
-    else {
+    } else {
       const markerIndex = revisedText.indexOf(marker);
     
       // Special handling for work experience analysis
       if (sectionId === 'work-experience' && !isContentCreationQuery) {
-      const systemPrompt = `Analyze this work experience section and provide specific improvements:
+        const systemPrompt = `Analyze this work experience section and provide specific improvements:
 - Suggest stronger action verbs
 - Identify missing quantifiable achievements
 - Point out areas needing more detail
 - Highlight any formatting issues
 Return your analysis with specific suggestions.`;
-      
-      messages[0].content = systemPrompt;
-      revisedText = aiResponse;
-    }
+        
+        messages[0].content = systemPrompt;
+        revisedText = aiResponse;
+      }
     // For content creation with professional summary, return the AI response directly
     else if (isContentCreationQuery && sectionId === 'professional-summary' && userQuery.toLowerCase().includes('write a professional summary')) {
       revisedText = aiResponse;
