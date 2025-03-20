@@ -403,7 +403,7 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
 
       setSections(updatedSections);
 
-      // Update personal info
+      console.log("[DEBUG] Updating personal info:", data.personalInfo);
       setPersonalInfo({
         name: data.personalInfo?.name || "",
         email: data.personalInfo?.email || "",
@@ -412,16 +412,55 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
         linkedin: data.personalInfo?.linkedin || "",
       });
 
-      // Update all sections
+      // Update all sections with debug checks
       setSections(prevSections => {
         return prevSections.map(section => {
           const parsedSection = data.sections.find(s => s.id === section.id);
-          if (!parsedSection) return section;
+          console.log(`[DEBUG] Processing section ${section.id}:`, parsedSection);
+
+          if (!parsedSection) {
+            console.log(`[DEBUG] No parsed data found for section: ${section.id}`);
+            return section;
+          }
+
+          // Special handling for sections with specific formats
+          if (section.id === 'professional-summary') {
+            console.log('[DEBUG] Processing professional summary:', parsedSection.content);
+            return {
+              ...section,
+              content: parsedSection.content || section.content
+            };
+          }
+
+          if (['work-experience', 'education', 'projects'].includes(section.id)) {
+            console.log(`[DEBUG] Processing ${section.id} items:`, parsedSection.items);
+            const updatedItems = parsedSection.items?.map(item => ({
+              title: item.title || item.degree || "",
+              subtitle: item.company || item.institution || "",
+              date: [item.startDate, item.endDate].filter(Boolean).join(" - "),
+              description: item.description || "",
+              bullets: item.achievements || [],
+            })) || [];
+
+            console.log(`[DEBUG] Updated ${section.id} items:`, updatedItems);
+            return {
+              ...section,
+              items: updatedItems
+            };
+          }
+
+          if (section.id === 'skills' && parsedSection.categories) {
+            console.log('[DEBUG] Processing skills categories:', parsedSection.categories);
+            return {
+              ...section,
+              categories: parsedSection.categories
+            };
+          }
 
           return {
             ...section,
-            content: parsedSection.content || "",
-            items: parsedSection.items || [],
+            content: parsedSection.content || section.content || "",
+            items: parsedSection.items || section.items || [],
             categories: parsedSection.categories || section.categories
           };
         });
