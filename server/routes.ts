@@ -421,18 +421,38 @@ Format the sections with proper HTML tags (<section>, <h2>, <p>, <ul>, <li>) and
     }
   });
 
+
+  // Added generatePDFTemplate function
+  function generatePDFTemplate(resumeData: any): string {
+    // Basic template - replace with a more sophisticated template
+    return `<h1>${resumeData.name}</h1>
+            <p>${resumeData.contact}</p>
+            <h2>Summary</h2>
+            <p>${resumeData.summary}</p>
+            <h2>Experience</h2>
+            <ul>
+              ${resumeData.experience.map(exp => `<li>${exp}</li>`).join('')}
+            </ul>
+            <h2>Education</h2>
+            <ul>
+              ${resumeData.education.map(edu => `<li>${edu}</li>`).join('')}
+            </ul>`;
+
+  }
+
   // Update the PDF download route
   app.post("/api/resumes/download-pdf", async (req, res) => {
-    if (!req.body.content) {
-      return res.status(400).json({ message: "Resume content is required" });
+    if (!req.body.resumeData) {
+      return res.status(400).json({ message: "Resume data is required" });
     }
 
     try {
-      const { content } = req.body;
+      const { resumeData } = req.body;
+      const htmlContent = generatePDFTemplate(resumeData);
 
       const browser = await puppeteer.launch({
         headless: 'new',
-        executablePath: '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
+        executablePath: '/nix/store/zi4f80l169xlmivz8vlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
         args: ['--no-sandbox', '--disable-setuid-sandbox']
       });
 
@@ -521,7 +541,7 @@ Format the sections with proper HTML tags (<section>, <h2>, <p>, <ul>, <li>) and
           </head>
           <body>
             <div class="resume-content">
-              ${content}
+              ${htmlContent}
             </div>
           </body>
           </html>

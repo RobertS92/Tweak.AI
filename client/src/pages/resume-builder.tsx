@@ -708,7 +708,41 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
               <Plus className="w-4 h-4 mr-2" />
               New Resume
             </Button>
-            <Button>
+            <Button onClick={async () => {
+              try {
+                const response = await fetch("/api/resumes/download-pdf", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ 
+                    resumeData: {
+                      personalInfo,
+                      sections
+                    }
+                  }),
+                });
+
+                if (!response.ok) throw new Error('Failed to generate PDF');
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${personalInfo.name.replace(/\s+/g, '_')}_resume.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+              } catch (error) {
+                console.error('PDF download failed:', error);
+                toast({
+                  title: "Error",
+                  description: "Failed to download PDF",
+                  variant: "destructive",
+                });
+              }
+            }}>
               <Download className="w-4 h-4 mr-2" />
               Download PDF
             </Button>
