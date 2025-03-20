@@ -403,33 +403,9 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
 
       setSections(updatedSections);
 
-      // Update personal info
-      setPersonalInfo({
-        name: data.personalInfo?.name || "",
-        email: data.personalInfo?.email || "",
-        phone: data.personalInfo?.phone || "",
-        location: data.personalInfo?.location || "",
-        linkedin: data.personalInfo?.linkedin || "",
-      });
-
-      // Update all sections
-      setSections(prevSections => {
-        return prevSections.map(section => {
-          const parsedSection = data.sections.find(s => s.id === section.id);
-          if (!parsedSection) return section;
-
-          return {
-            ...section,
-            content: parsedSection.content || "",
-            items: parsedSection.items || [],
-            categories: parsedSection.categories || section.categories
-          };
-        });
-      });
-
       setAiMessage("Resume parsed successfully. Select any section to get AI suggestions for improvements.");
       toast({
-        title: "Resume Parsed Successfully", 
+        title: "Resume Parsed Successfully",
         description: "All sections have been populated. Review and edit as needed.",
       });
     } catch (error) {
