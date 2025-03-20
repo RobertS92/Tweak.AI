@@ -424,20 +424,61 @@ Format the sections with proper HTML tags (<section>, <h2>, <p>, <ul>, <li>) and
 
   // Added generatePDFTemplate function
   function generatePDFTemplate(resumeData: any): string {
-    // Basic template - replace with a more sophisticated template
-    return `<h1>${resumeData.name}</h1>
-            <p>${resumeData.contact}</p>
-            <h2>Summary</h2>
-            <p>${resumeData.summary}</p>
-            <h2>Experience</h2>
-            <ul>
-              ${resumeData.experience.map(exp => `<li>${exp}</li>`).join('')}
-            </ul>
-            <h2>Education</h2>
-            <ul>
-              ${resumeData.education.map(edu => `<li>${edu}</li>`).join('')}
-            </ul>`;
+    if (!resumeData) {
+      throw new Error('Resume data is required');
+    }
 
+    const sections = resumeData.sections || [];
+    const workExperience = sections.find(s => s.id === 'work-experience')?.items || [];
+    const education = sections.find(s => s.id === 'education')?.items || [];
+    const skills = sections.find(s => s.id === 'skills')?.categories || [];
+    const summary = sections.find(s => s.id === 'professional-summary')?.content || '';
+
+    return `
+      <div class="resume-content">
+        <h1>${resumeData.personalInfo?.name || ''}</h1>
+        <div class="contact-info">
+          ${resumeData.personalInfo?.email || ''} | ${resumeData.personalInfo?.phone || ''} | ${resumeData.personalInfo?.location || ''}
+        </div>
+
+        <section>
+          <h2>Professional Summary</h2>
+          <p>${summary}</p>
+        </section>
+
+        <section>
+          <h2>Experience</h2>
+          ${workExperience.map(exp => `
+            <div class="experience-item">
+              <h3>${exp.title} at ${exp.subtitle}</h3>
+              <p class="date">${exp.date}</p>
+              <p>${exp.description}</p>
+            </div>
+          `).join('')}
+        </section>
+
+        <section>
+          <h2>Education</h2>
+          ${education.map(edu => `
+            <div class="education-item">
+              <h3>${edu.title}</h3>
+              <p>${edu.subtitle}</p>
+              <p class="date">${edu.date}</p>
+            </div>
+          `).join('')}
+        </section>
+
+        <section>
+          <h2>Skills</h2>
+          ${skills.map(category => `
+            <h3>${category.name}</h3>
+            <ul>
+              ${category.skills.map(skill => `<li>${skill}</li>`).join('')}
+            </ul>
+          `).join('')}
+        </section>
+      </div>
+    `;
   }
 
   // Update the PDF download route
