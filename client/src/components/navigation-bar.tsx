@@ -24,19 +24,19 @@ export default function NavigationBar({ className }: { className?: string }) {
             <Link href="/editor/new">
               <Button variant="ghost" className="flex items-center">
                 <FileEdit className="mr-2 h-4 w-4" />
-                Tweak Resume
+                Tweak
               </Button>
             </Link>
             <Link href="/builder">
               <Button variant="ghost" className="flex items-center">
                 <FileText className="mr-2 h-4 w-4" />
-                Resume Builder
+                Build
               </Button>
             </Link>
             <Link href="/interview-prep">
               <Button variant="ghost" className="flex items-center">
                 <Briefcase className="mr-2 h-4 w-4" />
-                Interview Prep
+                Prepare
               </Button>
             </Link>
           </nav>
