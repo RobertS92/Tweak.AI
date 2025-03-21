@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Send, Upload, Download, Loader2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface Message {
   type: 'user' | 'ai';
@@ -31,73 +32,14 @@ export default function MobileResumeChat() {
 
   const generateResumeMutation = useMutation({
     mutationFn: async (content: string) => {
-      console.log("[DEBUG] Starting resume generation with content length:", content.length);
+      const response = await apiRequest("POST", "/api/resumes/generate", {
+        content
+      });
 
-      const formattedContent = {
-        content: content.trim(),
-        format: 'conversational',
-        type: 'generate'
-      };
-
-      console.log("[DEBUG] Formatted request payload:", formattedContent);
-
-      try {
-        const response = await fetch('/api/resumes/generate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(formattedContent)
-        });
-
-        // Check if response is JSON
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          // Handle non-JSON response
-          const text = await response.text();
-          console.error("[DEBUG] Received non-JSON response:", text);
-          throw new Error("Invalid response format from server");
-        }
-
-        const data = await response.json();
-        console.log("[DEBUG] Resume generation response:", data);
-
-        if (!response.ok) {
-          throw new Error(data.message || "Failed to generate resume");
-        }
-        if (data.content) {
-          // Transform the content into a professionally styled HTML
-          data.content = `
-            <div class="resume-preview p-4 bg-white rounded-lg shadow">
-              <style>
-                .resume-preview {
-                  font-family: 'Arial', sans-serif;
-                  line-height: 1.6;
-                  max-width: 800px;
-                  margin: 0 auto;
-                }
-                .resume-preview h1 { font-size: 24px; font-weight: bold; color: #2C3E50; margin-bottom: 4px; }
-                .resume-preview h2 { font-size: 18px; color: #34495E; margin-bottom: 12px; }
-                .resume-preview .contact { font-size: 14px; color: #7F8C8D; margin-bottom: 16px; }
-                .resume-preview .section { margin: 16px 0; }
-                .resume-preview .section-title { font-size: 16px; font-weight: bold; color: #2C3E50; border-bottom: 2px solid #3498DB; padding-bottom: 4px; margin-bottom: 8px; }
-              </style>
-              ${data.content}
-            </div>
-          `;
-        }
-        return data;
-      } catch (error) {
-        console.error("[DEBUG] Resume generation critical error:", error);
-        throw error;
-      }
+      const data = await response.json();
+      return data;
     },
     onSuccess: (data) => {
-      if (!data.content) {
-        throw new Error("No resume content received");
-      }
-
       setGeneratedResume(data.content);
       setMessages(prev => [...prev, {
         type: 'ai',
@@ -109,10 +51,9 @@ export default function MobileResumeChat() {
       });
     },
     onError: (error: Error) => {
-      console.error("Resume generation error:", error);
       toast({
         title: "Generation Failed",
-        description: error.message || "Failed to generate resume. Please provide more information about your experience.",
+        description: error.message || "Failed to generate resume. Please try again.",
         variant: "destructive"
       });
     }
@@ -157,7 +98,6 @@ export default function MobileResumeChat() {
     setMessages(prev => [...prev, { type: 'user', content: userMessage }]);
 
     if (generatedResume && userMessage.toLowerCase().includes('download')) {
-      // Handle download request
       const blob = new Blob([generatedResume], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -184,7 +124,7 @@ export default function MobileResumeChat() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] p-4"> {/* Added padding here */}
+    <div className="flex flex-col h-[calc(100vh-4rem)] p-4">
       <Card className="flex-1 flex flex-col">
         <CardContent className="flex-1 flex flex-col p-4 gap-4">
           <ScrollArea className="flex-1 pr-4">
