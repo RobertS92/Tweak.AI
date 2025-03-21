@@ -11,7 +11,7 @@ export default function NavigationBar({ className }: { className?: string }) {
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <FileText className="h-6 w-6" />
             <span className="hidden font-bold sm:inline-block">
-              Resume AI
+              Tweak AI
             </span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
@@ -24,19 +24,19 @@ export default function NavigationBar({ className }: { className?: string }) {
             <Link href="/editor/new">
               <Button variant="ghost" className="flex items-center">
                 <FileEdit className="mr-2 h-4 w-4" />
-                Tweak Resume
+                Tweak
               </Button>
             </Link>
             <Link href="/builder">
               <Button variant="ghost" className="flex items-center">
                 <FileText className="mr-2 h-4 w-4" />
-                Resume Builder
+                Build
               </Button>
             </Link>
             <Link href="/interview-prep">
               <Button variant="ghost" className="flex items-center">
                 <Briefcase className="mr-2 h-4 w-4" />
-                Interview Prep
+                Prep
               </Button>
             </Link>
           </nav>
