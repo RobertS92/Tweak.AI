@@ -492,14 +492,14 @@ Format the sections with proper HTML tags (<section>, <h2>, <p>, <ul>, <li>) and
       const { resumeData } = req.body;
       const htmlContent = generatePDFTemplate(resumeData);
 
+      const executablePath = await chromium.executablePath()
+      
       const browser = await puppeteer.launch({
-        headless: 'new',
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu'
-        ]
+        headless: "new",
+        executablePath,
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        ignoreHTTPSErrors: true
       });
 
       try {
