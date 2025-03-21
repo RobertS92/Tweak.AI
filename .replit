@@ -52,4 +52,4 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "tsx server/index.ts"
+args = "npm run dev"
