@@ -11,6 +11,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import OpenAI from "openai";
 import puppeteer from 'puppeteer';
+import chromium from '@sparticuz/chromium';
 import { db } from "./db";
 
 // Add type definitions
@@ -493,8 +494,12 @@ Format the sections with proper HTML tags (<section>, <h2>, <p>, <ul>, <li>) and
 
       const browser = await puppeteer.launch({
         headless: 'new',
-        executablePath: '/nix/store/zi4f80l169xlmivz8vlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu'
+        ]
       });
 
       try {
