@@ -1,6 +1,7 @@
 
 { pkgs }: {
   deps = [
+    pkgs.nodejs-20_x
     pkgs.chromium
     pkgs.lsof
     pkgs.libnss
