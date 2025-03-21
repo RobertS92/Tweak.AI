@@ -16,11 +16,11 @@ export default function MobileNavigation() {
         </Link>
         <Link href="/builder" className="flex flex-col items-center p-2 text-muted-foreground hover:text-foreground">
           <FileText className="h-5 w-5" />
-          <span className="text-xs mt-1">Build</span>
+          <span className="text-xs mt-1">Create</span>
         </Link>
         <Link href="/interview-prep" className="flex flex-col items-center p-2 text-muted-foreground hover:text-foreground">
           <Briefcase className="h-5 w-5" />
-          <span className="text-xs mt-1">Prepare</span>
+          <span className="text-xs mt-1">Interview</span>
         </Link>
       </div>
     </nav>
