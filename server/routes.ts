@@ -434,18 +434,28 @@ Return an optimized version that matches keywords and improves ATS score while m
       const { resumeData } = req.body;
       const htmlContent = generatePDFTemplate(resumeData);
 
-      const executablePath = await chromium.executablePath()
-
-      const browser = await puppeteer.launch({
-        headless: "new",
-        executablePath,
-        args: chromium.args,
-        defaultViewport: chromium.defaultViewport,
-        ignoreHTTPSErrors: true
-      });
-
-      try {
-        const page = await browser.newPage();
+      const html_to_pdf = require('html-pdf-node');
+      const options = { 
+        format: 'Letter',
+        printBackground: true,
+        preferCSSPageSize: true
+      };
+      const file = { 
+        content: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            ${generateStyles()}
+          </style>
+        </head>
+        <body>
+          <div class="resume-content">
+            ${htmlContent}
+          </div>
+        </body>
+        </html>`
+      };;
 
         // Set content with consistent styling
         await page.setContent(`
@@ -535,17 +545,11 @@ Return an optimized version that matches keywords and improves ATS score while m
           </html>
         `, { waitUntil: 'networkidle0' });
 
-        // Generate PDF with consistent dimensions
-        const pdf = await page.pdf({
-          format: 'Letter',
-          printBackground: true,
-          preferCSSPageSize: true
-        });
-
-        // Set proper headers for PDF download
+        const pdf = await html_to_pdf.generatePdf(file, options);
+        
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`);
-        res.send(pdf);
+        res.send(pdf););
 
       } finally {
         await browser.close();
