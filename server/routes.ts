@@ -549,10 +549,15 @@ Return an optimized version that matches keywords and improves ATS score while m
         
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`);
-        res.send(pdf););
+        res.send(pdf);
 
-      } finally {
-        await browser.close();
+      } catch (error) {
+        console.error('PDF generation failed:', error);
+        res.status(500).json({ 
+          message: 'Failed to generate PDF', 
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
       }
     } catch (error) {
       console.error('PDF generation failed:', error);
