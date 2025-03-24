@@ -1,4 +1,3 @@
-
 import { generateStyles } from './pdf-styles';
 
 export const generatePDFTemplate = (resumeData: any) => {
@@ -9,14 +8,14 @@ export const generatePDFTemplate = (resumeData: any) => {
   const summary = sections.find((s: any) => s.id === 'professional-summary')?.content || '';
   const projects = sections.find((s: any) => s.id === 'projects')?.items || [];
   const certifications = sections.find((s: any) => s.id === 'certifications')?.items || [];
-  
+
   const contactParts = [];
   if (personalInfo?.email) contactParts.push(`<a href="mailto:${personalInfo.email}">${personalInfo.email}</a>`);
   if (personalInfo?.phone) contactParts.push(personalInfo.phone);
   if (personalInfo?.location) contactParts.push(personalInfo.location);
   if (personalInfo?.website) contactParts.push(`<a href="${personalInfo.website}">${personalInfo.website.replace(/^https?:\/\//, '')}</a>`);
   if (personalInfo?.linkedin) contactParts.push(`<a href="${personalInfo.linkedin}">LinkedIn</a>`);
-  
+
   const contactLine = contactParts.join(' | ');
 
   return `
@@ -41,19 +40,14 @@ export const generatePDFTemplate = (resumeData: any) => {
         ${workExperience.length > 0 ? `
         <section>
           <h2>Work Experience</h2>
-          ${workExperience.map(item => `
-            <div class="experience-item">
+          ${workExperience.map((item: any) => `
+            <div class="section-item">
               <div class="header">
                 <h3>${item.title}</h3>
-                <span class="date">${item.date}</span>
+                <div class="subtitle">${item.subtitle}</div>
+                <div class="date">${item.date}</div>
               </div>
-              <div class="subtitle">${item.subtitle}</div>
               <p>${item.description}</p>
-              ${item.bullets?.length ? `
-                <ul>
-                  ${item.bullets.map(bullet => `<li>${bullet}</li>`).join('')}
-                </ul>
-              ` : ''}
             </div>
           `).join('')}
         </section>
@@ -62,19 +56,14 @@ export const generatePDFTemplate = (resumeData: any) => {
         ${education.length > 0 ? `
         <section>
           <h2>Education</h2>
-          ${education.map(item => `
-            <div class="education-item">
+          ${education.map((item: any) => `
+            <div class="section-item">
               <div class="header">
                 <h3>${item.title}</h3>
-                <span class="date">${item.date}</span>
+                <div class="subtitle">${item.subtitle}</div>
+                <div class="date">${item.date}</div>
               </div>
-              <div class="subtitle">${item.subtitle}</div>
               ${item.description ? `<p>${item.description}</p>` : ''}
-              ${item.bullets?.length ? `
-                <ul>
-                  ${item.bullets.map(bullet => `<li>${bullet}</li>`).join('')}
-                </ul>
-              ` : ''}
             </div>
           `).join('')}
         </section>
@@ -83,12 +72,10 @@ export const generatePDFTemplate = (resumeData: any) => {
         ${skills.length > 0 ? `
         <section>
           <h2>Skills</h2>
-          ${skills.map(category => `
+          ${skills.map((category: any) => `
             <div class="skills-category">
               <h3>${category.name}</h3>
-              <ul>
-                ${category.skills.map(skill => `<li>${skill}</li>`).join('')}
-              </ul>
+              <div class="skills-list">${category.skills.join(', ')}</div>
             </div>
           `).join('')}
         </section>
@@ -97,19 +84,13 @@ export const generatePDFTemplate = (resumeData: any) => {
         ${projects.length > 0 ? `
         <section>
           <h2>Projects</h2>
-          ${projects.map(item => `
-            <div class="project-item">
+          ${projects.map((item: any) => `
+            <div class="section-item">
               <div class="header">
                 <h3>${item.title}</h3>
-                ${item.date ? `<span class="date">${item.date}</span>` : ''}
+                ${item.date ? `<div class="date">${item.date}</div>` : ''}
               </div>
-              ${item.subtitle ? `<div class="subtitle">${item.subtitle}</div>` : ''}
               <p>${item.description}</p>
-              ${item.bullets?.length ? `
-                <ul>
-                  ${item.bullets.map(bullet => `<li>${bullet}</li>`).join('')}
-                </ul>
-              ` : ''}
             </div>
           `).join('')}
         </section>
@@ -118,19 +99,17 @@ export const generatePDFTemplate = (resumeData: any) => {
         ${certifications.length > 0 ? `
         <section>
           <h2>Certifications</h2>
-          ${certifications.map(item => `
-            <div class="certification-item">
+          ${certifications.map((item: any) => `
+            <div class="section-item">
               <div class="header">
                 <h3>${item.title}</h3>
-                ${item.date ? `<span class="date">${item.date}</span>` : ''}
+                ${item.date ? `<div class="date">${item.date}</div>` : ''}
               </div>
-              ${item.subtitle ? `<div class="subtitle">${item.subtitle}</div>` : ''}
               ${item.description ? `<p>${item.description}</p>` : ''}
             </div>
           `).join('')}
         </section>
         ` : ''}
-
         <div style="display:none">
           DEBUG Data:
           Education: ${JSON.stringify(education)}
