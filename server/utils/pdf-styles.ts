@@ -1,3 +1,4 @@
+
 export const generateStyles = () => `
   * {
     margin: 0;
@@ -25,15 +26,6 @@ export const generateStyles = () => `
     margin-bottom: 10px;
   }
 
-  .contact {
-    font-size: 14px;
-    color: #666;
-  }
-
-  section {
-    margin-bottom: 25px;
-  }
-
   h2 {
     font-size: 18px;
     color: #333;
@@ -44,6 +36,31 @@ export const generateStyles = () => `
 
   h3 {
     font-size: 16px;
+    margin-bottom: 5px;
+  }
+
+  .contact {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 20px;
+  }
+
+  section {
+    margin-bottom: 25px;
+  }
+
+  .summary {
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  .experience-item, .education-item, .project-item, .certification-item {
+    margin-bottom: 20px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: #666;
     margin-bottom: 5px;
   }
 
@@ -74,13 +91,8 @@ export const generateStyles = () => `
     margin-bottom: 15px;
   }
 
-  .experience-item, .education-item, .project-item, .certification-item {
-    margin-bottom: 20px;
-  }
-
-  .subtitle {
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 5px;
+  .skills-category h3 {
+    color: #444;
+    margin-bottom: 8px;
   }
 `;
