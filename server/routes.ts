@@ -434,7 +434,7 @@ Return an optimized version that matches keywords and improves ATS score while m
       const { resumeData } = req.body;
       const htmlContent = generatePDFTemplate(resumeData);
 
-      const html_to_pdf = require('html-pdf-node');
+      const html_to_pdf = await import('html-pdf-node');
       const options = { 
         format: 'Letter',
         printBackground: true,
