@@ -1,0 +1,133 @@
+[DEBUG] Sections Parsing:
+
+[DEBUG] Section: professional-summary
+[DEBUG] Title: Professional Summary
+[DEBUG] Content: ✓ Found (517 chars)
+
+[DEBUG] Section: work-experience
+[DEBUG] Title: Work Experience
+[DEBUG] Items: 6 found
+
+[DEBUG] Item 1:
+[DEBUG]   title: ✓ Financial Data Analyst
+[DEBUG]   company: ✓ Hudson Way Capital
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2020-10
+[DEBUG]   endDate: ✓ 2021-06
+[DEBUG]   description: ✓ Normalized structured and unstructured alternative data from multiple sources. Tracked securities, behavioral, and credit data contributing to internal models and supporting investment decisions. Performed anomaly detection on financial statements and alternative data identifying irregular trends that informed deeper investigative analysis. Developed sentiment analysis tools to detect market trends, generating signals for trading and portfolio risk management. Scraped public sources for alternative data, augmenting traditional financial metrics for more robust decision-making.
+[DEBUG]   achievements: 0 entries
+
+[DEBUG] Item 2:
+[DEBUG]   title: ✓ Intent Analyst
+[DEBUG]   company: ✓ Socorro Asset Management
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2020-06
+[DEBUG]   endDate: ✓ 2020-09
+[DEBUG]   description: ✓ Conducted research on publicly traded, income-producing securities (equities, preferred shares, corporate bonds) across various sectors. Performed risk assessments and helped monitor a diversified portfolio, ensuring stability and alignment with bottom-up, fundamental strategies. Utilized quantitative methods and empirical data to identify market trends supporting strategic investment decisions. Prepared detailed reports on capital structure changes and other corporate events (e.g., share repurchases, bond offerings).
+[DEBUG]   achievements: 0 entries
+
+[DEBUG] Item 3:
+[DEBUG]   title: ✓ AI / ML Engineer
+[DEBUG]   company: ✓ Tata Consultancy Services (TCS)
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2024-06
+[DEBUG]   endDate: ✓ 2024-10
+[DEBUG]   description: ✓ Integrated NLP models to parse and classify unstructured text, including financial documents and product data. Deployed LLM-based solutions on AWS Lambda for scalable model management and performance tracking. Engineered prompt workflows (RAG systems) to improve generative text outputs, ensuring higher accuracy in client-facing dialogues.
+[DEBUG]   achievements: 0 entries
+
+[DEBUG] Item 4:
+[DEBUG]   title: ✓ NLP / Conversational AI Scientist
+[DEBUG]   company: ✓ Charter Communications (Spectrum)
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2023-06
+[DEBUG]   endDate: ✓ 2024-06
+[DEBUG]   description: ✓ Built NLU systems and conversational AI bots to improve customer interaction and routing, achieving a 95% F1 score. Analyzed large volumes of user intent data, refining prompt strategies and conversational flows with cross-functional teams. Developed pipelines for data preprocessing and semantic search, optimizing information retrieval for user queries.
+[DEBUG]   achievements: 0 entries
+
+[DEBUG] Item 5:
+[DEBUG]   title: ✓ Machine Learning Engineer
+[DEBUG]   company: ✓ Vision R&D
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2021-08
+[DEBUG]   endDate: ✓ 2023-06
+[DEBUG]   description: ✓ Developed advanced AI solutions, including NLP, computer vision, and reinforcement learning for various client use cases. Architected retrieval systems and microservices, integrating Faiss and Rust to accelerate model performance. Led data operations, ensuring data security, proper versioning, and alignment with business objectives.
+[DEBUG]   achievements: 0 entries
+
+[DEBUG] Item 6:
+[DEBUG]   title: ✓ Co-Founder
+[DEBUG]   company: ✓ Vuzag App
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2016-01
+[DEBUG]   endDate: ✓ 2020-06
+[DEBUG]   description: ✓ Developed MVP of a location-based visual search iOS app, raising $800,000 in seed funding. Managed technical teams to enhance app features, reaching over 30,000 downloads with a 5-star rating. Executed sales and marketing strategies, building partnerships to enrich real-time app content.
+[DEBUG]   achievements: 0 entries
+
+[DEBUG] Section: education
+[DEBUG] Title: Education
+[DEBUG] Items: 3 found
+
+[DEBUG] Item 1:
+[DEBUG]   degree: ✓ Post Graduate Degree (AI & ML)
+[DEBUG]   institution: ✓ University of Texas
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2022-01
+[DEBUG]   endDate: ✓ 2023-12
+[DEBUG]   gpa: ✗ 
+[DEBUG]   courses: 8 entries
+
+[DEBUG] Item 2:
+[DEBUG]   degree: ✓ Master of Business Administration (Finance)
+[DEBUG]   institution: ✓ Southern Methodist University
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2020-01
+[DEBUG]   endDate: ✓ 2021-02
+[DEBUG]   gpa: ✗ 
+[DEBUG]   courses: 0 entries
+
+[DEBUG] Item 3:
+[DEBUG]   degree: ✓ Bachelor of Arts (Sociology & Computer Science)
+[DEBUG]   institution: ✓ Southern Methodist University
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2011-07
+[DEBUG]   endDate: ✓ 2015-12
+[DEBUG]   gpa: ✗ 
+[DEBUG]   courses: 0 entries
+
+[DEBUG] Section: skills
+[DEBUG] Title: Skills
+
+[DEBUG] Categories:
+[DEBUG] Technical Skills: 5 skills
+[DEBUG] Skills: Financial Data Analysis, Python & Data Engineering, NLP & ML, Alternative Data & Quantitative Research, Statistical Analysis & Econometrics
+[DEBUG] Soft Skills: 4 skills
+[DEBUG] Skills: Cross-functional collaboration, communication, detail-oriented research, strong problem-solving
+
+[DEBUG] Section: projects
+[DEBUG] Title: Projects
+[DEBUG] Items: 4 found
+
+[DEBUG] Item 1:
+[DEBUG]   title: ✓ Interactive Chatbot for 10-K Filings
+[DEBUG]   description: ✓ Built an LLM-based chatbot that ingests 10-K / 10-Q filings and internal corporate data to provide on-demand insights and Q&A functionality with RAG. Tech: Python, Huggingface Transformers, Faiss, Flask, Docker, AWS
+
+[DEBUG] Item 2:
+[DEBUG]   title: ✓ AutoML System for Financial Signal Data
+[DEBUG]   description: ✓ Automated data pipelines for stock and financial data, improving model selection and hyperparameter tuning for enhanced price prediction. Tech: Python, scikit-learn, TensorFlow, Optuna, Docker, AWS
+
+[DEBUG] Item 3:
+[DEBUG]   title: ✓ NLP Pipeline for Financial Data Analysis
+[DEBUG]   description: ✓ Analyzed SEC filings, earnings call transcripts, and news articles via NLP for entity recognition, sentiment analysis, and topic modeling. Tech: Python, spaCy, TensorFlow, Huggingface, Azure
+
+[DEBUG] Item 4:
+[DEBUG]   title: ✓ Reinforcement Learning-based Cryptocurrency Trading Agent
+[DEBUG]   description: ✓ Explored RL strategies integrating market data and social sentiment, applying risk management for crypto asset trading. Tech: Python, TensorFlow, Graph Neural Networks, AWS EC2
+
+[DEBUG] Section: certifications
+[DEBUG] Title: Certifications
+
+[DEBUG] Parsing Statistics:
+[DEBUG] Personal Info Fields: 5/7
+[DEBUG] Total Sections: 6
+[DEBUG] Work Experience Items: 6
+[DEBUG] Education Items: 3
+[DEBUG] Total Skills: 9
