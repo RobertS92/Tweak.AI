@@ -30,6 +30,91 @@ export const generatePDFTemplate = (resumeData: any) => {
         </section>
         ` : ''}
 
+        ${workExperience.length > 0 ? `
+        <section>
+          <h2>Work Experience</h2>
+          ${workExperience.map(item => `
+            <div class="experience-item">
+              <h3>${item.title} | ${item.subtitle}</h3>
+              <div class="date">${item.date}</div>
+              <p>${item.description}</p>
+              ${item.bullets?.length ? `
+                <ul>
+                  ${item.bullets.map(bullet => `<li>${bullet}</li>`).join('')}
+                </ul>
+              ` : ''}
+            </div>
+          `).join('')}
+        </section>
+        ` : ''}
+
+        ${education.length > 0 ? `
+        <section>
+          <h2>Education</h2>
+          ${education.map(item => `
+            <div class="education-item">
+              <h3>${item.title}</h3>
+              <div class="subtitle">${item.subtitle}</div>
+              <div class="date">${item.date}</div>
+              ${item.description ? `<p>${item.description}</p>` : ''}
+              ${item.bullets?.length ? `
+                <ul>
+                  ${item.bullets.map(bullet => `<li>${bullet}</li>`).join('')}
+                </ul>
+              ` : ''}
+            </div>
+          `).join('')}
+        </section>
+        ` : ''}
+
+        ${skills.length > 0 ? `
+        <section>
+          <h2>Skills</h2>
+          ${skills.map(category => `
+            <div class="skills-category">
+              <h3>${category.name}</h3>
+              <ul>
+                ${category.skills.map(skill => `<li>${skill}</li>`).join('')}
+              </ul>
+            </div>
+          `).join('')}
+        </section>
+        ` : ''}
+
+        ${projects && projects.length > 0 ? `
+        <section>
+          <h2>Projects</h2>
+          ${projects.map(item => `
+            <div class="project-item">
+              <h3>${item.title}</h3>
+              ${item.date ? `<div class="date">${item.date}</div>` : ''}
+              <p>${item.description}</p>
+              ${item.bullets?.length ? `
+                <ul>
+                  ${item.bullets.map(bullet => `<li>${bullet}</li>`).join('')}
+                </ul>
+              ` : ''}
+            </div>
+          `).join('')}
+        </section>
+        ` : ''}
+
+        ${certifications && certifications.length > 0 ? `
+        <section>
+          <h2>Certifications</h2>
+          ${certifications.map(item => `
+            <div class="certification-item">
+              <h3>${item.title}</h3>
+              ${item.date ? `<div class="date">${item.date}</div>` : ''}
+              <p>${item.description || ''}</p>
+            </div>
+          `).join('')}
+        </section>
+        ` : ''}
+      </div>
+    </body>
+    </html>
+
         ${workExperience.length ? `
         <section>
           <h2>Work Experience</h2>
