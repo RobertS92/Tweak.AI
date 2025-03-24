@@ -1,0 +1,144 @@
+import { generateStyles } from './pdf-styles';
+
+export const generatePDFTemplate = (resumeData: any) => {
+  const { personalInfo, sections } = resumeData;
+  const workExperience = sections.find((s: any) => s.id === 'work-experience')?.items || [];
+  const education = sections.find((s: any) => s.id === 'education')?.items || [];
+  const skills = sections.find((s: any) => s.id === 'skills')?.categories || [];
+  const summary = sections.find((s: any) => s.id === 'professional-summary')?.content || '';
+  const projects = sections.find((s: any) => s.id === 'projects')?.items || [];
+  const certifications = sections.find((s: any) => s.id === 'certifications')?.items || [];
+  
+  // Format the contact line with proper conditionals
+  const contactParts = [];
+  if (personalInfo?.email) contactParts.push(`<a href="mailto:${personalInfo.email}">${personalInfo.email}</a>`);
+  if (personalInfo?.phone) contactParts.push(personalInfo.phone);
+  if (personalInfo?.location) contactParts.push(personalInfo.location);
+  if (personalInfo?.website) contactParts.push(`<a href="${personalInfo.website}">${personalInfo.website.replace(/^https?:\/\//, '')}</a>`);
+  if (personalInfo?.linkedin) contactParts.push(`<a href="${personalInfo.linkedin}">LinkedIn</a>`);
+  
+  const contactLine = contactParts.join(' | ');
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${personalInfo?.name || 'Resume'}</title>
+      <style>
+        ${generateStyles()}
+      </style>
+      <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    </head>
+    <body>
+      <div class="resume">
+        <header>
+          <h1>${personalInfo?.name || ''}</h1>
+          <div class="contact">${contactLine}</div>
+        </header>
+
+        ${summary ? `
+        <section>
+          <h2>Professional Summary</h2>
+          <div class="summary">${summary}</div>
+        </section>
+        ` : ''}
+
+        ${workExperience.length > 0 ? `
+        <section>
+          <h2>Professional Experience</h2>
+          ${workExperience.map(item => `
+            <div class="experience-item">
+              <div class="header">
+                <h3>${item.title}</h3>
+                <span class="date">${item.date}</span>
+              </div>
+              <div class="subtitle">${item.subtitle}</div>
+              ${item.description ? `<p>${item.description}</p>` : ''}
+              ${item.bullets?.length ? `
+                <ul>
+                  ${item.bullets.map(bullet => `<li>${bullet}</li>`).join('')}
+                </ul>
+              ` : ''}
+            </div>
+          `).join('')}
+        </section>
+        ` : ''}
+
+        ${education.length > 0 ? `
+        <section>
+          <h2>Education</h2>
+          ${education.map(item => `
+            <div class="education-item">
+              <div class="header">
+                <h3>${item.title}</h3>
+                <span class="date">${item.date}</span>
+              </div>
+              <div class="subtitle">${item.subtitle}</div>
+              ${item.description ? `<p>${item.description}</p>` : ''}
+              ${item.bullets?.length ? `
+                <ul>
+                  ${item.bullets.map(bullet => `<li>${bullet}</li>`).join('')}
+                </ul>
+              ` : ''}
+            </div>
+          `).join('')}
+        </section>
+        ` : ''}
+
+        ${skills.length > 0 ? `
+        <section>
+          <h2>Skills</h2>
+          ${skills.map(category => `
+            <div class="skills-category">
+              <h3>${category.name}</h3>
+              <ul>
+                ${category.skills.map(skill => `<li>${skill}</li>`).join('')}
+              </ul>
+            </div>
+          `).join('')}
+        </section>
+        ` : ''}
+
+        ${projects && projects.length > 0 ? `
+        <section>
+          <h2>Projects</h2>
+          ${projects.map(item => `
+            <div class="project-item">
+              <div class="header">
+                <h3>${item.title}</h3>
+                ${item.date ? `<span class="date">${item.date}</span>` : ''}
+              </div>
+              ${item.subtitle ? `<div class="subtitle">${item.subtitle}</div>` : ''}
+              ${item.description ? `<p>${item.description}</p>` : ''}
+              ${item.bullets?.length ? `
+                <ul>
+                  ${item.bullets.map(bullet => `<li>${bullet}</li>`).join('')}
+                </ul>
+              ` : ''}
+            </div>
+          `).join('')}
+        </section>
+        ` : ''}
+
+        ${certifications && certifications.length > 0 ? `
+        <section>
+          <h2>Certifications</h2>
+          ${certifications.map(item => `
+            <div class="certification-item">
+              <div class="header">
+                <h3>${item.title}</h3>
+                ${item.date ? `<span class="date">${item.date}</span>` : ''}
+              </div>
+              ${item.subtitle ? `<div class="subtitle">${item.subtitle}</div>` : ''}
+              ${item.description ? `<p>${item.description}</p>` : ''}
+            </div>
+          `).join('')}
+        </section>
+        ` : ''}
+      </div>
+    </body>
+    </html>
+  `;
+};
