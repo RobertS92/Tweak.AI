@@ -59,6 +59,7 @@
     "express-session": "^1.18.1",
     "file-type": "^20.4.0",
     "framer-motion": "^11.13.1",
+    "html-pdf-node": "^1.0.8",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.453.0",
     "mammoth": "^1.9.0",
