@@ -1,0 +1,68 @@
+Based on the template code, I can see why some sections might not be appearing in your resume PDF. There are a few potential issues:
+
+1. **Data Structure Issues**
+   The most likely reason is that your data structure doesn't match what the template is expecting. The template looks for sections with specific IDs:
+
+   ```javascript
+   const workExperience = sections.find((s: any) => s.id === 'work-experience')?.items || [];
+   const education = sections.find((s: any) => s.id === 'education')?.items || [];
+   const skills = sections.find((s: any) => s.id === 'skills')?.categories || [];
+   const projects = sections.find((s: any) => s.id === 'projects')?.items || [];
+   ```
+
+   If your sections have different IDs or structure, they won't be found.
+
+2. **Duplicate Template Sections**
+   In your original template, I noticed there were duplicate sections for work experience, education, skills, and projects at the end of the file. This could cause rendering issues where only the first instance is processed.
+
+3. **Empty Data Arrays**
+   The template has conditionals like `${education.length > 0 ? ... : ''}` which only render sections if there's data. If these arrays are empty, the sections won't appear.
+
+4. **Structure Mismatch**
+   For the skills section, the template expects a specific nested structure:
+   ```javascript
+   skills = [
+     { name: "Category Name", skills: ["Skill1", "Skill2"] },
+     // more categories...
+   ]
+   ```
+   If your skills data doesn't match this format, the section might not render correctly.
+
+Here are some debugging steps:
+
+1. **Check your resume data:**
+   Add a console.log statement before generating the PDF:
+   ```javascript
+   console.log("Resume sections:", JSON.stringify(sections, null, 2));
+   ```
+   This will show you what data is actually being processed.
+
+2. **Verify section IDs:**
+   Make sure the IDs in your data match exactly what the template is looking for:
+   - 'work-experience'
+   - 'education'
+   - 'skills'
+   - 'projects'
+   - 'professional-summary'
+   - 'certifications'
+
+3. **Check data structure:**
+   For skills specifically, ensure you have:
+   ```javascript
+   {
+     id: 'skills',
+     categories: [
+       { name: 'Category Name', skills: ['Skill1', 'Skill2'] }
+     ]
+   }
+   ```
+
+4. **Add debugging information to the template:**
+   You could modify the template to show what data it's finding:
+   ```html
+   <div style="color: red;">
+     Education data found: ${JSON.stringify(education)}
+   </div>
+   ```
+
+If these sections should be appearing based on your data, the improved template I provided should fix many of these issues, including removing the duplicated sections and standardizing the structure.
