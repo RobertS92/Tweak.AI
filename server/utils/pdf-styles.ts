@@ -9,9 +9,9 @@ export const generateStyles = () => `
     font-family: Arial, sans-serif;
     line-height: 1.6;
     color: #333;
-    max-width: 800px;
+    max-width: 850px;
     margin: 0 auto;
-    padding: 40px 20px;
+    padding: 40px;
   }
 
   .resume {
@@ -19,8 +19,8 @@ export const generateStyles = () => `
   }
 
   header {
-    text-align: center;
     margin-bottom: 30px;
+    text-align: center;
   }
 
   h1 {
@@ -28,7 +28,7 @@ export const generateStyles = () => `
     margin-bottom: 10px;
   }
 
-  .contact-info {
+  .contact {
     font-size: 14px;
     color: #666;
   }
@@ -41,8 +41,8 @@ export const generateStyles = () => `
     font-size: 20px;
     color: #2c3e50;
     border-bottom: 2px solid #eee;
-    padding-bottom: 5px;
     margin-bottom: 15px;
+    padding-bottom: 5px;
   }
 
   h3 {
@@ -53,7 +53,7 @@ export const generateStyles = () => `
   .header {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
+    align-items: center;
     margin-bottom: 5px;
   }
 
@@ -69,49 +69,27 @@ export const generateStyles = () => `
   }
 
   p {
-    font-size: 14px;
     margin-bottom: 10px;
+    font-size: 14px;
   }
 
-  ul {
-    margin-left: 20px;
-    margin-bottom: 10px;
-  }
-
-  li {
-    font-size: 14px;
-    margin-bottom: 3px;
+  .experience-item, .education-item, .project-item {
+    margin-bottom: 20px;
   }
 
   .skills-category {
     margin-bottom: 15px;
   }
 
-  .skills-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    list-style: none;
-    margin-left: 0;
+  ul {
+    list-style-type: none;
+    padding-left: 0;
   }
 
-  .skills-list li {
-    background: #f5f5f5;
-    padding: 3px 10px;
-    border-radius: 15px;
-    font-size: 13px;
-  }
-
-  .project-item {
-    margin-bottom: 20px;
-  }
-
-  a {
-    color: #2c3e50;
-    text-decoration: none;
-  }
-
-  a:hover {
-    text-decoration: underline;
+  li {
+    display: inline-block;
+    margin-right: 15px;
+    margin-bottom: 8px;
+    font-size: 14px;
   }
 `;
