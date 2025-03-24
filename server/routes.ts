@@ -443,10 +443,81 @@ Return an optimized version that matches keywords and improves ATS score while m
       const file = { 
         content: `
         <!DOCTYPE html>
-        <html>
+        <html lang="en">
         <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Enhanced Resume</title>
           <style>
-            ${generateStyles()}
+            @page {
+              size: letter;
+              margin: 0.75in;
+            }
+
+            body {
+              margin: 0;
+              padding: 0;
+              font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              background: white;
+            }
+
+            .resume-content {
+              max-width: 100%;
+              margin: 0 auto;
+            }
+
+            h1 {
+              font-size: 28px;
+              margin-bottom: 8px;
+              color: #2C3E50;
+              font-weight: 600;
+              text-align: center;
+            }
+
+            h2 {
+              font-size: 18px;
+              color: #2C3E50;
+              margin-bottom: 10px;
+              padding-bottom: 5px;
+              border-bottom: 2px solid #3E7CB1;
+              font-weight: 600;
+            }
+
+            h3 {
+              font-size: 16px;
+              color: #2C3E50;
+              margin-bottom: 4px;
+              font-weight: 600;
+            }
+
+            .contact-info {
+              text-align: center;
+              font-size: 14px;
+              margin-bottom: 5px;
+              color: #555;
+            }
+
+            ul {
+              padding-left: 20px;
+              margin-bottom: 8px;
+              list-style-type: disc;
+            }
+
+            li {
+              margin-bottom: 4px;
+              font-size: 14px;
+            }
+
+            p {
+              margin-bottom: 8px;
+              font-size: 14px;
+            }
+
+            section {
+              margin-bottom: 20px;
+            }
           </style>
         </head>
         <body>
@@ -455,109 +526,20 @@ Return an optimized version that matches keywords and improves ATS score while m
           </div>
         </body>
         </html>`
-      };;
+      };
 
-        // Set content with consistent styling
-        await page.setContent(`
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Enhanced Resume</title>
-            <style>
-              @page {
-                size: letter;
-                margin: 0.75in;
-              }
-
-              body {
-                margin: 0;
-                padding: 0;
-                font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                line-height: 1.6;
-                color: #333;
-                background: white;
-              }
-
-              .resume-content {
-                max-width: 100%;
-                margin: 0 auto;
-              }
-
-              h1 {
-                font-size: 28px;
-                margin-bottom: 8px;
-                color: #2C3E50;
-                font-weight: 600;
-                text-align: center;
-              }
-
-              h2 {
-                font-size: 18px;
-                color: #2C3E50;
-                margin-bottom: 10px;
-                padding-bottom: 5px;
-                border-bottom: 2px solid #3E7CB1;
-                font-weight: 600;
-              }
-
-              h3 {
-                font-size: 16px;
-                color: #2C3E50;
-                margin-bottom: 4px;
-                font-weight: 600;
-              }
-
-              .contact-info {
-                text-align: center;
-                font-size: 14px;
-                margin-bottom: 5px;
-                color: #555;
-              }
-
-              ul {
-                padding-left: 20px;
-                margin-bottom: 8px;
-                list-style-type: disc;
-              }
-
-              li {
-                margin-bottom: 4px;
-                font-size: 14px;
-              }
-
-              p {
-                margin-bottom: 8px;
-                font-size: 14px;
-              }
-
-              section {
-                margin-bottom: 20px;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="resume-content">
-              ${htmlContent}
-            </div>
-          </body>
-          </html>
-        `, { waitUntil: 'networkidle0' });
-
+      try {
         const pdf = await html_to_pdf.generatePdf(file, options);
         
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=enhanced_resume_${new Date().toISOString().split('T')[0]}.pdf`);
         res.send(pdf);
-
       } catch (error) {
         console.error('PDF generation failed:', error);
         res.status(500).json({ 
           message: 'Failed to generate PDF', 
           error: error instanceof Error ? error.message : String(error)
         });
-      }
       }
     } catch (error) {
       console.error('PDF generation failed:', error);
