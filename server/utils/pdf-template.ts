@@ -20,17 +20,15 @@ export const generatePDFTemplate = (resumeData: any) => {
   const contactLine = contactParts.join(' | ');
 
   return `
-    <!DOCTYPE html>
     <html>
     <head>
-      <meta charset="UTF-8">
       <style>${generateStyles()}</style>
     </head>
     <body>
       <div class="resume">
         <header>
           <h1>${personalInfo?.name || ''}</h1>
-          <div class="contact">${contactLine}</div>
+          <div class="contact-info">${contactLine}</div>
         </header>
 
         ${summary ? `
@@ -49,7 +47,7 @@ export const generatePDFTemplate = (resumeData: any) => {
                 <h3>${item.title}</h3>
                 <span class="date">${item.date}</span>
               </div>
-              <div class="subheader">${item.subtitle}</div>
+              <div class="subtitle">${item.subtitle}</div>
               <p>${item.description}</p>
               ${item.bullets?.length ? `
                 <ul>
@@ -132,6 +130,13 @@ export const generatePDFTemplate = (resumeData: any) => {
           `).join('')}
         </section>
         ` : ''}
+
+        <div style="display:none">
+          DEBUG Data:
+          Education: ${JSON.stringify(education)}
+          Skills: ${JSON.stringify(skills)}
+          Projects: ${JSON.stringify(projects)}
+        </div>
       </div>
     </body>
     </html>
