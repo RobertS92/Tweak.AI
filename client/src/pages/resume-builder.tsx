@@ -710,30 +710,58 @@ ${bulletPoints ? `\nAchievements:\n${bulletPoints}` : ""}
             </Button>
             <Button onClick={async () => {
               try {
-                const response = await fetch("/api/resumes/download-pdf", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({ 
-                    resumeData: {
-                      personalInfo,
-                      sections
+                const { jsPDF } = await import('jspdf');
+                const doc = new jsPDF();
+
+                // Add content to PDF
+                const name = personalInfo.name || 'Resume';
+                doc.setFontSize(20);
+                doc.text(name, 20, 20);
+
+                doc.setFontSize(12);
+                doc.text(`${personalInfo.email || ''} | ${personalInfo.phone || ''} | ${personalInfo.location || ''}`, 20, 30);
+
+                let yPos = 40;
+
+                // Professional Summary
+                if (sections.find(s => s.id === 'professional-summary')?.content) {
+                  doc.setFontSize(16);
+                  doc.text('Professional Summary', 20, yPos);
+                  yPos += 10;
+                  doc.setFontSize(12);
+                  const summary = sections.find(s => s.id === 'professional-summary')?.content;
+                  const summaryLines = doc.splitTextToSize(summary, 170);
+                  doc.text(summaryLines, 20, yPos);
+                  yPos += summaryLines.length * 7 + 10;
+                }
+
+                // Work Experience
+                const workExp = sections.find(s => s.id === 'work-experience')?.items || [];
+                if (workExp.length) {
+                  doc.setFontSize(16);
+                  doc.text('Work Experience', 20, yPos);
+                  yPos += 10;
+
+                  workExp.forEach(job => {
+                    if (yPos > 270) {
+                      doc.addPage();
+                      yPos = 20;
                     }
-                  }),
-                });
+                    doc.setFontSize(14);
+                    doc.text(`${job.title} - ${job.subtitle}`, 20, yPos);
+                    yPos += 7;
+                    doc.setFontSize(12);
+                    doc.text(job.date, 20, yPos);
+                    yPos += 7;
+                    const descLines = doc.splitTextToSize(job.description, 170);
+                    doc.text(descLines, 20, yPos);
+                    yPos += descLines.length * 7 + 10;
+                  });
+                }
 
-                if (!response.ok) throw new Error('Failed to generate PDF');
 
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `${personalInfo.name.replace(/\s+/g, '_')}_resume.pdf`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url);
+                // Save the PDF
+                doc.save(`${name.replace(/\s+/g, '_')}_resume.pdf`);
               } catch (error) {
                 console.error('PDF download failed:', error);
                 toast({
