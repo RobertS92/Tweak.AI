@@ -17,6 +17,7 @@ export default function InterviewPrep() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentAudioData, setCurrentAudioData] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isComplete, setIsComplete] = useState(false); // Added state for interview completion
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -201,6 +202,11 @@ export default function InterviewPrep() {
       console.log("[DEBUG] Playing AI response");
       await playAudio(data.audio);
 
+      //Check for interview completion (example condition - replace with actual logic)
+      if (!data.nextQuestion) {
+          setIsComplete(true);
+      }
+
     } catch (error) {
       console.log(`[DEBUG] Answer evaluation error: ${error}`);
       toast({
@@ -291,7 +297,7 @@ export default function InterviewPrep() {
       </div>
 
       <div className="grid gap-6">
-        {!interviewStarted ? (
+        {!interviewStarted && !isComplete ? (
           <Card>
             <CardHeader>
               <CardTitle>Interview Setup</CardTitle>
@@ -313,69 +319,80 @@ export default function InterviewPrep() {
             </CardContent>
           </Card>
         ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Interview Session</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {currentQuestion && (
-                <div className="bg-muted p-4 rounded-lg">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium mb-2">Interviewer:</h3>
-                      <p className="whitespace-pre-wrap">{currentQuestion}</p>
+          !isComplete ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Interview Session</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {currentQuestion && (
+                  <div className="bg-muted p-4 rounded-lg">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-medium mb-2">Interviewer:</h3>
+                        <p className="whitespace-pre-wrap">{currentQuestion}</p>
+                      </div>
+                      {!isRecording && !isSpeaking && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            console.log("[DEBUG] Replaying current question");
+                            if (currentAudioData) {
+                              playAudio(currentAudioData);
+                            }
+                          }}
+                          disabled={isSpeaking || !currentAudioData}
+                        >
+                          <Play className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
-                    {!isRecording && !isSpeaking && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          console.log("[DEBUG] Replaying current question");
-                          if (currentAudioData) {
-                            playAudio(currentAudioData);
-                          }
-                        }}
-                        disabled={isSpeaking || !currentAudioData}
-                      >
-                        <Play className="h-4 w-4" />
-                      </Button>
-                    )}
                   </div>
+                )}
+
+                <div className="min-h-[100px] p-4 bg-muted rounded-lg">
+                  {transcript || "Your answer will appear here as you speak..."}
                 </div>
-              )}
 
-              <div className="min-h-[100px] p-4 bg-muted rounded-lg">
-                {transcript || "Your answer will appear here as you speak..."}
-              </div>
-
-              <div className="flex justify-center gap-4">
-                <Button
-                  variant={isRecording ? "destructive" : "default"}
-                  onClick={isRecording ? stopRecording : startRecording}
-                  disabled={isSpeaking}
-                  size="lg"
-                  className="rounded-full h-16 w-16 p-0"
-                >
-                  {isRecording ? (
-                    <Square className="h-6 w-6" />
-                  ) : (
-                    <Mic className="h-6 w-6" />
-                  )}
-                </Button>
-
-                {!isRecording && transcript && (
+                <div className="flex justify-center gap-4">
                   <Button
-                    onClick={evaluateAnswer}
-                    disabled={isSubmitting || isSpeaking}
+                    variant={isRecording ? "destructive" : "default"}
+                    onClick={isRecording ? stopRecording : startRecording}
+                    disabled={isSpeaking}
                     size="lg"
                     className="rounded-full h-16 w-16 p-0"
                   >
-                    <Send className="h-6 w-6" />
+                    {isRecording ? (
+                      <Square className="h-6 w-6" />
+                    ) : (
+                      <Mic className="h-6 w-6" />
+                    )}
                   </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+
+                  {!isRecording && transcript && (
+                    <Button
+                      onClick={evaluateAnswer}
+                      disabled={isSubmitting || isSpeaking}
+                      size="lg"
+                      className="rounded-full h-16 w-16 p-0"
+                    >
+                      <Send className="h-6 w-6" />
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Interview Complete</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>The interview is finished. Thank you!</p>
+              </CardContent>
+            </Card>
+          )
         )}
       </div>
     </div>

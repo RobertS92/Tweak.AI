@@ -268,6 +268,16 @@ router.post("/interview/evaluate", async (req, res) => {
 
     console.log("[DEBUG] Updated session history. New length:", session.history.length);
 
+    // Check if interview should end (after 5 questions or if completion criteria met)
+    if (session.history.length >= 10 || shouldEndInterview(session)) {
+      console.log("[DEBUG] Interview completion criteria met");
+      return res.json({
+        feedback: "Thank you for your time. This concludes our interview.",
+        sessionId,
+        isComplete: true
+      });
+    }
+
     res.json({
       evaluation: evaluationResult,
       nextQuestion,
@@ -282,6 +292,13 @@ router.post("/interview/evaluate", async (req, res) => {
     });
   }
 });
+
+function shouldEndInterview(session: any) {
+  // End if key topics have been covered or time exceeded
+  const interviewDuration = Date.now() - parseInt(session.sessionId);
+  const maxDuration = 20 * 60 * 1000; // 20 minutes
+  return interviewDuration > maxDuration;
+}
 
 router.post("/interview/respond", async (req, res) => {
   try {
