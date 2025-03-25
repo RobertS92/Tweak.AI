@@ -19,6 +19,7 @@ export default function InterviewPrep() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false); // Added state for interview completion
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
+  const [interviewDuration, setInterviewDuration] = useState(15); // Added state for interview duration
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -238,7 +239,7 @@ export default function InterviewPrep() {
       const analysisResponse = await fetch('/api/interview/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobDescription }),
+        body: JSON.stringify({ jobDescription, durationMinutes: interviewDuration }), // Updated here
       });
 
       if (!analysisResponse.ok) {
@@ -252,7 +253,7 @@ export default function InterviewPrep() {
       const response = await fetch('/api/interview/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobDescription }),
+        body: JSON.stringify({ jobDescription, durationMinutes: interviewDuration }), // Updated here
       });
 
       if (!response.ok) {
@@ -312,6 +313,14 @@ export default function InterviewPrep() {
                   className="min-h-[200px]"
                   disabled={interviewStarted}
                 />
+              </div>
+              <div>
+                <label htmlFor="interviewDuration">Interview Duration (minutes):</label>
+                <select id="interviewDuration" value={interviewDuration} onChange={(e) => setInterviewDuration(parseInt(e.target.value, 10))}>
+                  <option value={15}>15</option>
+                  <option value={30}>30</option>
+                  <option value={45}>45</option>
+                </select>
               </div>
               <Button onClick={startInterview} disabled={isAnalyzing}>
                 {isAnalyzing ? "Analyzing..." : "Start Interview"}

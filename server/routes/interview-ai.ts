@@ -109,7 +109,7 @@ router.post("/interview/analyze", async (req, res) => {
 router.post("/interview/start", async (req, res) => {
   try {
     console.log("[DEBUG] Starting interview session setup");
-    const { jobDescription } = req.body;
+    const { jobDescription, durationMinutes = 30 } = req.body;
 
     if (!jobDescription) {
       return res.status(400).json({
@@ -159,7 +159,8 @@ Keep the response under 60 seconds when spoken.`
       jobDescription,
       currentQuestion: response,
       history: [{ role: "interviewer", content: response }],
-      analysis: null
+      analysis: null,
+      durationMinutes
     });
 
     console.log("[DEBUG] Interview session created");
@@ -296,7 +297,7 @@ router.post("/interview/evaluate", async (req, res) => {
 function shouldEndInterview(session: any) {
   // End if key topics have been covered or time exceeded
   const interviewDuration = Date.now() - parseInt(session.sessionId);
-  const maxDuration = 20 * 60 * 1000; // 20 minutes
+  const maxDuration = session.durationMinutes * 60 * 1000; 
   return interviewDuration > maxDuration;
 }
 
