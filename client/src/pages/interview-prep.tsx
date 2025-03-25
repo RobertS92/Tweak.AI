@@ -17,23 +17,21 @@ export default function InterviewPrep() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentAudioData, setCurrentAudioData] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isComplete, setIsComplete] = useState(false); // Added state for interview completion
+  const [isComplete, setIsComplete] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
-  const [interviewDuration, setInterviewDuration] = useState(15); // Added state for interview duration
+  const [interviewDuration, setInterviewDuration] = useState(15);
+  const [feedback, setFeedback] = useState<{ feedback: string; scores: any } | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (window.SpeechRecognition || window.webkitSpeechRecognition) {
-      console.log("[DEBUG] Initializing speech recognition");
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const recognitionInstance = new SpeechRecognition();
       recognitionInstance.continuous = true;
       recognitionInstance.interimResults = true;
       recognitionInstance.lang = 'en-US';
       setRecognition(recognitionInstance);
-      console.log("[DEBUG] Speech recognition initialized successfully");
     } else {
-      console.log("[DEBUG] Speech recognition not supported by browser");
       toast({
         title: "Speech Recognition Not Available",
         description: "Your browser doesn't support speech recognition. Please use a modern browser like Chrome.",
@@ -53,40 +51,30 @@ export default function InterviewPrep() {
   useEffect(() => {
     if (recognition) {
       recognition.onstart = () => {
-        console.log("[DEBUG] Speech recognition started");
       };
 
       recognition.onend = () => {
-        console.log("[DEBUG] Speech recognition ended");
         setIsRecording(false);
       };
 
       recognition.onresult = (event) => {
-        console.log("[DEBUG] Received speech recognition result");
         let finalTranscript = '';
         let interimTranscript = '';
 
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
             finalTranscript += event.results[i][0].transcript;
-            console.log(`[DEBUG] Final transcript received: ${finalTranscript}`);
           } else {
             interimTranscript += event.results[i][0].transcript;
-            console.log(`[DEBUG] Interim transcript: ${interimTranscript}`);
           }
         }
 
         if (finalTranscript) {
-          setTranscript((prev) => {
-            const newTranscript = prev + finalTranscript;
-            console.log(`[DEBUG] Updated transcript length: ${newTranscript.length}`);
-            return newTranscript;
-          });
+          setTranscript((prev) => prev + finalTranscript);
         }
       };
 
       recognition.onerror = (event) => {
-        console.log(`[DEBUG] Speech recognition error: ${event.error}`);
         toast({
           title: "Error",
           description: "There was an error with the speech recognition. Please try again.",
@@ -99,45 +87,28 @@ export default function InterviewPrep() {
 
   const playAudio = async (base64Audio: string) => {
     try {
-      console.log("[DEBUG] Starting audio playback");
-      if (!audioRef.current) {
-        console.log("[DEBUG] Audio element not initialized");
-        return;
-      }
+      if (!audioRef.current) return;
 
       setIsSpeaking(true);
-      console.log(`[DEBUG] Creating audio blob from base64 string`);
 
-      // Convert base64 to binary
       const binaryString = window.atob(base64Audio);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
 
-      // Create blob and URL
       const blob = new Blob([bytes], { type: 'audio/mp3' });
       const url = URL.createObjectURL(blob);
-      console.log(`[DEBUG] Created audio URL: ${url}`);
 
-      // Set up audio element
       audioRef.current.src = url;
 
-      try {
-        await audioRef.current.play();
-        console.log("[DEBUG] Audio playback started successfully");
-      } catch (playError) {
-        console.log(`[DEBUG] Audio playback failed: ${playError}`);
-        throw playError;
-      }
+      await audioRef.current.play();
 
       audioRef.current.onended = () => {
-        console.log("[DEBUG] Audio playback completed");
         setIsSpeaking(false);
         URL.revokeObjectURL(url);
       };
     } catch (error) {
-      console.log(`[DEBUG] Audio playback error: ${error}`);
       console.error("Audio playback error:", error);
       setIsSpeaking(false);
       toast({
@@ -149,36 +120,24 @@ export default function InterviewPrep() {
   };
 
   const startRecording = () => {
-    if (!recognition) {
-      console.log("[DEBUG] Cannot start recording - recognition not initialized");
-      return;
-    }
-    console.log("[DEBUG] Starting recording");
+    if (!recognition) return;
     setIsRecording(true);
     setTranscript("");
     recognition.start();
   };
 
   const stopRecording = () => {
-    if (!recognition) {
-      console.log("[DEBUG] Cannot stop recording - recognition not initialized");
-      return;
-    }
-    console.log("[DEBUG] Stopping recording");
+    if (!recognition) return;
     setIsRecording(false);
     recognition.stop();
   };
 
   const evaluateAnswer = async () => {
-    if (!transcript.trim()) {
-      console.log("[DEBUG] No answer to evaluate");
-      return;
-    }
+    if (!transcript.trim()) return;
 
     setIsSubmitting(true);
 
     try {
-      console.log("[DEBUG] Sending answer for evaluation");
       const response = await fetch('/api/interview/evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -193,23 +152,17 @@ export default function InterviewPrep() {
       }
 
       const data = await response.json();
-      console.log("[DEBUG] Received evaluation response");
-      console.log(`[DEBUG] Completeness score: ${data.evaluation.completeness}`);
-
       setCurrentQuestion(data.nextQuestion);
       setCurrentAudioData(data.audio);
       setTranscript("");
-
-      console.log("[DEBUG] Playing AI response");
+      setFeedback(data.feedback); // Set feedback data
       await playAudio(data.audio);
 
-      //Check for interview completion (example condition - replace with actual logic)
       if (!data.nextQuestion) {
-          setIsComplete(true);
+        setIsComplete(true);
       }
 
     } catch (error) {
-      console.log(`[DEBUG] Answer evaluation error: ${error}`);
       toast({
         title: "Error",
         description: "Failed to get feedback. Please try again.",
@@ -222,7 +175,6 @@ export default function InterviewPrep() {
 
   const startInterview = async () => {
     if (!jobDescription) {
-      console.log("[DEBUG] Interview start failed - missing job description");
       toast({
         title: "Missing Information",
         description: "Please provide the job description.",
@@ -232,14 +184,12 @@ export default function InterviewPrep() {
     }
 
     setIsAnalyzing(true);
-    console.log("[DEBUG] Starting interview setup");
 
     try {
-      console.log("[DEBUG] Sending job description for analysis");
       const analysisResponse = await fetch('/api/interview/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobDescription, durationMinutes: interviewDuration }), // Updated here
+        body: JSON.stringify({ jobDescription, durationMinutes: interviewDuration }),
       });
 
       if (!analysisResponse.ok) {
@@ -247,13 +197,11 @@ export default function InterviewPrep() {
       }
 
       const analysisData = await analysisResponse.json();
-      console.log("[DEBUG] Job analysis completed successfully");
 
-      console.log("[DEBUG] Starting interview session");
       const response = await fetch('/api/interview/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobDescription, durationMinutes: interviewDuration }), // Updated here
+        body: JSON.stringify({ jobDescription, durationMinutes: interviewDuration }),
       });
 
       if (!response.ok) {
@@ -261,7 +209,6 @@ export default function InterviewPrep() {
       }
 
       const data = await response.json();
-      console.log(`[DEBUG] Interview session created. Session ID: ${data.sessionId}`);
 
       setSessionId(data.sessionId);
       setCurrentQuestion(data.question);
@@ -269,7 +216,6 @@ export default function InterviewPrep() {
       setInterviewStarted(true);
       setTranscript("");
 
-      console.log("[DEBUG] Playing initial interview question");
       await playAudio(data.audio);
 
       toast({
@@ -277,7 +223,6 @@ export default function InterviewPrep() {
         description: "The AI interviewer will now ask you questions. Speak naturally to respond.",
       });
     } catch (error) {
-      console.log(`[DEBUG] Interview start error: ${error}`);
       toast({
         title: "Error",
         description: "Failed to start the interview. Please try again.",
@@ -346,7 +291,6 @@ export default function InterviewPrep() {
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            console.log("[DEBUG] Replaying current question");
                             if (currentAudioData) {
                               playAudio(currentAudioData);
                             }
@@ -399,6 +343,22 @@ export default function InterviewPrep() {
               </CardHeader>
               <CardContent>
                 <p>The interview is finished. Thank you!</p>
+                {isComplete && feedback && (
+                  <div className="mt-4">
+                    <div className="text-lg font-medium">Scores:</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>Clarity and Conciseness: {feedback.scores.clarity}/10</div>
+                      <div>Answer Quality: {feedback.scores.quality}/10</div>
+                      <div>Technical Accuracy: {feedback.scores.technical}/10</div>
+                      <div>Communication Skills: {feedback.scores.communication}/10</div>
+                      <div>Overall Performance: {feedback.scores.overall}/10</div>
+                    </div>
+                    <div className="mt-4">
+                      <div className="text-lg font-medium">Detailed Feedback:</div>
+                      <p className="mt-2 whitespace-pre-wrap">{feedback.feedback}</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )

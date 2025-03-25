@@ -184,7 +184,7 @@ Keep the response under 60 seconds when spoken.`
 router.post("/interview/evaluate", async (req, res) => {
   try {
     console.log("[DEBUG] Starting answer evaluation");
-    const { sessionId, answer } = req.body;
+    const { sessionId, answer, isFinal = false } = req.body;
 
     console.log("[DEBUG] Evaluation request details:", {
       sessionId,
@@ -204,6 +204,39 @@ router.post("/interview/evaluate", async (req, res) => {
       return res.status(404).json({
         error: "Session not found",
         details: "Interview session has expired or is invalid"
+      });
+    }
+
+    if (isFinal) {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: `Analyze the complete interview and provide detailed feedback with scores. Focus on:
+1. Clarity and Conciseness (1-10)
+2. Answer Quality (1-10)
+3. Technical Accuracy (1-10)
+4. Communication Skills (1-10)
+5. Overall Performance (1-10)
+
+Format the response as JSON with 'scores' object and 'feedback' string.`
+          },
+          {
+            role: "user",
+            content: `Job Description: ${session.jobDescription}\nInterview History: ${JSON.stringify(session.history)}`
+          }
+        ],
+        temperature: 0.7
+      });
+
+      const feedback = JSON.parse(completion.choices[0].message.content || "{}");
+      session.feedback = feedback;
+      
+      return res.json({
+        feedback: feedback.feedback,
+        scores: feedback.scores,
+        sessionId
       });
     }
 
