@@ -1,0 +1,396 @@
+%PDF-1.3
+%ºß¬à
+3 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 4 0 R
+>>
+endobj
+4 0 obj
+<<
+/Length 3703
+>>
+stream
+0.5670000000000001 w
+0 G
+BT
+/F1 20 Tf
+23. TL
+0 g
+56.6929133858267775 785.1970866141732586 Td
+(Rob Seals) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 756.8506299212598378 Td
+(rseals13@gmail.com | 832-517-0329 | Houston, TX) Tj
+ET
+BT
+/F1 16 Tf
+18.3999999999999986 TL
+0 g
+56.6929133858267775 728.5041732283464171 Td
+(Professional Summary) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 700.15771653543311 Td
+(ML Engineer with over 5 years of experience in developing and deploying machine learning) Tj
+T* (models and natural language processing \(NLP\) solutions. Skilled in Python, TensorFlow,) Tj
+T* (PyTorch, and scikit-learn. Expertise in generative AI, model fine-tuning, and cloud-based) Tj
+T* (deployment \(AWS, Azure\). Adept at applying machine learning algorithms to solve) Tj
+T* (real-world business problems and deliver actionable insights. Collaborative team player) Tj
+T* (experienced in cross-functional teamwork and end-to-end model development.) Tj
+ET
+BT
+/F1 16 Tf
+18.3999999999999986 TL
+0 g
+56.6929133858267775 552.7561417322833677 Td
+(Work Experience) Tj
+ET
+BT
+/F1 14 Tf
+16.0999999999999979 TL
+0 g
+56.6929133858267775 524.4096850393700606 Td
+(AI / ML Engineer - Tata Consultancy Services \(TCS\)) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 504.5671653543306547 Td
+(2024-06 - 2024-10) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 484.7246456692913057 Td
+(Developed NLP-based AI assistants for generative responses and intent classification,) Tj
+T* (improving customer interactions and reducing handling time. Fine-tuned LLMs \(GPT,) Tj
+T* (Llama, Claude\) to optimize context-aware dialogues and retrieval-augmented generation) Tj
+T* (\(RAG\), enhancing system performance. Deployed models using AWS Lambda, ensuring) Tj
+T* (scalability and efficient lifecycle management, including performance monitoring. Optimized) Tj
+T* (MLOps pipelines, enabling automated updates, CI/CD, and continuous model tracking to) Tj
+T* (ensure high-quality outcomes.) Tj
+ET
+BT
+/F1 14 Tf
+16.0999999999999979 TL
+0 g
+56.6929133858267775 317.480551181102328 Td
+(NLP / Conversational AI Scientist - Charter Communications \(Spectrum\)) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 297.6380314960629221 Td
+(2023-06 - 2024-06) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 277.7955118110235162 Td
+(Fine-tuned 7 domain-specific models for NLU tasks, achieving a 95% F1 score and) Tj
+T* (improving model performance across various industries. Built preprocessing pipelines,) Tj
+T* (semantic search algorithms, and custom prompts for improved intent recognition and) Tj
+T* (conversational experiences. Collaborated with CX teams to optimize IVR systems and) Tj
+T* (real-time conversational AI strategies, enhancing user engagement. Integrated data) Tj
+T* (analysis scripts to monitor model performance and identify opportunities for improvement.) Tj
+ET
+BT
+/F1 14 Tf
+16.0999999999999979 TL
+0 g
+56.6929133858267775 130.3939370078738875 Td
+(Machine Learning Engineer - Vision R&D) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 110.5514173228345953 Td
+(2021-08 - 2023-06) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 90.7088976377951894 Td
+(Developed scalable machine learning solutions for business problems, including traditional) Tj
+T* (ML, computer vision, NLP, and reinforcement learning. Designed high-performance) Tj
+T* (retrieval systems with Faiss and Rust, improving model inference and data access) Tj
+T* (efficiency. Contributed to cloud deployment using AWS and Docker, ensuring scalable) Tj
+T* (applications for real-time processing.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<</Type /Page
+/Parent 1 0 R
+/Resources 2 0 R
+/MediaBox [0 0 595.2799999999999727 841.8899999999999864]
+/Contents 6 0 R
+>>
+endobj
+6 0 obj
+<<
+/Length 854
+>>
+stream
+0.5670000000000001 w
+0 G
+BT
+/F1 14 Tf
+16.0999999999999979 TL
+0 g
+56.6929133858267775 785.1970866141732586 Td
+(Financial Data Analyst - Hudson Way Capital) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 765.3545669291338527 Td
+(2020-10 - 2021-06) Tj
+ET
+BT
+/F1 12 Tf
+13.7999999999999989 TL
+0 g
+56.6929133858267775 745.5120472440944468 Td
+(Developed predictive models \(e.g., logistic regression, time series forecasting\) to assess) Tj
+T* (company valuations, earnings potential, and market risk. Engineered features from) Tj
+T* (unstructured market data \(e.g., financial reports, news feeds\) using tokenization and text) Tj
+T* (embeddings to support investment decisions. Applied MLOps practices for model) Tj
+T* (deployment and continuous integration, ensuring scalable solutions aligned with internal) Tj
+T* (data governance.) Tj
+ET
+endstream
+endobj
+1 0 obj
+<</Type /Pages
+/Kids [3 0 R 5 0 R ]
+/Count 2
+>>
+endobj
+7 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+8 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+9 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-Oblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+10 0 obj
+<<
+/Type /Font
+/BaseFont /Helvetica-BoldOblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+11 0 obj
+<<
+/Type /Font
+/BaseFont /Courier
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+12 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+13 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-Oblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+14 0 obj
+<<
+/Type /Font
+/BaseFont /Courier-BoldOblique
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+15 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Roman
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+16 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Bold
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+17 0 obj
+<<
+/Type /Font
+/BaseFont /Times-Italic
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+18 0 obj
+<<
+/Type /Font
+/BaseFont /Times-BoldItalic
+/Subtype /Type1
+/Encoding /WinAnsiEncoding
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+19 0 obj
+<<
+/Type /Font
+/BaseFont /ZapfDingbats
+/Subtype /Type1
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+20 0 obj
+<<
+/Type /Font
+/BaseFont /Symbol
+/Subtype /Type1
+/FirstChar 32
+/LastChar 255
+>>
+endobj
+2 0 obj
+<<
+/ProcSet [/PDF /Text /ImageB /ImageC /ImageI]
+/Font <<
+/F1 7 0 R
+/F2 8 0 R
+/F3 9 0 R
+/F4 10 0 R
+/F5 11 0 R
+/F6 12 0 R
+/F7 13 0 R
+/F8 14 0 R
+/F9 15 0 R
+/F10 16 0 R
+/F11 17 0 R
+/F12 18 0 R
+/F13 19 0 R
+/F14 20 0 R
+>>
+/XObject <<
+>>
+>>
+endobj
+21 0 obj
+<<
+/Producer (jsPDF 3.0.1)
+/CreationDate (D:20250325112233-05'00')
+>>
+endobj
+22 0 obj
+<<
+/Type /Catalog
+/Pages 1 0 R
+/OpenAction [3 0 R /FitH null]
+/PageLayout /OneColumn
+>>
+endobj
+xref
+0 23
+0000000000 65535 f 
+0000004949 00000 n 
+0000006774 00000 n 
+0000000015 00000 n 
+0000000152 00000 n 
+0000003907 00000 n 
+0000004044 00000 n 
+0000005012 00000 n 
+0000005137 00000 n 
+0000005267 00000 n 
+0000005400 00000 n 
+0000005538 00000 n 
+0000005662 00000 n 
+0000005791 00000 n 
+0000005923 00000 n 
+0000006059 00000 n 
+0000006187 00000 n 
+0000006314 00000 n 
+0000006443 00000 n 
+0000006576 00000 n 
+0000006678 00000 n 
+0000007024 00000 n 
+0000007110 00000 n 
+trailer
+<<
+/Size 23
+/Root 22 0 R
+/Info 21 0 R
+/ID [ <1F23DAFE7B33CACCED22A365CEED0E3C> <1F23DAFE7B33CACCED22A365CEED0E3C> ]
+>>
+startxref
+7214
+%%EOF
