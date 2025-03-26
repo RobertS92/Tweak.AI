@@ -17,8 +17,9 @@ export default function Layout({ children }) {
         'pb-0': !isMobile
       })}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {isMobile ? <MobileNavigation /> : <NavigationBar />}
+          <NavigationBar className="hidden md:block" />
           {children}
+          <MobileNavigation className="md:hidden" />
         </ThemeProvider>
       </body>
     </div>

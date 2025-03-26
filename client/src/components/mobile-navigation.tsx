@@ -2,9 +2,9 @@
 import { Link } from "wouter";
 import { LayoutDashboard, FileEdit, FileText, Briefcase } from 'lucide-react';
 
-export default function MobileNavigation() {
+export default function MobileNavigation({ className = "" }) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t shadow-lg md:hidden z-50">
+    <nav className={`fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t shadow-lg z-50 ${className}`}>
       <div className="container flex justify-around py-3">
         <Link href="/dashboard" className="flex flex-col items-center p-2 text-muted-foreground hover:text-foreground">
           <LayoutDashboard className="h-5 w-5" />
