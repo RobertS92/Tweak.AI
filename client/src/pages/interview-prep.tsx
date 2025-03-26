@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Mic, Square, Play, Send } from "lucide-react";
+import { Mic, Square, Play, Send, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 export default function InterviewPrep() {
   const { toast } = useToast();
@@ -21,6 +23,10 @@ export default function InterviewPrep() {
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
   const [interviewDuration, setInterviewDuration] = useState(15);
   const [feedback, setFeedback] = useState<{ feedback: string; scores: any } | null>(null);
+  const [jobType, setJobType] = useState("Software Engineer");
+  const [jobLevel, setJobLevel] = useState("Mid-Level");
+  const [difficulty, setDifficulty] = useState("Standard");
+  const [interviewFocus, setInterviewFocus] = useState("Technical");
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -155,7 +161,7 @@ export default function InterviewPrep() {
       setCurrentQuestion(data.nextQuestion);
       setCurrentAudioData(data.audio);
       setTranscript("");
-      setFeedback(data.feedback); // Set feedback data
+      setFeedback(data.feedback); 
       await playAudio(data.audio);
 
       if (!data.nextQuestion) {
@@ -234,135 +240,183 @@ export default function InterviewPrep() {
   };
 
   return (
-    <div className="container py-6 max-w-[1400px] mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">AI Interview Practice</h1>
-        <p className="text-muted-foreground mt-2">
-          Have a natural conversation with our AI interviewer. Just paste the job description and start speaking.
-        </p>
+    <div className="min-h-screen bg-[#f5f7fa]">
+      <div className="border-b bg-white">
+        <div className="max-w-[1200px] mx-auto px-6 h-[70px] flex items-center">
+          <h1 className="text-2xl font-bold text-[#2c3e50]">AI Interview Practice</h1>
+        </div>
       </div>
-
-      <div className="grid gap-6">
-        {!interviewStarted && !isComplete ? (
+      <div className="max-w-[1200px] mx-auto px-6 py-4">
+        <p className="text-muted-foreground mb-6">Practice your interview skills with our AI interviewer tailored to specific job positions</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Interview Setup</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Job Description</label>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="font-semibold text-[#2c3e50]">Job Type</label>
+                  <Select value={jobType} onValueChange={setJobType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select job type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Software Engineer">Software Engineer</SelectItem>
+                      <SelectItem value="Data Scientist">Data Scientist</SelectItem>
+                      <SelectItem value="Product Manager">Product Manager</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="font-semibold text-[#2c3e50]">Level</label>
+                  <Select value={jobLevel} onValueChange={setJobLevel}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Entry-Level">Entry-Level</SelectItem>
+                      <SelectItem value="Mid-Level">Mid-Level</SelectItem>
+                      <SelectItem value="Senior">Senior</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="font-semibold text-[#2c3e50]">Job Description</label>
                 <Textarea
-                  placeholder="Paste the job description here"
+                  placeholder="Paste the job description here to customize the interview questions..."
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
-                  className="min-h-[200px]"
-                  disabled={interviewStarted}
+                  className="min-h-[150px]"
                 />
               </div>
-              <div>
-                <label htmlFor="interviewDuration">Interview Duration (minutes):</label>
-                <select id="interviewDuration" value={interviewDuration} onChange={(e) => setInterviewDuration(parseInt(e.target.value, 10))}>
-                  <option value={15}>15</option>
-                  <option value={30}>30</option>
-                  <option value={45}>45</option>
-                </select>
+
+              <div className="bg-[#f0f7ff] border border-[#4f8df9] rounded-lg p-4 flex items-center justify-between">
+                <span className="text-[#4f8df9] font-semibold flex items-center gap-2">
+                  <Upload size={20} />
+                  Upload your resume for more targeted questions
+                </span>
+                <Button variant="secondary">Upload</Button>
               </div>
-              <Button onClick={startInterview} disabled={isAnalyzing}>
-                {isAnalyzing ? "Analyzing..." : "Start Interview"}
+
+              <div className="space-y-4">
+                <h3 className="font-semibold text-[#2c3e50]">Interview Settings</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm text-[#2c3e50]">Duration</label>
+                    <Select value={String(interviewDuration)} onValueChange={(v) => setInterviewDuration(Number(v))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select duration" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="15">15 minutes</SelectItem>
+                        <SelectItem value="30">30 minutes</SelectItem>
+                        <SelectItem value="45">45 minutes</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm text-[#2c3e50]">Difficulty</label>
+                    <Select value={difficulty} onValueChange={setDifficulty}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select difficulty" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Standard">Standard</SelectItem>
+                        <SelectItem value="Advanced">Advanced</SelectItem>
+                        <SelectItem value="Expert">Expert</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm text-[#2c3e50]">Interview Focus</label>
+                <div className="flex gap-2">
+                  {["Technical", "Behavioral", "Mixed"].map((focus) => (
+                    <Button
+                      key={focus}
+                      variant={interviewFocus === focus ? "default" : "outline"}
+                      onClick={() => setInterviewFocus(focus)}
+                      className={cn(
+                        "flex-1",
+                        interviewFocus === focus && "bg-[#4f8df9]"
+                      )}
+                    >
+                      {focus}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <Button className="w-full bg-[#1e2a3b] hover:bg-[#2c3e50] h-12" onClick={startInterview}>
+                Start Interview
               </Button>
             </CardContent>
           </Card>
-        ) : (
-          !isComplete ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Interview Session</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {currentQuestion && (
-                  <div className="bg-muted p-4 rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-medium mb-2">Interviewer:</h3>
-                        <p className="whitespace-pre-wrap">{currentQuestion}</p>
-                      </div>
-                      {!isRecording && !isSpeaking && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            if (currentAudioData) {
-                              playAudio(currentAudioData);
-                            }
-                          }}
-                          disabled={isSpeaking || !currentAudioData}
-                        >
-                          <Play className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
+
+          <Card className="bg-[#f5f7fa]">
+            <CardHeader>
+              <CardTitle>Interview Preview</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Card className="border">
+                <CardContent className="flex gap-4 p-4">
+                  <div className="w-20 h-20 rounded-full bg-[#3498db] flex items-center justify-center">
+                    <span className="text-2xl font-bold text-white">AI</span>
                   </div>
-                )}
-
-                <div className="min-h-[100px] p-4 bg-muted rounded-lg">
-                  {transcript || "Your answer will appear here as you speak..."}
-                </div>
-
-                <div className="flex justify-center gap-4">
-                  <Button
-                    variant={isRecording ? "destructive" : "default"}
-                    onClick={isRecording ? stopRecording : startRecording}
-                    disabled={isSpeaking}
-                    size="lg"
-                    className="rounded-full h-16 w-16 p-0"
-                  >
-                    {isRecording ? (
-                      <Square className="h-6 w-6" />
-                    ) : (
-                      <Mic className="h-6 w-6" />
-                    )}
-                  </Button>
-
-                  {!isRecording && transcript && (
-                    <Button
-                      onClick={evaluateAnswer}
-                      disabled={isSubmitting || isSpeaking}
-                      size="lg"
-                      className="rounded-full h-16 w-16 p-0"
-                    >
-                      <Send className="h-6 w-6" />
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Interview Complete</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>The interview is finished. Thank you!</p>
-                {isComplete && feedback && (
-                  <div className="mt-4">
-                    <div className="text-lg font-medium">Scores:</div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>Clarity and Conciseness: {feedback.scores.clarity}/10</div>
-                      <div>Answer Quality: {feedback.scores.quality}/10</div>
-                      <div>Technical Accuracy: {feedback.scores.technical}/10</div>
-                      <div>Communication Skills: {feedback.scores.communication}/10</div>
-                      <div>Overall Performance: {feedback.scores.overall}/10</div>
-                    </div>
-                    <div className="mt-4">
-                      <div className="text-lg font-medium">Detailed Feedback:</div>
-                      <p className="mt-2 whitespace-pre-wrap">{feedback.feedback}</p>
-                    </div>
+                  <div>
+                    <h3 className="font-bold text-lg">Sarah Johnson</h3>
+                    <p className="text-sm text-muted-foreground">Senior Technical Recruiter</p>
+                    <p className="text-sm text-muted-foreground">Specializing in {jobType} roles</p>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          )
-        )}
+                </CardContent>
+              </Card>
+
+              <div className="space-y-2">
+                <h3 className="font-bold">Sample Questions You'll Be Asked:</h3>
+                <div className="space-y-2">
+                  {[
+                    "Tell me about your experience with Python and data structures.",
+                    "How would you optimize a slow-performing database query?",
+                    "Can you explain your approach to debugging complex issues?"
+                  ].map((q, i) => (
+                    <div key={i} className="bg-[#f9f9fa] p-3 rounded-lg text-sm">{q}</div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="font-bold">Post-Interview Analysis Will Include:</h3>
+                <ul className="space-y-2">
+                  {[
+                    "Detailed performance score for each question",
+                    "Speech analysis (filler words, pacing, clarity)",
+                    "Keyword usage compared to job description",
+                    "Personalized improvement suggestions"
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-[#2ecc71]" />
+                      <span className="text-sm">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <Card className="bg-[#f0f7ff] border-[#4f8df9]">
+                <CardContent className="p-4">
+                  <p className="font-bold text-[#4f8df9] mb-2">💡 How it works:</p>
+                  <p className="text-sm">
+                    AI will ask questions, listen to your responses, and provide real-time feedback.
+                  </p>
+                </CardContent>
+              </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
