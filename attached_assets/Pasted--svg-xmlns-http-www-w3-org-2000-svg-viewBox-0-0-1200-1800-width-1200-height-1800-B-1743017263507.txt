@@ -1,0 +1,203 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1800" width="1200" height="1800">
+  <!-- Background -->
+  <rect width="1200" height="1800" fill="#f5f7fa" />
+  
+  <!-- Navigation Bar -->
+  <rect x="0" y="0" width="1200" height="70" fill="#ffffff" stroke="#e6e9ed" stroke-width="1"/>
+  
+  <!-- Logo -->
+  <g>
+    <text x="40" y="43" font-family="Arial" font-size="22" font-weight="bold" fill="#1e2a3b">Tweak AI</text>
+    <circle cx="25" cy="35" r="15" fill="#4f8df9"/>
+    <text x="25" y="41" font-family="Arial" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">T</text>
+  </g>
+  
+  <!-- Navigation Items -->
+  <g>
+    <text x="740" y="43" font-family="Arial" font-size="16" fill="#2c3e50">Home</text>
+    <text x="820" y="43" font-family="Arial" font-size="16" fill="#2c3e50">Dashboard</text>
+    <text x="930" y="43" font-family="Arial" font-size="16" fill="#2c3e50">Tweak</text>
+    <text x="1010" y="43" font-family="Arial" font-size="16" fill="#2c3e50">Build</text>
+    <text x="1080" y="43" font-family="Arial" font-size="16" fill="#2c3e50">Prep</text>
+  </g>
+  
+  <!-- Hero Section -->
+  <g>
+    <text x="600" y="150" font-family="Arial" font-size="36" font-weight="bold" fill="#1e2a3b" text-anchor="middle">Optimize Your Resume with AI</text>
+    <text x="600" y="200" font-family="Arial" font-size="18" fill="#7f8c8d" text-anchor="middle">Get instant ATS score analysis, personalized improvements, and match your resume</text>
+    <text x="600" y="230" font-family="Arial" font-size="18" fill="#7f8c8d" text-anchor="middle">to job descriptions to stand out from the competition.</text>
+  </g>
+  
+  <!-- Process Steps -->
+  <g>
+    <!-- Step 1 -->
+    <circle cx="200" cy="300" r="40" fill="#4f8df9" />
+    <text x="200" y="310" font-family="Arial" font-size="22" font-weight="bold" fill="#ffffff" text-anchor="middle">1</text>
+    <text x="200" y="370" font-family="Arial" font-size="18" font-weight="bold" fill="#2c3e50" text-anchor="middle">Upload</text>
+    <text x="200" y="395" font-family="Arial" font-size="14" fill="#7f8c8d" text-anchor="middle">Upload your existing resume</text>
+    
+    <!-- Arrow 1 -->
+    <line x1="240" y1="300" x2="360" y2="300" stroke="#e6e9ed" stroke-width="3" />
+    <polygon points="350,290 365,300 350,310" fill="#e6e9ed" />
+    
+    <!-- Step 2 -->
+    <circle cx="400" cy="300" r="40" fill="#4f8df9" />
+    <text x="400" y="310" font-family="Arial" font-size="22" font-weight="bold" fill="#ffffff" text-anchor="middle">2</text>
+    <text x="400" y="370" font-family="Arial" font-size="18" font-weight="bold" fill="#2c3e50" text-anchor="middle">Analyze</text>
+    <text x="400" y="395" font-family="Arial" font-size="14" fill="#7f8c8d" text-anchor="middle">AI analyzes your content</text>
+    
+    <!-- Arrow 2 -->
+    <line x1="440" y1="300" x2="560" y2="300" stroke="#e6e9ed" stroke-width="3" />
+    <polygon points="550,290 565,300 550,310" fill="#e6e9ed" />
+    
+    <!-- Step 3 -->
+    <circle cx="600" cy="300" r="40" fill="#4f8df9" />
+    <text x="600" y="310" font-family="Arial" font-size="22" font-weight="bold" fill="#ffffff" text-anchor="middle">3</text>
+    <text x="600" y="370" font-family="Arial" font-size="18" font-weight="bold" fill="#2c3e50" text-anchor="middle">Optimize</text>
+    <text x="600" y="395" font-family="Arial" font-size="14" fill="#7f8c8d" text-anchor="middle">Get personalized improvements</text>
+    
+    <!-- Arrow 3 -->
+    <line x1="640" y1="300" x2="760" y2="300" stroke="#e6e9ed" stroke-width="3" />
+    <polygon points="750,290 765,300 750,310" fill="#e6e9ed" />
+    
+    <!-- Step 4 -->
+    <circle cx="800" cy="300" r="40" fill="#4f8df9" />
+    <text x="800" y="310" font-family="Arial" font-size="22" font-weight="bold" fill="#ffffff" text-anchor="middle">4</text>
+    <text x="800" y="370" font-family="Arial" font-size="18" font-weight="bold" fill="#2c3e50" text-anchor="middle">Match</text>
+    <text x="800" y="395" font-family="Arial" font-size="14" fill="#7f8c8d" text-anchor="middle">Target specific job descriptions</text>
+  </g>
+  
+  <!-- Feature Cards -->
+  <g>
+    <!-- Card 1: Upload Resume -->
+    <rect x="100" y="450" width="300" height="380" rx="10" fill="#ffffff" stroke="#e6e9ed" stroke-width="1" />
+    <circle cx="250" cy="510" r="40" fill="#f0f7ff" />
+    <text x="250" y="520" font-family="Arial" font-size="28" fill="#4f8df9" text-anchor="middle">↑</text>
+    <text x="250" y="580" font-family="Arial" font-size="20" font-weight="bold" fill="#2c3e50" text-anchor="middle">Upload Resume</text>
+    <text x="250" y="610" font-family="Arial" font-size="14" fill="#7f8c8d" text-anchor="middle" width="260">Start by uploading your existing</text>
+    <text x="250" y="630" font-family="Arial" font-size="14" fill="#7f8c8d" text-anchor="middle" width="260">resume in multiple formats.</text>
+    
+    <!-- Bullet Points -->
+    <circle cx="130" cy="670" r="4" fill="#2ecc71" />
+    <text x="145" y="675" font-family="Arial" font-size="14" fill="#2c3e50">Support for PDF, Word, and TXT</text>
+    
+    <circle cx="130" cy="700" r="4" fill="#2ecc71" />
+    <text x="145" y="705" font-family="Arial" font-size="14" fill="#2c3e50">Secure document handling</text>
+    
+    <circle cx="130" cy="730" r="4" fill="#2ecc71" />
+    <text x="145" y="735" font-family="Arial" font-size="14" fill="#2c3e50">Multiple resume management</text>
+    
+    <circle cx="130" cy="760" r="4" fill="#2ecc71" />
+    <text x="145" y="765" font-family="Arial" font-size="14" fill="#2c3e50">Version control and history</text>
+    
+    <!-- Card 2: AI Analysis -->
+    <rect x="450" y="450" width="300" height="380" rx="10" fill="#ffffff" stroke="#e6e9ed" stroke-width="1" />
+    <circle cx="600" cy="510" r="40" fill="#f0f7ff" />
+    <text x="600" y="520" font-family="Arial" font-size="28" fill="#4f8df9" text-anchor="middle">✨</text>
+    <text x="600" y="580" font-family="Arial" font-size="20" font-weight="bold" fill="#2c3e50" text-anchor="middle">AI Analysis</text>
+    <text x="600" y="610" font-family="Arial" font-size="14" fill="#7f8c8d" text-anchor="middle" width="260">Our AI evaluates your resume against</text>
+    <text x="600" y="630" font-family="Arial" font-size="14" fill="#7f8c8d" text-anchor="middle" width="260">industry standards and ATS systems.</text>
+    
+    <!-- Bullet Points -->
+    <circle cx="480" cy="670" r="4" fill="#2ecc71" />
+    <text x="495" y="675" font-family="Arial" font-size="14" fill="#2c3e50">ATS compatibility scoring</text>
+    
+    <circle cx="480" cy="700" r="4" fill="#2ecc71" />
+    <text x="495" y="705" font-family="Arial" font-size="14" fill="#2c3e50">Keyword optimization</text>
+    
+    <circle cx="480" cy="730" r="4" fill="#2ecc71" />
+    <text x="495" y="735" font-family="Arial" font-size="14" fill="#2c3e50">Content and format evaluation</text>
+    
+    <circle cx="480" cy="760" r="4" fill="#2ecc71" />
+    <text x="495" y="765" font-family="Arial" font-size="14" fill="#2c3e50">Industry-specific recommendations</text>
+    
+    <!-- Card 3: Job Matching -->
+    <rect x="800" y="450" width="300" height="380" rx="10" fill="#ffffff" stroke="#e6e9ed" stroke-width="1" />
+    <circle cx="950" cy="510" r="40" fill="#f0f7ff" />
+    <text x="950" y="520" font-family="Arial" font-size="28" fill="#4f8df9" text-anchor="middle">🎯</text>
+    <text x="950" y="580" font-family="Arial" font-size="20" font-weight="bold" fill="#2c3e50" text-anchor="middle">Job Matching</text>
+    <text x="950" y="610" font-family="Arial" font-size="14" fill="#7f8c8d" text-anchor="middle" width="260">Tailor your resume to specific job</text>
+    <text x="950" y="630" font-family="Arial" font-size="14" fill="#7f8c8d" text-anchor="middle" width="260">descriptions for higher match rates.</text>
+    
+    <!-- Bullet Points -->
+    <circle cx="830" cy="670" r="4" fill="#2ecc71" />
+    <text x="845" y="675" font-family="Arial" font-size="14" fill="#2c3e50">Job description analysis</text>
+    
+    <circle cx="830" cy="700" r="4" fill="#2ecc71" />
+    <text x="845" y="705" font-family="Arial" font-size="14" fill="#2c3e50">Skill gap identification</text>
+    
+    <circle cx="830" cy="730" r="4" fill="#2ecc71" />
+    <text x="845" y="735" font-family="Arial" font-size="14" fill="#2c3e50">Targeted keyword suggestions</text>
+    
+    <circle cx="830" cy="760" r="4" fill="#2ecc71" />
+    <text x="845" y="765" font-family="Arial" font-size="14" fill="#2c3e50">Customized versions for each job</text>
+  </g>
+  
+  <!-- Upload Section -->
+  <g>
+    <rect x="250" y="880" width="700" height="300" rx="10" fill="#ffffff" stroke="#4f8df9" stroke-width="2" stroke-dasharray="6,3" />
+    <text x="600" y="940" font-family="Arial" font-size="28" fill="#4f8df9" text-anchor="middle">↑</text>
+    <text x="600" y="990" font-family="Arial" font-size="24" font-weight="bold" fill="#2c3e50" text-anchor="middle">Upload Your Resume</text>
+    <text x="600" y="1030" font-family="Arial" font-size="16" fill="#7f8c8d" text-anchor="middle">Drag and drop your resume here or click to browse</text>
+    <text x="600" y="1060" font-family="Arial" font-size="14" fill="#7f8c8d" text-anchor="middle">Supported formats: PDF or TXT (Max 5MB)</text>
+    
+    <rect x="500" y="1090" width="200" height="50" rx="25" fill="#4f8df9" />
+    <text x="600" y="1122" font-family="Arial" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">Select File</text>
+    
+    <text x="600" y="1160" font-family="Arial" font-size="14" fill="#7f8c8d" text-anchor="middle">You can upload multiple resumes by returning to this page</text>
+  </g>
+  
+  <!-- Testimonials Section -->
+  <g>
+    <text x="600" y="1240" font-family="Arial" font-size="28" font-weight="bold" fill="#2c3e50" text-anchor="middle">What Our Users Say</text>
+    
+    <!-- Testimonial 1 -->
+    <rect x="100" y="1280" width="320" height="220" rx="10" fill="#ffffff" stroke="#e6e9ed" stroke-width="1" />
+    <text x="130" y="1320" font-family="Arial" font-size="14" fill="#2c3e50">
+      <tspan x="130" dy="0">"Thanks to Tweak AI, my resume's ATS</tspan>
+      <tspan x="130" dy="20">score jumped from 65% to 92%. I received</tspan>
+      <tspan x="130" dy="20">callbacks from 3 companies within a week!"</tspan>
+    </text>
+    <circle cx="150" cy="1410" r="25" fill="#3498db" />
+    <text x="150" y="1418" font-family="Arial" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">JM</text>
+    <text x="190" y="1405" font-family="Arial" font-size="16" font-weight="bold" fill="#2c3e50">John Miller</text>
+    <text x="190" y="1425" font-family="Arial" font-size="14" fill="#7f8c8d">Software Engineer</text>
+    
+    <!-- Testimonial 2 -->
+    <rect x="440" y="1280" width="320" height="220" rx="10" fill="#ffffff" stroke="#e6e9ed" stroke-width="1" />
+    <text x="470" y="1320" font-family="Arial" font-size="14" fill="#2c3e50">
+      <tspan x="470" dy="0">"The job matching feature is incredible. It</tspan>
+      <tspan x="470" dy="20">showed me exactly what keywords I was</tspan>
+      <tspan x="470" dy="20">missing for each application. Game changer!"</tspan>
+    </text>
+    <circle cx="490" cy="1410" r="25" fill="#e74c3c" />
+    <text x="490" y="1418" font-family="Arial" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">SA</text>
+    <text x="530" y="1405" font-family="Arial" font-size="16" font-weight="bold" fill="#2c3e50">Sarah Adams</text>
+    <text x="530" y="1425" font-family="Arial" font-size="14" fill="#7f8c8d">Marketing Specialist</text>
+    
+    <!-- Testimonial 3 -->
+    <rect x="780" y="1280" width="320" height="220" rx="10" fill="#ffffff" stroke="#e6e9ed" stroke-width="1" />
+    <text x="810" y="1320" font-family="Arial" font-size="14" fill="#2c3e50">
+      <tspan x="810" dy="0">"As a career coach, I recommend Tweak AI</tspan>
+      <tspan x="810" dy="20">to all my clients. It provides the data-driven</tspan>
+      <tspan x="810" dy="20">insights that truly make a difference."</tspan>
+    </text>
+    <circle cx="830" cy="1410" r="25" fill="#2ecc71" />
+    <text x="830" y="1418" font-family="Arial" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">DR</text>
+    <text x="870" y="1405" font-family="Arial" font-size="16" font-weight="bold" fill="#2c3e50">David Rodriguez</text>
+    <text x="870" y="1425" font-family="Arial" font-size="14" fill="#7f8c8d">Career Coach</text>
+  </g>
+  
+  <!-- CTA Buttons -->
+  <g>
+    <rect x="450" y="1550" width="300" height="60" rx="30" fill="#1e2a3b" />
+    <text x="600" y="1588" font-family="Arial" font-size="20" font-weight="bold" fill="#ffffff" text-anchor="middle">View Dashboard</text>
+    
+    <rect x="450" y="1630" width="300" height="60" rx="30" fill="#ffffff" stroke="#1e2a3b" stroke-width="2" />
+    <text x="600" y="1668" font-family="Arial" font-size="20" font-weight="bold" fill="#1e2a3b" text-anchor="middle">Learn More</text>
+  </g>
+  
+  <!-- Footer -->
+  <rect x="0" y="1740" width="1200" height="60" fill="#1e2a3b" />
+  <text x="600" y="1778" font-family="Arial" font-size="14" fill="#ffffff" text-anchor="middle">© 2025 Tweak AI. All rights reserved.</text>
+</svg>
