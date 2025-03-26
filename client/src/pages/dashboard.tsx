@@ -72,7 +72,7 @@ export default function Dashboard() {
       <div className="flex">
 
         {/* Main Content */}
-        <div className="ml-[220px] flex-1 p-6">
+        <div className="flex-1 p-6 ml-[60px]">
           {/* Top Bar */}
           <div className="flex justify-between items-center mb-8 bg-white p-4 rounded-lg">
             <div>
