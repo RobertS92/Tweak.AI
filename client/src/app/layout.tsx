@@ -1,27 +1,21 @@
 
-import React from 'react';
-import { ThemeProvider } from 'next-themes';
-import cn from 'classnames';
-import { fontSans } from '@/utils/fonts';
-import NavigationBar from '@/components/navigation-bar';
-import MobileNavigation from '@/components/mobile-navigation';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { Link } from "wouter";
+import { cn } from "@/lib/utils";
+import NavigationBar from "@/components/navigation-bar";
+import MobileNavigation from "@/components/mobile-navigation";
 
-export default function Layout({ children }) {
-  const isMobile = useIsMobile();
-
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div>
-      <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable, {
-        'pb-16': isMobile,
-        'pb-0': !isMobile
-      })}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <NavigationBar className="hidden md:block" />
-          {children}
-          <MobileNavigation className="md:hidden" />
-        </ThemeProvider>
-      </body>
+    <div className="min-h-screen bg-background font-sans antialiased">
+      <NavigationBar />
+      <main className="flex-1">
+        {children}
+      </main>
+      <MobileNavigation className="md:hidden" />
     </div>
   );
 }
