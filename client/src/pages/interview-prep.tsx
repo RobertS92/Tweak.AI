@@ -439,6 +439,7 @@ export default function InterviewPrep() {
                   ))}
                 </ul>
               </div>
+              </div>
 
               <Card className="bg-[#f0f7ff] border-[#4f8df9]">
                 <CardContent className="p-4">
