@@ -70,51 +70,6 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
       <div className="flex">
-        {/* Left Navigation Panel */}
-        <div className="w-[220px] h-screen bg-[#1e2a3b] fixed left-0 top-0 p-6">
-          {/* App Logo */}
-          <div className="flex items-center gap-2 mb-12">
-            <span className="text-xl font-bold text-white">Tweak AI</span>
-            <div className="w-2 h-2 rounded-full bg-[#4f8df9]" />
-          </div>
-
-          {/* Navigation Items */}
-          <div className="space-y-2">
-            <Link href="/dashboard">
-              <div className="p-3 rounded-lg bg-[#4f8df9] text-white cursor-pointer">
-                Dashboard
-              </div>
-            </Link>
-            <Link href="/resume-builder">
-              <div className="p-3 rounded-lg hover:bg-[#2c3e50] text-white cursor-pointer">
-                Resume Builder
-              </div>
-            </Link>
-            <Link href="/interview-prep">
-              <div className="p-3 rounded-lg hover:bg-[#2c3e50] text-white cursor-pointer">
-                Interview Prep
-              </div>
-            </Link>
-            <Link href="/job-matcher">
-              <div className="p-3 rounded-lg hover:bg-[#2c3e50] text-white cursor-pointer">
-                Job Matcher
-              </div>
-            </Link>
-            <Link href="/ai-assistant">
-              <div className="p-3 rounded-lg hover:bg-[#2c3e50] text-white cursor-pointer">
-                AI Assistant
-              </div>
-            </Link>
-          </div>
-
-          {/* Profile & Settings */}
-          <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center">
-            <div className="w-12 h-12 rounded-full bg-[#3498db] flex items-center justify-center text-white">
-              RS
-            </div>
-            <span className="text-white mt-2 text-sm">Settings</span>
-          </div>
-        </div>
 
         {/* Main Content */}
         <div className="ml-[220px] flex-1 p-6">
