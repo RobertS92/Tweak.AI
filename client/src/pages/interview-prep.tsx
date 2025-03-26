@@ -393,7 +393,7 @@ export default function InterviewPrep() {
             </div>
           </div>
         </div>
-        
+
         <div>
           <h3 className="font-bold mb-2">Post-Interview Analysis Will Include:</h3>
           <div className="space-y-2">
@@ -439,16 +439,15 @@ export default function InterviewPrep() {
                   ))}
                 </ul>
               </div>
-              </div>
-
-              <Card className="bg-[#f0f7ff] border-[#4f8df9]">
-                <CardContent className="p-4">
-                  <p className="font-bold text-[#4f8df9] mb-2">💡 How it works:</p>
-                  <p className="text-sm">
-                    AI will ask questions, listen to your responses, and provide real-time feedback.
+              <div className="bg-[#f0f7ff] p-4 rounded-lg flex gap-3">
+                <span className="text-xl">💡</span>
+                <div>
+                  <p className="font-semibold text-[#2c3e50]">How it works:</p>
+                  <p className="text-sm text-[#2c3e50]">
+                    Our AI will ask relevant questions, analyze your responses in real-time, and provide comprehensive feedback to help improve your interview skills.
                   </p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
