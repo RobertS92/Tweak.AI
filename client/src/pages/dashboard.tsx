@@ -1,28 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+
+import { useState } from "react";
 import { Link } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import {
-  FileText,
-  Plus,
-  ExternalLink,
-  Trash2,
-  FileEdit,
-} from "lucide-react";
-import { format } from "date-fns";
-import { useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Plus, Download, Edit, Trash2 } from "lucide-react";
 
 interface Resume {
   id: number;
@@ -33,6 +18,7 @@ interface Resume {
 
 export default function Dashboard() {
   const { toast } = useToast();
+  const [page, setPage] = useState(1);
 
   const { data: resumes, isLoading } = useQuery<Resume[]>({
     queryKey: ["/api/resumes"],
@@ -57,143 +43,179 @@ export default function Dashboard() {
     return Math.round(total / resumes.length);
   };
 
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return "bg-[#2ecc71]";
+    if (score >= 70) return "bg-[#f39c12]";
+    return "bg-[#e74c3c]";
+  };
+
+  const getScoreTextColor = (score: number) => {
+    if (score >= 80) return "text-[#2ecc71]";
+    if (score >= 70) return "text-[#f39c12]";
+    return "text-[#e74c3c]";
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#f5f7fa] flex items-center justify-center">
+        <div className="animate-pulse text-lg text-muted-foreground">
+          Loading dashboard...
+        </div>
+      </div>
+    );
+  }
+
+  const avgScore = calculateAverageScore(resumes);
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-4">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Resume Dashboard</h1>
-            <p className="text-muted-foreground">
-              Manage and optimize your resumes
-            </p>
+    <div className="min-h-screen bg-[#f5f7fa]">
+      <div className="flex">
+        {/* Left Navigation Panel */}
+        <div className="w-[220px] h-screen bg-[#1e2a3b] fixed left-0 top-0 p-6">
+          {/* App Logo */}
+          <div className="flex items-center gap-2 mb-12">
+            <span className="text-xl font-bold text-white">Tweak AI</span>
+            <div className="w-2 h-2 rounded-full bg-[#4f8df9]" />
           </div>
-          <Link href="/">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Upload New Resume
-            </Button>
-          </Link>
+
+          {/* Navigation Items */}
+          <div className="space-y-2">
+            <Link href="/dashboard">
+              <div className="p-3 rounded-lg bg-[#4f8df9] text-white cursor-pointer">
+                Dashboard
+              </div>
+            </Link>
+            <Link href="/resume-builder">
+              <div className="p-3 rounded-lg hover:bg-[#2c3e50] text-white cursor-pointer">
+                Resume Builder
+              </div>
+            </Link>
+            <Link href="/interview-prep">
+              <div className="p-3 rounded-lg hover:bg-[#2c3e50] text-white cursor-pointer">
+                Interview Prep
+              </div>
+            </Link>
+            <Link href="/job-matcher">
+              <div className="p-3 rounded-lg hover:bg-[#2c3e50] text-white cursor-pointer">
+                Job Matcher
+              </div>
+            </Link>
+            <Link href="/ai-assistant">
+              <div className="p-3 rounded-lg hover:bg-[#2c3e50] text-white cursor-pointer">
+                AI Assistant
+              </div>
+            </Link>
+          </div>
+
+          {/* Profile & Settings */}
+          <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center">
+            <div className="w-12 h-12 rounded-full bg-[#3498db] flex items-center justify-center text-white">
+              RS
+            </div>
+            <span className="text-white mt-2 text-sm">Settings</span>
+          </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Total Resumes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">
-                {isLoading ? "-" : resumes?.length || 0}
-              </div>
-            </CardContent>
-          </Card>
+        {/* Main Content */}
+        <div className="ml-[220px] flex-1 p-6">
+          {/* Top Bar */}
+          <div className="flex justify-between items-center mb-8 bg-white p-4 rounded-lg">
+            <div>
+              <h1 className="text-2xl font-bold text-[#2c3e50]">Resume Dashboard</h1>
+              <p className="text-[#7f8c8d]">Manage and optimize your resumes</p>
+            </div>
+            <Link href="/resume-builder">
+              <Button className="bg-[#4f8df9]">
+                <Plus className="mr-2 h-4 w-4" /> Upload Resume
+              </Button>
+            </Link>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Average ATS Score</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="text-3xl font-bold">-</div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="text-3xl font-bold">
-                    {calculateAverageScore(resumes)}
-                  </div>
-                  <Progress
-                    value={calculateAverageScore(resumes)}
-                  />
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-3 gap-6 mb-8">
+            <Card className="p-6">
+              <h3 className="text-[#7f8c8d] mb-4">Total Resumes</h3>
+              <div className="text-3xl font-bold text-[#2c3e50]">
+                {resumes?.length || 0}
+              </div>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Storage Used</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">
-                {isLoading ? "-" : `${resumes?.length || 0}/3`}
+            <Card className="p-6">
+              <h3 className="text-[#7f8c8d] mb-4">Average ATS Score</h3>
+              <div className="text-3xl font-bold text-[#2c3e50] mb-4">
+                {avgScore}
               </div>
-              <p className="text-sm text-muted-foreground">Free Plan</p>
-            </CardContent>
-          </Card>
-        </div>
+              <Progress value={avgScore} className="h-2" />
+              <div className="flex justify-between mt-2">
+                <span className={getScoreTextColor(avgScore)}>
+                  {avgScore >= 80 ? "Excellent" : avgScore >= 70 ? "Good" : "Needs Improvement"}
+                </span>
+                <span className="text-[#7f8c8d]">Target: 85+</span>
+              </div>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Resumes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Loading resumes...
+            <Card className="p-6">
+              <h3 className="text-[#7f8c8d] mb-4">Storage Used</h3>
+              <div className="text-3xl font-bold text-[#2c3e50] mb-4">
+                {resumes?.length || 0}/300
               </div>
-            ) : resumes?.length === 0 ? (
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground mb-4">
-                  No resumes uploaded yet
-                </p>
-                <Link href="/">
-                  <Button>Upload Your First Resume</Button>
-                </Link>
+              <Progress value={(resumes?.length || 0) / 3} className="h-2" />
+              <div className="flex justify-between mt-2">
+                <span className="text-[#3498db]">Professional Plan</span>
+                <span className="text-[#7f8c8d]">
+                  {Math.round(((resumes?.length || 0) / 300) * 100)}% Used
+                </span>
               </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>ATS Score</TableHead>
-                    <TableHead>Last Updated</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+            </Card>
+          </div>
+
+          {/* Resumes Table */}
+          <Card className="p-6">
+            <h2 className="text-xl font-bold text-[#2c3e50] mb-6">Your Resumes</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-[#f5f7fa]">
+                  <tr>
+                    <th className="text-left p-4 text-[#7f8c8d] font-medium">Title</th>
+                    <th className="text-left p-4 text-[#7f8c8d] font-medium">ATS Score</th>
+                    <th className="text-left p-4 text-[#7f8c8d] font-medium">Last Updated</th>
+                    <th className="text-right p-4 text-[#7f8c8d] font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {resumes?.map((resume) => (
-                    <TableRow key={resume.id}>
-                      <TableCell className="font-medium">
-                        {resume.title}
-                      </TableCell>
-                      <TableCell>
-                        {resume.atsScore ? (
-                          <Badge
-                            variant={
-                              resume.atsScore >= 80 ? "success" : "destructive"
-                            }
-                          >
-                            {resume.atsScore}%
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">Analyzing</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(resume.createdAt), "MMM d, yyyy")}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Link href={`/editor/${resume.id}`}>
-                            <Button size="sm" variant="outline">
-                              <FileEdit className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => deleteMutation.mutate(resume.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    <tr key={resume.id} className="border-t border-[#e6e9ed]">
+                      <td className="p-4 text-[#2c3e50]">{resume.title}</td>
+                      <td className="p-4">
+                        <span className={`px-3 py-1 rounded-full text-white text-sm ${getScoreColor(resume.atsScore || 0)}`}>
+                          {resume.atsScore}%
+                        </span>
+                      </td>
+                      <td className="p-4 text-[#7f8c8d]">
+                        {new Date(resume.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="p-4 text-right space-x-2">
+                        <Button variant="outline" size="icon">
+                          <Edit className="h-4 w-4 text-[#f39c12]" />
+                        </Button>
+                        <Button variant="outline" size="icon">
+                          <Download className="h-4 w-4 text-[#3498db]" />
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          onClick={() => deleteMutation.mutate(resume.id)}
+                        >
+                          <Trash2 className="h-4 w-4 text-[#e74c3c]" />
+                        </Button>
+                      </td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );
