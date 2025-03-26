@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useRouter } from 'wouter'; //Import wouter hooks
 
 export default function Home() {
-  const navigate = useNavigate();
+  const [location, setLocation] = useLocation(); //Use wouter's location hook
+  const navigate = useRouter(); //Use wouter's router hook
 
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
@@ -185,7 +186,7 @@ export default function Home() {
 
       {/* CTA Buttons */}
       <div className="text-center mt-16 mb-20">
-        <Button className="bg-[#1e2a3b] text-white px-8 py-2 rounded-md" onClick={() => navigate('/dashboard')}>
+        <Button className="bg-[#1e2a3b] text-white px-8 py-2 rounded-md" onClick={() => setLocation('/dashboard')}> {/* Changed to setLocation */}
           View Dashboard
         </Button>
         <Button variant="outline" className="ml-4 px-8 py-2 rounded-md">
