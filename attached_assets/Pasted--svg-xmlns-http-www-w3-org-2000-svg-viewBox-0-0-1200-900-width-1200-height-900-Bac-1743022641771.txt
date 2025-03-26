@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <!-- Background -->
+  <rect width="1200" height="900" fill="#f5f7fa" />
+  
+  <!-- Top Navigation Bar -->
+  <rect x="0" y="0" width="1200" height="60" fill="#1e2a3b" />
+  
+  <!-- App Logo -->
+  <g>
+    <text x="40" y="38" font-family="Arial" font-size="20" font-weight="bold" fill="#ffffff">Tweak AI</text>
+    <circle cx="20" cy="30" r="8" fill="#4f8df9"/>
+  </g>
+  
+  <!-- Navigation Items -->
+  <g>
+    <text x="180" y="38" font-family="Arial" font-size="14" fill="#ffffff">Dashboard</text>
+    <text x="280" y="38" font-family="Arial" font-size="14" fill="#ffffff">Resume Builder</text>
+    <text x="400" y="38" font-family="Arial" font-size="14" fill="#4f8df9">Interview Prep</text>
+    <text x="510" y="38" font-family="Arial" font-size="14" fill="#ffffff">Job Matcher</text>
+    <text x="610" y="38" font-family="Arial" font-size="14" fill="#ffffff">AI Assistant</text>
+  </g>
+  
+  <!-- User Menu -->
+  <g>
+    <circle cx="1150" cy="30" r="20" fill="#3498db"/>
+    <text x="1150" y="35" font-family="Arial" font-size="14" fill="#ffffff" text-anchor="middle">RS</text>
+  </g>
+  
+  <!-- Main Header -->
+  <rect x="0" y="60" width="1200" height="110" fill="#ffffff" />
+  <text x="600" y="105" font-family="Arial" font-size="28" font-weight="bold" fill="#2c3e50" text-anchor="middle">AI Interview Practice</text>
+  <text x="600" y="140" font-family="Arial" font-size="16" fill="#7f8c8d" text-anchor="middle">Practice your interview skills with our AI interviewer tailored to specific job positions</text>
+  
+  <!-- Main Content Wrapper -->
+  <rect x="50" y="190" width="1100" height="680" rx="8" fill="#ffffff" stroke="#e6e9ed" stroke-width="1"/>
+  
+  <!-- Left and Right Panel Setup -->
+  <rect x="50" y="190" width="550" height="680" fill="#ffffff" rx="8 0 0 8" />
+  <rect x="600" y="190" width="550" height="680" fill="#f5f7fa" rx="0 8 8 0" />
+  
+  <!-- Interview Setup Panel (Left) -->
+  <g>
+    <text x="90" y="230" font-family="Arial" font-size="20" font-weight="bold" fill="#2c3e50">Interview Setup</text>
+    
+    <!-- Job Type Selector -->
+    <text x="90" y="270" font-family="Arial" font-size="16" font-weight="bold" fill="#2c3e50">Select Job Type</text>
+    <rect x="90" y="280" width="200" height="50" rx="8" fill="#ffffff" stroke="#e6e9ed" stroke-width="1"/>
+    <text x="110" y="310" font-family="Arial" font-size="14" fill="#2c3e50">Software Engineer</text>
+    <text x="270" y="310" font-family="Arial" font-size="14" fill="#7f8c8d">▼</text>
+    
+    <rect x="310" y="280" width="200" height="50" rx="8" fill="#ffffff" stroke="#e6e9ed" stroke-width="1"/>
+    <text x="330" y="310" font-family="Arial" font-size="14" fill="#2c3e50">Mid-Level</text>
+    <text x="490" y="310" font-family="Arial" font-size="14" fill="#7f8c8d">▼</text>
+    
+    <!-- Job Description Paste Area -->
+    <text x="90" y="360" font-family="Arial" font-size="16" font-weight="bold" fill="#2c3e50">Job Description</text>
+    <rect x="90" y="370" width="420" height="150" rx="8" fill="#ffffff" stroke="#e6e9ed" stroke-width="1"/>
+    <text x="105" y="390" font-family="Arial" font-size="14" fill="#7f8c8d">Paste the job description here to customize the interview questions...</text>
+    
+    <!-- Upload Resume Option -->
+    <rect x="90" y="540" width="420" height="70" rx="8" fill="#f0f7ff" stroke="#4f8df9" stroke-width="1"/>
+    <text x="120" y="575" font-family="Arial" font-size="14" font-weight="bold" fill="#4f8df9">📎 Upload your resume for more targeted questions</text>
+    <rect x="380" y="555" width="100" height="40" rx="20" fill="#4f8df9"/>
+    <text x="430" y="578" font-family="Arial" font-size="14" fill="#ffffff" text-anchor="middle">Upload</text>
+    
+    <!-- Interview Settings -->
+    <text x="90" y="640" font-family="Arial" font-size="16" font-weight="bold" fill="#2c3e50">Interview Settings</text>
+    
+    <!-- Duration Selector -->
+    <text x="90" y="670" font-family="Arial" font-size="14" fill="#2c3e50">Interview Duration</text>
+    <rect x="90" y="680" width="150" height="40" rx="8" fill="#ffffff" stroke="#e6e9ed" stroke-width="1"/>
+    <text x="110" y="705" font-family="Arial" font-size="14" fill="#2c3e50">15 minutes</text>
+    <text x="220" y="705" font-family="Arial" font-size="14" fill="#7f8c8d">▼</text>
+    
+    <!-- Difficulty Selector -->
+    <text x="260" y="670" font-family="Arial" font-size="14" fill="#2c3e50">Difficulty Level</text>
+    <rect x="260" y="680" width="150" height="40" rx="8" fill="#ffffff" stroke="#e6e9ed" stroke-width="1"/>
+    <text x="280" y="705" font-family="Arial" font-size="14" fill="#2c3e50">Standard</text>
+    <text x="390" y="705" font-family="Arial" font-size="14" fill="#7f8c8d">▼</text>
+    
+    <!-- Interview Types -->
+    <text x="90" y="740" font-family="Arial" font-size="14" fill="#2c3e50">Interview Focus</text>
+    <rect x="90" y="750" width="130" height="40" rx="20" fill="#4f8df9"/>
+    <text x="155" y="775" font-family="Arial" font-size="14" fill="#ffffff" text-anchor="middle">Technical</text>
+    
+    <rect x="230" y="750" width="140" height="40" rx="20" fill="#ffffff" stroke="#e6e9ed" stroke-width="1"/>
+    <text x="300" y="775" font-family="Arial" font-size="14" fill="#7f8c8d" text-anchor="middle">Behavioral</text>
+    
+    <rect x="380" y="750" width="130" height="40" rx="20" fill="#ffffff" stroke="#e6e9ed" stroke-width="1"/>
+    <text x="445" y="775" font-family="Arial" font-size="14" fill="#7f8c8d" text-anchor="middle">Mixed</text>
+    
+    <!-- Start Interview Button -->
+    <rect x="90" y="810" width="420" height="50" rx="25" fill="#1e2a3b"/>
+    <text x="300" y="840" font-family="Arial" font-size="16" font-weight="bold" fill="#ffffff" text-anchor="middle">Start Interview</text>
+  </g>
+  
+  <!-- Interview Preview Panel (Right) -->
+  <g>
+    <text x="640" y="230" font-family="Arial" font-size="20" font-weight="bold" fill="#2c3e50">Interview Preview</text>
+    
+    <!-- Interviewer Profile -->
+    <rect x="640" y="260" width="470" height="100" rx="8" fill="#ffffff" stroke="#e6e9ed" stroke-width="1"/>
+    <circle cx="690" cy="310" r="40" fill="#3498db"/>
+    <text x="690" y="320" font-family="Arial" font-size="22" font-weight="bold" fill="#ffffff" text-anchor="middle">AI</text>
+    
+    <text x="750" y="290" font-family="Arial" font-size="18" font-weight="bold" fill="#2c3e50">Sarah Johnson</text>
+    <text x="750" y="315" font-family="Arial" font-size="14" fill="#7f8c8d">Senior Technical Recruiter</text>
+    <text x="750" y="340" font-family="Arial" font-size="14" fill="#7f8c8d">Specializing in Software Engineering roles</text>
+    
+    <!-- Sample Question Preview -->
+    <rect x="640" y="380" width="470" height="180" rx="8" fill="#ffffff" stroke="#e6e9ed" stroke-width="1"/>
+    <text x="660" y="410" font-family="Arial" font-size="16" font-weight="bold" fill="#2c3e50">Sample Questions You'll Be Asked:</text>
+    
+    <rect x="660" y="430" width="430" height="40" rx="8" fill="#f9f9fa"/>
+    <text x="680" y="455" font-family="Arial" font-size="14" fill="#2c3e50">Tell me about your experience with Python and data structures.</text>
+    
+    <rect x="660" y="480" width="430" height="40" rx="8" fill="#f9f9fa"/>
+    <text x="680" y="505" font-family="Arial" font-size="14" fill="#2c3e50">How would you optimize a slow-performing database query?</text>
+    
+    <rect x="660" y="530" width="430" height="40" rx="8" fill="#f9f9fa"/>
+    <text x="680" y="555" font-family="Arial" font-size="14" fill="#2c3e50">Can you explain your approach to debugging complex issues?</text>
+    
+    <!-- Interview Analysis Preview -->
+    <rect x="640" y="580" width="470" height="180" rx="8" fill="#ffffff" stroke="#e6e9ed" stroke-width="1"/>
+    <text x="660" y="610" font-family="Arial" font-size="16" font-weight="bold" fill="#2c3e50">Post-Interview Analysis Will Include:</text>
+    
+    <circle cx="670" cy="640" r="8" fill="#2ecc71"/>
+    <text x="690" y="645" font-family="Arial" font-size="14" fill="#2c3e50">Detailed performance score for each question</text>
+    
+    <circle cx="670" cy="670" r="8" fill="#2ecc71"/>
+    <text x="690" y="675" font-family="Arial" font-size="14" fill="#2c3e50">Speech analysis (filler words, pacing, clarity)</text>
+    
+    <circle cx="670" cy="700" r="8" fill="#2ecc71"/>
+    <text x="690" y="705" font-family="Arial" font-size="14" fill="#2c3e50">Keyword usage compared to job description</text>
+    
+    <circle cx="670" cy="730" r="8" fill="#2ecc71"/>
+    <text x="690" y="735" font-family="Arial" font-size="14" fill="#2c3e50">Personalized improvement suggestions</text>
+    
+    <!-- How It Works -->
+    <rect x="640" y="780" width="470" height="80" rx="8" fill="#f0f7ff" stroke="#4f8df9" stroke-width="1"/>
+    <text x="660" y="810" font-family="Arial" font-size="14" font-weight="bold" fill="#4f8df9">💡 How it works:</text>
+    <text x="660" y="835" font-family="Arial" font-size="13" fill="#2c3e50">AI will ask questions, listen to your responses, and provide real-time feedback.</text>
+  </g>
+</svg>
