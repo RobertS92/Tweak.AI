@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { useLocation, useRouter } from 'wouter'; //Import wouter hooks
+import { toast } from "@/hooks/use-toast";
 
 export default function Home() {
   const [location, setLocation] = useLocation(); //Use wouter's location hook
