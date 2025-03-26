@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ThemeProvider } from 'next-themes';
 import cn from 'classnames';
@@ -16,9 +17,8 @@ export default function Layout({ children }) {
         'pb-0': !isMobile
       })}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <NavigationBar className="hidden md:block" />
+          {isMobile ? <MobileNavigation /> : <NavigationBar />}
           {children}
-          {isMobile && <MobileNavigation />}
         </ThemeProvider>
       </body>
     </div>
