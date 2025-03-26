@@ -132,10 +132,70 @@ export default function Home() {
       <div className="max-w-2xl mx-auto mt-20 px-4">
         <Card className="p-8 border-dashed border-2">
           <div className="text-center">
+            <input
+              type="file"
+              id="resume-upload"
+              accept=".pdf,.txt"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  // Validate file size (max 5MB)
+                  if (file.size > 5 * 1024 * 1024) {
+                    toast({
+                      title: "File too large",
+                      description: "Please upload a file smaller than 5MB",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  const validTypes = ["application/pdf", "text/plain"];
+                  if (!validTypes.includes(file.type)) {
+                    toast({
+                      title: "Invalid file type",
+                      description: "Please upload a PDF or TXT file",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  // Handle file upload
+                  const formData = new FormData();
+                  formData.append("resume", file);
+                  fetch("/api/resumes/upload", {
+                    method: "POST",
+                    body: formData,
+                  })
+                    .then((response) => response.json())
+                    .then((data) => {
+                      toast({
+                        title: "Resume uploaded successfully",
+                        description: "Analyzing your resume...",
+                      });
+                      navigate(`/editor/${data.id}`);
+                    })
+                    .catch((error) => {
+                      toast({
+                        title: "Upload failed",
+                        description: error.message,
+                        variant: "destructive",
+                      });
+                    });
+                }
+              }}
+            />
             <h3 className="text-xl font-semibold mb-4">Upload Your Resume</h3>
             <p className="text-sm text-gray-600 mb-4">Drag and drop your resume here or click to browse</p>
             <p className="text-xs text-gray-500 mb-6">Supported formats: PDF or TXT (Max 5MB)</p>
-            <Button className="bg-[#4f8df9]">Select File</Button>
+            <Button 
+              className="bg-[#4f8df9]"
+              onClick={() => {
+                document.getElementById('resume-upload')?.click();
+              }}
+            >
+              Select File
+            </Button>
             <p className="text-xs text-gray-500 mt-4">You can upload multiple resumes by returning to this page</p>
           </div>
         </Card>
