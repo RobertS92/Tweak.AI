@@ -1,12 +1,11 @@
+// interview.ts (Assuming you want to use ES modules)
 
-import express from 'express';
-import { Router } from 'express';
+import express, { Request, Response } from "express";
 
-const router = Router();
+const app = express();
+app.use(express.json());
 
-router.use(express.json());
-
-router.post("/start", async (req, res) => {
+app.post("/start", async (req: Request, res: Response) => {
   try {
     const { type, level, jobType } = req.body;
     console.log("[DEBUG] Received interview params:", { type, level, jobType });
@@ -18,7 +17,9 @@ router.post("/start", async (req, res) => {
           !type && "type",
           !level && "level",
           !jobType && "jobType",
-        ].filter(Boolean).join(", ")}`
+        ]
+          .filter(Boolean)
+          .join(", ")}`,
       });
     }
 
@@ -28,17 +29,15 @@ router.post("/start", async (req, res) => {
     // Return initial interview data
     res.status(200).json({
       message: "Interview started successfully",
-      question: "Tell me about your background and experience with this type of role.",
-      sessionId: Date.now().toString()
+      question:
+        "Tell me about your background and experience with this type of role.",
+      sessionId: Date.now().toString(),
     });
-
   } catch (error) {
-    console.error("[DEBUG] Error starting interview:", error);
-    res.status(500).json({ 
-      error: "Failed to start interview",
-      details: error instanceof Error ? error.message : String(error)
-    });
+    console.error("Error starting interview:", error);
+    res.status(500).json({ error: "Failed to start interview" });
   }
 });
 
-export default router;
+const port = 3000;
+app.listen(port, () => console.log(`Server listening on port ${port}`));

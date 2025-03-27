@@ -1,3 +1,4 @@
+// interviewSimulation.tsx (Assuming you have a way to get type, level, and jobType)
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, Square } from "lucide-react";
@@ -7,14 +8,51 @@ interface InterviewSimulationProps {
   transcript: string;
   isRecording: boolean;
   onStopInterview: () => void;
+  type: string;
+  level: string;
+  jobType: string;
 }
 
 export default function InterviewSimulation({
   currentQuestion,
   transcript,
   isRecording,
-  onStopInterview
+  onStopInterview,
+  type,
+  level,
+  jobType,
 }: InterviewSimulationProps) {
+  const startInterview = async () => {
+    try {
+      const response = await fetch("/api/interview/start", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type,
+          level,
+          jobType,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Failed to start interview:", errorData);
+        alert("Failed to start interview. Check console.");
+        return;
+      }
+
+      const data = await response.json();
+      console.log("Interview started:", data);
+      alert(data.message);
+      // Handle the data returned from the server, such as the first question and session ID.
+    } catch (error) {
+      console.error("Error starting interview:", error);
+      alert("An error occurred. Check console.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
       <div className="border-b bg-[#1e2a3b]">
@@ -66,6 +104,7 @@ export default function InterviewSimulation({
                   Recording...
                 </Button>
               ) : null}
+              <Button onClick={startInterview}>Start Interview</Button>
             </div>
           </div>
 
