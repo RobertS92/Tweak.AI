@@ -364,8 +364,9 @@ export default function InterviewPrep() {
                 <Button 
                   className="w-full bg-[#1e2a3b] hover:bg-[#2c3e50] h-12" 
                   onClick={startInterview}
+                  disabled={isAnalyzing || !jobType}
                 >
-                  Start Interview
+                  {isAnalyzing ? "Preparing Interview..." : "Start Interview"}
                 </Button>
               </div>
             </CardContent>
