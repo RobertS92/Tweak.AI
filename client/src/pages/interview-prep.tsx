@@ -391,10 +391,16 @@ export default function InterviewPrep() {
                     Preview Interview
                   </Button>
                   <Button
-                    type="submit" // Added type="submit"
                     className="w-full bg-[#1e2a3b] hover:bg-[#2c3e50] h-12"
-                    onClick={startInterview}
-                    disabled={isAnalyzing || !jobType}
+                    onClick={() => {
+                      const params = new URLSearchParams({
+                        type: interviewType,
+                        level: experienceLevel,
+                        jobType: jobType
+                      });
+                      window.location.href = `/interview-simulation?${params.toString()}`;
+                    }}
+                    disabled={isAnalyzing || !jobType || !interviewType || !experienceLevel}
                   >
                     {isAnalyzing ? "Preparing Interview..." : "Start Interview"}
                   </Button>
