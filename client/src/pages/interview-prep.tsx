@@ -474,8 +474,13 @@ export default function InterviewPrep() {
           </div>
         </div>
       </div>
-      {isLiveInterview && ( // Conditional rendering for Live Interview
-        <InterviewSimulation /> {/* Render the InterviewSimulation component */}
+      {isLiveInterview && (
+        <InterviewSimulation
+          currentQuestion={currentQuestion}
+          transcript={transcript}
+          isRecording={isRecording}
+          onStopInterview={() => setIsLiveInterview(false)}
+        />
       )}
     </div>
   );
