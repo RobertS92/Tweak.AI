@@ -262,12 +262,8 @@ export default function InterviewPrep() {
   // Added form submission handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams({
-      type: interviewType,
-      level: experienceLevel,
-      jobType: "Software Engineer"
-    });
-    window.location.href = `/interview-simulation?${params.toString()}`;
+    //Simulate saving data - replace with actual saving logic
+    console.log("Interview Preferences Saved:", { interviewType, experienceLevel });
   };
 
 
@@ -391,16 +387,10 @@ export default function InterviewPrep() {
                     Preview Interview
                   </Button>
                   <Button
+                    type="submit" // Added type="submit"
                     className="w-full bg-[#1e2a3b] hover:bg-[#2c3e50] h-12"
-                    onClick={() => {
-                      const params = new URLSearchParams({
-                        type: interviewType,
-                        level: experienceLevel,
-                        jobType: jobType
-                      });
-                      window.location.href = `/interview-simulation?${params.toString()}`;
-                    }}
-                    disabled={isAnalyzing || !jobType || !interviewType || !experienceLevel}
+                    onClick={startInterview}
+                    disabled={isAnalyzing || !jobType}
                   >
                     {isAnalyzing ? "Preparing Interview..." : "Start Interview"}
                   </Button>

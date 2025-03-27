@@ -27,8 +27,7 @@ export default function InterviewSimulationPage() {
           throw new Error("Missing required interview parameters");
         }
 
-        // Generate a detailed job description
-        const jobDescription = `${level} ${jobType} position requiring ${type} expertise. The ideal candidate will have strong problem-solving abilities and experience with modern development practices. This role involves collaborating with cross-functional teams and implementing scalable solutions.`;
+        const jobDescription = `${level} ${jobType} position requiring ${type} expertise`;
         console.log("[DEBUG] Preparing interview request:", { 
           type, 
           jobType, 
