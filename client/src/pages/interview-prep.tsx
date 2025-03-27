@@ -28,6 +28,8 @@ export default function InterviewPrep() {
   const [difficulty, setDifficulty] = useState("Standard");
   const [interviewFocus, setInterviewFocus] = useState("Technical");
   const [showPreview, setShowPreview] = useState(false);
+  const [isLiveInterview, setIsLiveInterview] = useState(false);
+  const [interviewResults, setInterviewResults] = useState(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -191,7 +193,7 @@ export default function InterviewPrep() {
     }
 
     setIsAnalyzing(true);
-
+    setIsLiveInterview(true); // Added line
     try {
       const analysisResponse = await fetch('/api/interview/analyze', {
         method: 'POST',
@@ -470,6 +472,11 @@ export default function InterviewPrep() {
           </div>
         </div>
       </div>
+      {isLiveInterview && ( // Conditional rendering for Live Interview
+        <div>
+          <h1>Live Interview Placeholder</h1> {/* Replace with actual component */}
+        </div>
+      )}
     </div>
   );
 }
