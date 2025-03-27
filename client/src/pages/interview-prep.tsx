@@ -6,7 +6,7 @@ import { Mic, Square, Play, Send, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Upload, Plus, FileText, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, FileText, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import InterviewSimulation from '@/components/interview-simulation'; // Added import
 
 export default function InterviewPrep() {
