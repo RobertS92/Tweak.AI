@@ -27,10 +27,22 @@ export default function InterviewSimulationPage() {
           throw new Error("Missing required interview parameters");
         }
 
-        console.log("[DEBUG] Sending interview params:", { type, jobType, level });
-        const requestBody = { type, jobType, level };
-        console.log("[DEBUG] Sending request with body:", requestBody);
-        console.log("[DEBUG] Stringified body:", JSON.stringify(requestBody));
+        const jobDescription = `${level} ${jobType} position requiring ${type} expertise`;
+        console.log("[DEBUG] Preparing interview request:", { 
+          type, 
+          jobType, 
+          level,
+          jobDescription 
+        });
+
+        const requestBody = { 
+          type,
+          jobType,
+          level,
+          jobDescription
+        };
+
+        console.log("[DEBUG] Sending request body:", requestBody);
 
         const response = await fetch('/api/interview/start', {
           method: 'POST',

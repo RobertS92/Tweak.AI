@@ -8,23 +8,39 @@ app.use(express.json());
 app.post("/start", async (req: Request, res: Response) => {
   try {
     console.log("[DEBUG] Raw request body:", req.body);
-    console.log("[DEBUG] Request headers:", req.headers);
-    
-    const { type, level, jobType } = req.body;
-    console.log("[DEBUG] Extracted interview params:", { type, level, jobType });
-    console.log("[DEBUG] Param types:", {
-      typeType: typeof type,
-      levelType: typeof level,
-      jobTypeType: typeof jobType
+
+    const { type, level, jobType, jobDescription } = req.body;
+    console.log("[DEBUG] Received interview params:", { 
+      type, 
+      level, 
+      jobType,
+      hasJobDescription: !!jobDescription,
+      jobDescriptionLength: jobDescription?.length
     });
 
-    if (!type || !level || !jobType) {
+    // Validate all required fields
+    const missingFields = [];
+    if (!type) missingFields.push('type');
+    if (!level) missingFields.push('level');
+    if (!jobType) missingFields.push('jobType');
+    if (!jobDescription) missingFields.push('jobDescription');
+
+    if (missingFields.length > 0) {
+      console.log("[DEBUG] Missing fields:", missingFields);
+      return res.status(400).json({
+        error: "Missing required fields",
+        details: `The following fields are required: ${missingFields.join(', ')}`
+      });
+    }
+
+    if (!type || !level || !jobType || !jobDescription) {
       return res.status(400).json({
         error: "Missing required fields",
         details: `Missing: ${[
           !type && "type",
           !level && "level",
           !jobType && "jobType",
+          !jobDescription && "jobDescription"
         ]
           .filter(Boolean)
           .join(", ")}`,
