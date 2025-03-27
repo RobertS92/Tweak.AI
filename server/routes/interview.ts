@@ -7,8 +7,16 @@ app.use(express.json());
 
 app.post("/start", async (req: Request, res: Response) => {
   try {
+    console.log("[DEBUG] Raw request body:", req.body);
+    console.log("[DEBUG] Request headers:", req.headers);
+    
     const { type, level, jobType } = req.body;
-    console.log("[DEBUG] Received interview params:", { type, level, jobType });
+    console.log("[DEBUG] Extracted interview params:", { type, level, jobType });
+    console.log("[DEBUG] Param types:", {
+      typeType: typeof type,
+      levelType: typeof level,
+      jobTypeType: typeof jobType
+    });
 
     if (!type || !level || !jobType) {
       return res.status(400).json({

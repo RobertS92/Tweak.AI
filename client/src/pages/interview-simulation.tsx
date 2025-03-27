@@ -28,25 +28,27 @@ export default function InterviewSimulationPage() {
         }
 
         console.log("[DEBUG] Sending interview params:", { type, jobType, level });
+        const requestBody = { type, jobType, level };
+        console.log("[DEBUG] Sending request with body:", requestBody);
+        console.log("[DEBUG] Stringified body:", JSON.stringify(requestBody));
+
         const response = await fetch('/api/interview/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            type,
-            jobType,
-            level
-          }),
+          body: JSON.stringify(requestBody),
         });
 
+        const responseData = await response.json();
+        console.log("[DEBUG] Response status:", response.status);
+        console.log("[DEBUG] Response data:", responseData);
+
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(`Failed to start interview: ${response.statusText} - ${errorData.error || ''}`);
+          throw new Error(`Failed to start interview: ${response.statusText} - ${responseData.error || ''}`);
         }
 
-        const data = await response.json();
-        console.log("[DEBUG] Interview started successfully:", data);
+        console.log("[DEBUG] Interview started successfully:", responseData);
 
-        setCurrentQuestion(data.question);
+        setCurrentQuestion(responseData.question);
         setIsLoading(false);
       } catch (err) {
         console.error("[DEBUG] Interview initialization error:", err);
