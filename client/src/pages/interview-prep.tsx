@@ -33,6 +33,11 @@ export default function InterviewPrep() {
   const [isLiveInterview, setIsLiveInterview] = useState(false);
   const [interviewResults, setInterviewResults] = useState(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Added state for form data
+  const [interviewType, setInterviewType] = useState("");
+  const [role, setRole] = useState("");
+  const [experienceLevel, setExperienceLevel] = useState("");
+
 
   useEffect(() => {
     if (window.SpeechRecognition || window.webkitSpeechRecognition) {
@@ -244,6 +249,14 @@ export default function InterviewPrep() {
     }
   };
 
+  // Added form submission handler
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    //Simulate saving data - replace with actual saving logic
+    console.log("Interview Preferences Saved:", { interviewType, role, experienceLevel });
+  };
+
+
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
       <div className="border-b bg-white">
@@ -259,7 +272,49 @@ export default function InterviewPrep() {
               <CardTitle>Interview Setup</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              {/* Added form for interview preferences */}
+              <form onSubmit={handleSubmit}>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="font-semibold text-[#2c3e50]">Interview Type</label>
+                    <Select value={interviewType} onValueChange={setInterviewType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select interview type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Technical">Technical</SelectItem>
+                        <SelectItem value="Behavioral">Behavioral</SelectItem>
+                        <SelectItem value="Mixed">Mixed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="font-semibold text-[#2c3e50]">Role</label>
+                    <Select value={role} onValueChange={setRole}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Software Engineer">Software Engineer</SelectItem>
+                        <SelectItem value="Data Scientist">Data Scientist</SelectItem>
+                        <SelectItem value="Product Manager">Product Manager</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="font-semibold text-[#2c3e50]">Experience Level</label>
+                  <Select value={experienceLevel} onValueChange={setExperienceLevel}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select experience level" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Entry-Level">Entry-Level</SelectItem>
+                      <SelectItem value="Mid-Level">Mid-Level</SelectItem>
+                      <SelectItem value="Senior">Senior</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2">
                   <label className="font-semibold text-[#2c3e50]">Job Type</label>
                   <Select value={jobType} onValueChange={setJobType}>
@@ -286,93 +341,94 @@ export default function InterviewPrep() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className="font-semibold text-[#2c3e50]">Job Description</label>
-                <Textarea
-                  placeholder="Paste the job description here to customize the interview questions..."
-                  value={jobDescription}
-                  onChange={(e) => setJobDescription(e.target.value)}
-                  className="min-h-[150px]"
-                />
-              </div>
+                <div className="space-y-2">
+                  <label className="font-semibold text-[#2c3e50]">Job Description</label>
+                  <Textarea
+                    placeholder="Paste the job description here to customize the interview questions..."
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    className="min-h-[150px]"
+                  />
+                </div>
 
-              <div className="bg-[#f0f7ff] border border-[#4f8df9] rounded-lg p-4 flex items-center justify-between">
-                <span className="text-[#4f8df9] font-semibold flex items-center gap-2">
-                  <Upload size={20} />
-                  Upload your resume for more targeted questions
-                </span>
-                <Button variant="secondary">Upload</Button>
-              </div>
+                <div className="bg-[#f0f7ff] border border-[#4f8df9] rounded-lg p-4 flex items-center justify-between">
+                  <span className="text-[#4f8df9] font-semibold flex items-center gap-2">
+                    <Upload size={20} />
+                    Upload your resume for more targeted questions
+                  </span>
+                  <Button variant="secondary">Upload</Button>
+                </div>
 
-              <div className="space-y-4">
-                <h3 className="font-semibold text-[#2c3e50]">Interview Settings</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm text-[#2c3e50]">Duration</label>
-                    <Select value={String(interviewDuration)} onValueChange={(v) => setInterviewDuration(Number(v))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select duration" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="15">15 minutes</SelectItem>
-                        <SelectItem value="30">30 minutes</SelectItem>
-                        <SelectItem value="45">45 minutes</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm text-[#2c3e50]">Difficulty</label>
-                    <Select value={difficulty} onValueChange={setDifficulty}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select difficulty" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Standard">Standard</SelectItem>
-                        <SelectItem value="Advanced">Advanced</SelectItem>
-                        <SelectItem value="Expert">Expert</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-[#2c3e50]">Interview Settings</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm text-[#2c3e50]">Duration</label>
+                      <Select value={String(interviewDuration)} onValueChange={(v) => setInterviewDuration(Number(v))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select duration" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="15">15 minutes</SelectItem>
+                          <SelectItem value="30">30 minutes</SelectItem>
+                          <SelectItem value="45">45 minutes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm text-[#2c3e50]">Difficulty</label>
+                      <Select value={difficulty} onValueChange={setDifficulty}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select difficulty" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Standard">Standard</SelectItem>
+                          <SelectItem value="Advanced">Advanced</SelectItem>
+                          <SelectItem value="Expert">Expert</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-sm text-[#2c3e50]">Interview Focus</label>
-                <div className="flex gap-2">
-                  {["Technical", "Behavioral", "Mixed"].map((focus) => (
-                    <Button
-                      key={focus}
-                      variant={interviewFocus === focus ? "default" : "outline"}
-                      onClick={() => setInterviewFocus(focus)}
-                      className={cn(
-                        "flex-1",
-                        interviewFocus === focus && "bg-[#4f8df9]"
-                      )}
-                    >
-                      {focus}
-                    </Button>
-                  ))}
+                <div className="space-y-2">
+                  <label className="text-sm text-[#2c3e50]">Interview Focus</label>
+                  <div className="flex gap-2">
+                    {["Technical", "Behavioral", "Mixed"].map((focus) => (
+                      <Button
+                        key={focus}
+                        variant={interviewFocus === focus ? "default" : "outline"}
+                        onClick={() => setInterviewFocus(focus)}
+                        className={cn(
+                          "flex-1",
+                          interviewFocus === focus && "bg-[#4f8df9]"
+                        )}
+                      >
+                        {focus}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-4">
-                <Button 
-                  className="w-full bg-[#4f8df9] hover:bg-[#3a7ad9] h-12" 
-                  onClick={() => setShowPreview(true)}
-                  disabled={!jobType || !jobLevel || !difficulty || !interviewFocus}
-                >
-                  Preview Interview
-                </Button>
-                <Button 
-                  className="w-full bg-[#1e2a3b] hover:bg-[#2c3e50] h-12" 
-                  onClick={startInterview}
-                  disabled={isAnalyzing || !jobType}
-                >
-                  {isAnalyzing ? "Preparing Interview..." : "Start Interview"}
-                </Button>
-              </div>
+                <div className="space-y-4">
+                  <Button
+                    className="w-full bg-[#4f8df9] hover:bg-[#3a7ad9] h-12"
+                    onClick={() => setShowPreview(true)}
+                    disabled={!jobType || !jobLevel || !difficulty || !interviewFocus || !interviewType || !role || !experienceLevel}
+                  >
+                    Preview Interview
+                  </Button>
+                  <Button
+                    type="submit" // Added type="submit"
+                    className="w-full bg-[#1e2a3b] hover:bg-[#2c3e50] h-12"
+                    onClick={startInterview}
+                    disabled={isAnalyzing || !jobType}
+                  >
+                    {isAnalyzing ? "Preparing Interview..." : "Start Interview"}
+                  </Button>
+                </div>
+              </form>
             </CardContent>
           </Card>
 
