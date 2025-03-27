@@ -427,8 +427,8 @@ Return an optimized version that matches keywords and improves ATS score while m
   // PDF generation moved to client-side
 
   // Import routes
-  const resumeAiAssistant = require("./routes/resume-ai-assistant").default;
-  const interview = require("./routes/interview").default;
+  import resumeAiAssistant from "./routes/resume-ai-assistant";
+  import interview from "./routes/interview";
 
   // Register routes
   app.use("/api/resume-ai-assistant", resumeAiAssistant);
