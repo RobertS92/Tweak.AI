@@ -1,6 +1,8 @@
 
 import express from 'express';
-const router = express.Router();
+import { Router } from 'express';
+
+const router = Router();
 
 router.use(express.json());
 
@@ -23,6 +25,7 @@ router.post("/start", async (req, res) => {
     const jobDescription = `${level} ${jobType} position requiring ${type} expertise`;
     const durationMinutes = 30;
 
+    // Return initial interview data
     res.status(200).json({
       message: "Interview started successfully",
       question: "Tell me about your background and experience with this type of role.",
@@ -30,8 +33,11 @@ router.post("/start", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error starting interview:", error);
-    res.status(500).json({ error: "Failed to start interview" });
+    console.error("[DEBUG] Error starting interview:", error);
+    res.status(500).json({ 
+      error: "Failed to start interview",
+      details: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
