@@ -161,7 +161,7 @@ export default function InterviewPrep() {
       setCurrentQuestion(data.nextQuestion);
       setCurrentAudioData(data.audio);
       setTranscript("");
-      setFeedback(data.feedback); 
+      setFeedback(data.feedback);
       await playAudio(data.audio);
 
       if (!data.nextQuestion) {
@@ -359,87 +359,91 @@ export default function InterviewPrep() {
           </Card>
 
           {/* Interview Preview Card - Only shown after setup */}
-{jobType && jobLevel && difficulty && interviewFocus && (
-  <Card className="bg-[#f5f7fa]">
-    <CardHeader>
-      <CardTitle>Interview Preview</CardTitle>
-    </CardHeader>
-    <CardContent className="space-y-6">
-      <Card className="border">
-        <CardContent className="flex gap-4 p-4">
-          <div className="w-20 h-20 rounded-full bg-[#3498db] flex items-center justify-center">
-            <span className="text-2xl font-bold text-white">AI</span>
-          </div>
+          {jobType && jobLevel && difficulty && interviewFocus && (
+            <Card className="bg-[#f5f7fa]">
+              <CardHeader>
+                <CardTitle>Interview Preview</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Card className="border">
+                  <CardContent className="flex gap-4 p-4">
+                    <div className="w-20 h-20 rounded-full bg-[#3498db] flex items-center justify-center">
+                      <span className="text-2xl font-bold text-white">AI</span>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg">AI Interviewer</h3>
+                      <p className="text-sm text-muted-foreground">{jobLevel} {jobType} Interview</p>
+                      <p className="text-sm text-muted-foreground">{interviewFocus} Focus • {difficulty} Difficulty</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-bold mb-2">What to Expect:</h3>
+                    <div className="space-y-2">
+                      <div className="bg-[#f9f9fa] p-3 rounded-lg text-sm">
+                        • {interviewDuration} minute {interviewFocus.toLowerCase()} interview
+                      </div>
+                      <div className="bg-[#f9f9fa] p-3 rounded-lg text-sm">
+                        • Questions tailored to {jobLevel.toLowerCase()} {jobType.toLowerCase()} roles
+                      </div>
+                      <div className="bg-[#f9f9fa] p-3 rounded-lg text-sm">
+                        • {difficulty} level technical and behavioral assessment
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-bold mb-2">Post-Interview Analysis Will Include:</h3>
+                    <div className="space-y-2">
+                      <div className="bg-[#f9f9fa] p-3 rounded-lg text-sm">
+                        • Response quality and relevance scoring
+                      </div>
+                      <div className="bg-[#f9f9fa] p-3 rounded-lg text-sm">
+                        • Communication skills assessment
+                      </div>
+                      <div className="bg-[#f9f9fa] p-3 rounded-lg text-sm">
+                        • Technical knowledge evaluation
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-[#f0f7ff] border border-[#4f8df9] rounded-lg p-4">
+                    <div className="flex gap-3">
+                      <span className="text-xl">💡</span>
+                      <div>
+                        <p className="font-semibold text-[#2c3e50]">How it works:</p>
+                        <p className="text-sm text-[#2c3e50]">
+                          Our AI will ask relevant questions, analyze your responses in real-time, and provide comprehensive feedback to help improve your interview skills.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div>
-            <h3 className="font-bold text-lg">AI Interviewer</h3>
-            <p className="text-sm text-muted-foreground">{jobLevel} {jobType} Interview</p>
-            <p className="text-sm text-muted-foreground">{interviewFocus} Focus • {difficulty} Difficulty</p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="space-y-4">
-        <div>
-          <h3 className="font-bold mb-2">What to Expect:</h3>
-          <div className="space-y-2">
-            <div className="bg-[#f9f9fa] p-3 rounded-lg text-sm">
-              • {interviewDuration} minute {interviewFocus.toLowerCase()} interview
+            <div className="space-y-2">
+              <h3 className="font-bold">Post-Interview Analysis Will Include:</h3>
+              <ul className="space-y-2">
+                {[
+                  "Detailed performance score for each question",
+                  "Speech analysis (filler words, pacing, clarity)",
+                  "Keyword usage compared to job description",
+                  "Personalized improvement suggestions"
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-[#2ecc71]" />
+                    <span className="text-sm">{item}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="bg-[#f9f9fa] p-3 rounded-lg text-sm">
-              • Questions tailored to {jobLevel.toLowerCase()} {jobType.toLowerCase()} roles
-            </div>
-            <div className="bg-[#f9f9fa] p-3 rounded-lg text-sm">
-              • {difficulty} level technical and behavioral assessment
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h3 className="font-bold mb-2">Post-Interview Analysis Will Include:</h3>
-          <div className="space-y-2">
-            <div className="bg-[#f9f9fa] p-3 rounded-lg text-sm">
-              • Response quality and relevance scoring
-            </div>
-            <div className="bg-[#f9f9fa] p-3 rounded-lg text-sm">
-              • Communication skills assessment
-            </div>
-            <div className="bg-[#f9f9fa] p-3 rounded-lg text-sm">
-              • Technical knowledge evaluation
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-[#f0f7ff] p-4 rounded-lg flex gap-3">
-          <span className="text-xl">💡</span>
-          <div>
-            <p className="font-semibold text-[#2c3e50]">How it works:</p>
-            <p className="text-sm text-[#2c3e50]">
-              Our AI will ask relevant questions, analyze your responses in real-time, and provide comprehensive feedback to help improve your interview skills.
-            </p>
-          </div>
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-)}
-
-              <div className="space-y-2">
-                <h3 className="font-bold">Post-Interview Analysis Will Include:</h3>
-                <ul className="space-y-2">
-                  {[
-                    "Detailed performance score for each question",
-                    "Speech analysis (filler words, pacing, clarity)",
-                    "Keyword usage compared to job description",
-                    "Personalized improvement suggestions"
-                  ].map((item, i) => (
-                    <li key={i} className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-[#2ecc71]" />
-                      <span className="text-sm">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="bg-[#f0f7ff] p-4 rounded-lg flex gap-3">
+            <div className="bg-[#f0f7ff] border border-[#4f8df9] rounded-lg p-4">
+              <div className="flex gap-3">
                 <span className="text-xl">💡</span>
                 <div>
                   <p className="font-semibold text-[#2c3e50]">How it works:</p>
@@ -448,8 +452,8 @@ export default function InterviewPrep() {
                   </p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>
