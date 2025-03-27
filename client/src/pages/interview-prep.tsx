@@ -6,6 +6,8 @@ import { Mic, Square, Play, Send, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { Upload, Plus, FileText, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import InterviewSimulation from '@/components/interview-simulation'; // Added import
 
 export default function InterviewPrep() {
   const { toast } = useToast();
@@ -193,7 +195,7 @@ export default function InterviewPrep() {
     }
 
     setIsAnalyzing(true);
-    setIsLiveInterview(true); // Added line
+    setIsLiveInterview(true);
     try {
       const analysisResponse = await fetch('/api/interview/analyze', {
         method: 'POST',
@@ -473,9 +475,7 @@ export default function InterviewPrep() {
         </div>
       </div>
       {isLiveInterview && ( // Conditional rendering for Live Interview
-        <div>
-          <h1>Live Interview Placeholder</h1> {/* Replace with actual component */}
-        </div>
+        <InterviewSimulation /> {/* Render the InterviewSimulation component */}
       )}
     </div>
   );
