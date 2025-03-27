@@ -370,30 +370,13 @@ export default function InterviewPrep() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm text-[#2c3e50]">Interview Focus</label>
-                  <div className="flex gap-2">
-                    {["Technical", "Behavioral", "Mixed"].map((focus) => (
-                      <Button
-                        key={focus}
-                        variant={interviewFocus === focus ? "default" : "outline"}
-                        onClick={() => setInterviewFocus(focus)}
-                        className={cn(
-                          "flex-1",
-                          interviewFocus === focus && "bg-[#4f8df9]"
-                        )}
-                      >
-                        {focus}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
+                
 
                 <div className="space-y-4">
                   <Button
                     className="w-full bg-[#4f8df9] hover:bg-[#3a7ad9] h-12"
                     onClick={() => setShowPreview(true)}
-                    disabled={!jobType || !difficulty || !interviewFocus || !interviewType || !experienceLevel}
+                    disabled={!jobType || !difficulty || !interviewType || !experienceLevel}
                   >
                     Preview Interview
                   </Button>
