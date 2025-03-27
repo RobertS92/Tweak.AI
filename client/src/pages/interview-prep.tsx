@@ -35,7 +35,6 @@ export default function InterviewPrep() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   // Added state for form data
   const [interviewType, setInterviewType] = useState("");
-  const [role, setRole] = useState("");
   const [experienceLevel, setExperienceLevel] = useState("");
 
 
@@ -253,7 +252,7 @@ export default function InterviewPrep() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     //Simulate saving data - replace with actual saving logic
-    console.log("Interview Preferences Saved:", { interviewType, role, experienceLevel });
+    console.log("Interview Preferences Saved:", { interviewType, experienceLevel });
   };
 
 
@@ -289,31 +288,18 @@ export default function InterviewPrep() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <label className="font-semibold text-[#2c3e50]">Role</label>
-                    <Select value={role} onValueChange={setRole}>
+                    <label className="font-semibold text-[#2c3e50]">Experience Level</label>
+                    <Select value={experienceLevel} onValueChange={setExperienceLevel}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select role" />
+                        <SelectValue placeholder="Select experience level" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Software Engineer">Software Engineer</SelectItem>
-                        <SelectItem value="Data Scientist">Data Scientist</SelectItem>
-                        <SelectItem value="Product Manager">Product Manager</SelectItem>
+                        <SelectItem value="Entry-Level">Entry-Level</SelectItem>
+                        <SelectItem value="Mid-Level">Mid-Level</SelectItem>
+                        <SelectItem value="Senior">Senior</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="font-semibold text-[#2c3e50]">Experience Level</label>
-                  <Select value={experienceLevel} onValueChange={setExperienceLevel}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select experience level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Entry-Level">Entry-Level</SelectItem>
-                      <SelectItem value="Mid-Level">Mid-Level</SelectItem>
-                      <SelectItem value="Senior">Senior</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
                 <div className="space-y-2">
                   <label className="font-semibold text-[#2c3e50]">Job Type</label>
@@ -415,7 +401,7 @@ export default function InterviewPrep() {
                   <Button
                     className="w-full bg-[#4f8df9] hover:bg-[#3a7ad9] h-12"
                     onClick={() => setShowPreview(true)}
-                    disabled={!jobType || !jobLevel || !difficulty || !interviewFocus || !interviewType || !role || !experienceLevel}
+                    disabled={!jobType || !jobLevel || !difficulty || !interviewFocus || !interviewType || !experienceLevel}
                   >
                     Preview Interview
                   </Button>
