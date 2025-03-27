@@ -198,8 +198,13 @@ export default function InterviewPrep() {
       return;
     }
 
-    setIsAnalyzing(true);
-    setIsLiveInterview(true);
+    const params = new URLSearchParams({
+      type: interviewType,
+      level: experienceLevel,
+      jobType: jobType
+    });
+
+    window.location.href = `/interview-simulation?${params.toString()}`;
     try {
       const analysisResponse = await fetch('/api/interview/analyze', {
         method: 'POST',
