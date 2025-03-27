@@ -1,8 +1,8 @@
-const express = require('express');
+const express = require("express");
 const app = express();
 app.use(express.json());
 
-app.post('/start', async (req, res) => {
+app.post("/start", async (req, res) => {
   try {
     const { type, level, jobType } = req.body;
     console.log("[DEBUG] Received interview params:", { type, level, jobType });
@@ -11,10 +11,12 @@ app.post('/start', async (req, res) => {
       return res.status(400).json({
         error: "Missing required fields",
         details: `Missing: ${[
-          !type && 'type',
-          !level && 'level', 
-          !jobType && 'jobType'
-        ].filter(Boolean).join(', ')}`
+          !type && "type",
+          !level && "level",
+          !jobType && "jobType",
+        ]
+          .filter(Boolean)
+          .join(", ")}`,
       });
     }
 
@@ -22,12 +24,12 @@ app.post('/start', async (req, res) => {
     const durationMinutes = 30;
 
     // Return initial interview data
-    res.status(200).json({ 
-      message: 'Interview started successfully',
-      question: "Tell me about your background and experience with this type of role.",
-      sessionId: Date.now().toString()
+    res.status(200).json({
+      message: "Interview started successfully",
+      question:
+        "Tell me about your background and experience with this type of role.",
+      sessionId: Date.now().toString(),
     });
-
   } catch (error) {
     console.error("Error starting interview:", error);
     res.status(500).json({ error: "Failed to start interview" });
