@@ -198,10 +198,16 @@ export default function InterviewPrep() {
       return;
     }
 
-    const params = new URLSearchParams({
+    console.log("[DEBUG] Starting interview with params:", {
       type: interviewType,
       level: experienceLevel,
       jobType: jobType
+    });
+    
+    const params = new URLSearchParams({
+      type: interviewType || '',
+      level: experienceLevel || '',
+      jobType: jobType || ''
     });
 
     window.location.href = `/interview-simulation?${params.toString()}`;
