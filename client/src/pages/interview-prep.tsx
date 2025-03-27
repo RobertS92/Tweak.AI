@@ -474,7 +474,11 @@ export default function InterviewPrep() {
           </div>
         </div>
       </div>
-      {isLiveInterview && (
+      {!isLiveInterview ? (
+        <div>
+          {/* Rest of the preparation UI */}
+        </div>
+      ) : (
         <InterviewSimulation
           currentQuestion={currentQuestion}
           transcript={transcript}
