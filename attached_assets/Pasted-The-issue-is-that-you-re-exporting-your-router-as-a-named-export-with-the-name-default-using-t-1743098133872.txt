@@ -1,0 +1,82 @@
+The issue is that you're exporting your router as a **named export** with the name `default` using the syntax:
+
+```typescript
+export { router as default };
+```
+
+However, in your `routes.ts` file, you're importing it as a **default export** without the curly braces:
+
+```typescript
+import resumeAiAssistant from "./routes/resume-ai-assistant";
+```
+
+**How to Fix It**
+
+You have two options to resolve this:
+
+**Option 1: Change the Import in `routes.ts` to a Named Import**
+
+Modify the import statement in `routes.ts` to use curly braces, indicating a named import:
+
+```typescript
+import { default as resumeAiAssistant } from "./routes/resume-ai-assistant";
+```
+
+Or, more concisely:
+
+```typescript
+import resumeAiAssistant from "./routes/resume-ai-assistant";
+```
+
+This will match the export from `resume-ai-assistant.ts`.
+
+**Option 2: Change the Export in `resume-ai-assistant.ts` to a Default Export**
+
+Modify the export statement in `resume-ai-assistant.ts` to use the `export default` syntax:
+
+```typescript
+export default router;
+```
+
+Then, leave the import statement in `routes.ts` as it is:
+
+```typescript
+import resumeAiAssistant from "./routes/resume-ai-assistant";
+```
+
+**Recommended Approach:**
+
+The second option (using `export default`) is generally preferred for exporting a single, primary value from a module, which is the case with your router.
+
+**Corrected `resume-ai-assistant.ts` (Option 2):**
+
+```typescript
+import { Router } from "express";
+import OpenAI from "openai";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const router = Router();
+
+// ... (rest of your code)
+
+export default router;
+```
+
+**Corrected `routes.ts` (using either fix):**
+
+```typescript
+// ... (rest of your code)
+
+import resumeAiAssistant from "./routes/resume-ai-assistant";
+import interview from "./routes/interview";
+
+// Register routes
+app.use("/api/resume-ai-assistant", resumeAiAssistant);
+app.use("/api/interview", interview);
+
+// ... (rest of your code)
+```
+
+By making this change, `esbuild` will correctly resolve the import, and the "unexpected token" error will be resolved.
