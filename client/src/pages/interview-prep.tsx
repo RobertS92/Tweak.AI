@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button } from "../components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Mic, Square, Play, Send, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
