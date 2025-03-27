@@ -474,17 +474,18 @@ export default function InterviewPrep() {
           </div>
         </div>
       </div>
-      {!isLiveInterview ? (
-        <div>
-          {/* Rest of the preparation UI */}
-        </div>
-      ) : (
+      {isLiveInterview ? (
         <InterviewSimulation
           currentQuestion={currentQuestion}
           transcript={transcript}
           isRecording={isRecording}
           onStopInterview={() => setIsLiveInterview(false)}
         />
+      ) : (
+        // Preparation UI content here
+        <div className="max-w-[1200px] mx-auto px-6 py-4">
+          {/* Rest of your preparation UI */}
+        </div>
       )}
     </div>
   );
