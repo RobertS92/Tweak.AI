@@ -314,19 +314,6 @@ export default function InterviewPrep() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <label className="font-semibold text-[#2c3e50]">Level</label>
-                  <Select value={jobLevel} onValueChange={setJobLevel}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Entry-Level">Entry-Level</SelectItem>
-                      <SelectItem value="Mid-Level">Mid-Level</SelectItem>
-                      <SelectItem value="Senior">Senior</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
                 <div className="space-y-2">
                   <label className="font-semibold text-[#2c3e50]">Job Description</label>
@@ -401,7 +388,7 @@ export default function InterviewPrep() {
                   <Button
                     className="w-full bg-[#4f8df9] hover:bg-[#3a7ad9] h-12"
                     onClick={() => setShowPreview(true)}
-                    disabled={!jobType || !jobLevel || !difficulty || !interviewFocus || !interviewType || !experienceLevel}
+                    disabled={!jobType || !difficulty || !interviewFocus || !interviewType || !experienceLevel}
                   >
                     Preview Interview
                   </Button>
