@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import InterviewSimulation from "@/components/interview-simulation";
 import { useLocation } from "wouter";
@@ -32,19 +31,20 @@ export default function InterviewSimulationPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            interviewType: type,
-            jobType,
-            experienceLevel: level
+            type: type,
+            jobType: jobType,
+            level: level
           }),
         });
 
         if (!response.ok) {
-          throw new Error(`Failed to start interview: ${response.statusText}`);
+          const errorData = await response.json();
+          throw new Error(`Failed to start interview: ${response.statusText} - ${errorData.error || ''}`);
         }
 
         const data = await response.json();
         console.log("[DEBUG] Interview started successfully:", data);
-        
+
         setCurrentQuestion(data.question);
         setIsLoading(false);
       } catch (err) {
