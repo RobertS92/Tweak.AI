@@ -27,6 +27,7 @@ export default function InterviewPrep() {
   const [jobLevel, setJobLevel] = useState("Mid-Level");
   const [difficulty, setDifficulty] = useState("Standard");
   const [interviewFocus, setInterviewFocus] = useState("Technical");
+  const [showPreview, setShowPreview] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -352,14 +353,26 @@ export default function InterviewPrep() {
                 </div>
               </div>
 
-              <Button className="w-full bg-[#1e2a3b] hover:bg-[#2c3e50] h-12" onClick={startInterview}>
-                Start Interview
-              </Button>
+              <div className="space-y-4">
+                <Button 
+                  className="w-full bg-[#4f8df9] hover:bg-[#3a7ad9] h-12" 
+                  onClick={() => setShowPreview(true)}
+                  disabled={!jobType || !jobLevel || !difficulty || !interviewFocus}
+                >
+                  Preview Interview
+                </Button>
+                <Button 
+                  className="w-full bg-[#1e2a3b] hover:bg-[#2c3e50] h-12" 
+                  onClick={startInterview}
+                >
+                  Start Interview
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Interview Preview Card - Only shown after setup */}
-          {jobType && jobLevel && difficulty && interviewFocus && (
+          {/* Interview Preview Card - Only shown after setup and preview click */}
+          {jobType && jobLevel && difficulty && interviewFocus && showPreview && (
             <Card className="bg-[#f5f7fa]">
               <CardHeader>
                 <CardTitle>Interview Preview</CardTitle>
