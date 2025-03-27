@@ -262,8 +262,12 @@ export default function InterviewPrep() {
   // Added form submission handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    //Simulate saving data - replace with actual saving logic
-    console.log("Interview Preferences Saved:", { interviewType, experienceLevel });
+    const params = new URLSearchParams({
+      type: interviewType,
+      level: experienceLevel,
+      jobType: "Software Engineer"
+    });
+    window.location.href = `/interview-simulation?${params.toString()}`;
   };
 
 
