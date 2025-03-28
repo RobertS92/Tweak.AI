@@ -7,10 +7,11 @@ export default function InterviewSimulationPage() {
   const [location] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-  const [currentQuestion, setCurrentQuestion] = useState("");
-  const [transcript, setTranscript] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState<string>("");
+  const [transcript, setTranscript] = useState<string>("");
+  const [isRecording, setIsRecording] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     const initializeInterview = async () => {
@@ -42,6 +43,10 @@ export default function InterviewSimulationPage() {
         };
 
         console.log("[DEBUG] Sending request body:", requestBody);
+
+        if (!requestBody.type || !requestBody.jobType || !requestBody.level || !requestBody.jobDescription) {
+          throw new Error("Missing required interview parameters");
+        }
 
         const response = await fetch('/api/interview/start', {
           method: 'POST',
