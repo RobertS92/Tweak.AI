@@ -232,13 +232,15 @@ export default function InterviewPrep() {
     
     const jobDescription = `${experienceLevel} ${jobType} position requiring ${interviewType} expertise`;
     
-const params = new URLSearchParams({
+const defaultJobDesc = `${jobType} position requiring ${interviewType} expertise`;
+    const params = new URLSearchParams({
       type: interviewType || '',
       level: experienceLevel || '',
       jobType: jobType || '',
-      jobDescription: jobDescription
+      jobDescription: jobDescription || defaultJobDesc
     });
 
+    // Use router.push instead of window.location for cleaner navigation
     window.location.href = `/interview-simulation?${params.toString()}`;
     try {
       const analysisResponse = await fetch('/api/interview/analyze', {

@@ -89,8 +89,11 @@ export default function InterviewSimulationPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f5f7fa] p-6 flex items-center justify-center">
-        <div className="text-[#4f8df9]">Initializing interview...</div>
+      <div className="min-h-screen bg-[#f5f7fa] p-6 flex flex-col items-center justify-center gap-4">
+        <div className="text-[#4f8df9] text-xl font-semibold">Initializing interview...</div>
+        <div className="w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-full bg-[#4f8df9] animate-pulse rounded-full"></div>
+        </div>
       </div>
     );
   }

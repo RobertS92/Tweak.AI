@@ -10,11 +10,11 @@ interface InterviewSimulationProps {
 }
 
 export default function InterviewSimulation({
-  currentQuestion,
-  transcript,
-  isRecording,
-  onStopInterview,
-}: InterviewSimulationProps) {
+  currentQuestion = "",
+  transcript = "",
+  isRecording = false,
+  onStopInterview = () => window.location.href = '/interview-prep',
+}: Partial<InterviewSimulationProps>) {
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-8">
       <div className="grid grid-cols-1 md:grid-cols-[2fr,1fr] gap-6">
