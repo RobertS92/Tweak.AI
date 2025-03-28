@@ -8,9 +8,6 @@ interface InterviewSimulationProps {
   transcript: string;
   isRecording: boolean;
   onStopInterview: () => void;
-  type: string;
-  level: string;
-  jobType: string;
 }
 
 export default function InterviewSimulation({

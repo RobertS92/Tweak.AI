@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import InterviewSimulation from "@/components/interview-simulation";
 import { useLocation } from "wouter";
@@ -18,24 +19,18 @@ export default function InterviewSimulationPage() {
       try {
         console.log("[DEBUG] Initializing interview simulation");
         const searchParams = new URLSearchParams(window.location.search);
-        const type = searchParams.get("type") || '';
-        const jobType = searchParams.get("jobType") || '';
-        const level = searchParams.get("level") || '';
-        const jobDescription = searchParams.get("jobDescription") || '';
+        const type = searchParams.get("type");
+        const jobType = searchParams.get("jobType");
+        const level = searchParams.get("level");
+        const jobDescription = searchParams.get("jobDescription");
 
         console.log("[DEBUG] Interview params:", { type, jobType, level, jobDescription });
 
         if (!type || !jobType || !level || !jobDescription) {
           throw new Error("Missing required interview parameters");
         }
-        console.log("[DEBUG] Preparing interview request:", { 
-          type, 
-          jobType, 
-          level,
-          jobDescription 
-        });
 
-        const requestBody = { 
+        const requestBody = {
           type,
           jobType,
           level,
@@ -44,41 +39,41 @@ export default function InterviewSimulationPage() {
 
         console.log("[DEBUG] Sending request body:", requestBody);
 
-        if (!requestBody.type || !requestBody.jobType || !requestBody.level || !requestBody.jobDescription) {
-          throw new Error("Missing required interview parameters");
-        }
-
         const response = await fetch('/api/interview/start', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody),
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
         });
 
-        const responseData = await response.json();
         console.log("[DEBUG] Response status:", response.status);
-        console.log("[DEBUG] Response data:", responseData);
 
         if (!response.ok) {
-          throw new Error(`Failed to start interview: ${response.statusText} - ${responseData.error || ''}`);
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to start interview");
         }
 
+        const responseData = await response.json();
         console.log("[DEBUG] Interview started successfully:", responseData);
 
+        setSessionId(responseData.sessionId);
         setCurrentQuestion(responseData.question);
         setIsLoading(false);
       } catch (err) {
         console.error("[DEBUG] Interview initialization error:", err);
         setError(err instanceof Error ? err.message : "Failed to start interview");
+        setIsLoading(false);
         toast({
           title: "Error",
-          description: "Failed to start the interview. Please try again.",
+          description: err instanceof Error ? err.message : "Failed to start interview",
           variant: "destructive"
         });
       }
     };
 
     initializeInterview();
-  }, [location]);
+  }, [toast]);
 
   const handleStopInterview = () => {
     window.location.href = '/interview-prep';
@@ -97,6 +92,14 @@ export default function InterviewSimulationPage() {
             Return to Interview Prep
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#f5f7fa] p-6 flex items-center justify-center">
+        <div className="text-[#4f8df9]">Initializing interview...</div>
       </div>
     );
   }
