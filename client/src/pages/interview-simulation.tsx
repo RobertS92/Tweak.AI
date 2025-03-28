@@ -17,17 +17,16 @@ export default function InterviewSimulationPage() {
       try {
         console.log("[DEBUG] Initializing interview simulation");
         const searchParams = new URLSearchParams(window.location.search);
-        const type = searchParams.get("type");
-        const jobType = searchParams.get("jobType");
-        const level = searchParams.get("level");
+        const type = searchParams.get("type") || '';
+        const jobType = searchParams.get("jobType") || '';
+        const level = searchParams.get("level") || '';
+        const jobDescription = searchParams.get("jobDescription") || '';
 
-        console.log("[DEBUG] Interview params:", { type, jobType, level });
+        console.log("[DEBUG] Interview params:", { type, jobType, level, jobDescription });
 
-        if (!type || !jobType || !level) {
+        if (!type || !jobType || !level || !jobDescription) {
           throw new Error("Missing required interview parameters");
         }
-
-        const jobDescription = searchParams.get('jobDescription') || `${level} ${jobType} position requiring ${type} expertise`;
         console.log("[DEBUG] Preparing interview request:", { 
           type, 
           jobType, 
