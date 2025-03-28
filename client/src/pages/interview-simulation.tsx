@@ -1,11 +1,9 @@
 
 import { useState, useEffect } from "react";
 import InterviewSimulation from "@/components/interview-simulation";
-import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 
 export default function InterviewSimulationPage() {
-  const [location] = useLocation();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [currentQuestion, setCurrentQuestion] = useState<string>("");
@@ -47,33 +45,26 @@ export default function InterviewSimulationPage() {
           body: JSON.stringify(requestBody)
         });
 
-        console.log("[DEBUG] Response status:", response.status);
-
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || "Failed to start interview");
         }
 
-        const responseData = await response.json();
-        console.log("[DEBUG] Interview started successfully:", responseData);
+        const data = await response.json();
+        console.log("[DEBUG] Interview started successfully:", data);
 
-        setSessionId(responseData.sessionId);
-        setCurrentQuestion(responseData.question);
+        setSessionId(data.sessionId);
+        setCurrentQuestion(data.question);
         setIsLoading(false);
       } catch (err) {
         console.error("[DEBUG] Interview initialization error:", err);
         setError(err instanceof Error ? err.message : "Failed to start interview");
         setIsLoading(false);
-        toast({
-          title: "Error",
-          description: err instanceof Error ? err.message : "Failed to start interview",
-          variant: "destructive"
-        });
       }
     };
 
     initializeInterview();
-  }, [toast]);
+  }, []);
 
   const handleStopInterview = () => {
     window.location.href = '/interview-prep';
