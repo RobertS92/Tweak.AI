@@ -233,16 +233,18 @@ export default function InterviewPrep() {
     const jobDescription = `${experienceLevel} ${jobType} position requiring ${interviewType} expertise`;
     
 const defaultJobDesc = `${jobType} position requiring ${interviewType} expertise`;
-    const params = new URLSearchParams({
-      type: interviewType || '',
-      level: experienceLevel || '',
-      jobType: jobType || '',
-      jobDescription: jobDescription || defaultJobDesc
-    });
-
-    // Use router.push instead of window.location for cleaner navigation
-    window.location.href = `/interview-simulation?${params.toString()}`;
     try {
+      if (!interviewType || !experienceLevel || !jobType) {
+        throw new Error("Please select all interview preferences");
+      }
+
+      const params = new URLSearchParams({
+        type: interviewType,
+        level: experienceLevel,
+        jobType: jobType,
+        jobDescription: jobDescription || defaultJobDesc
+      });
+
       const analysisResponse = await fetch('/api/interview/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

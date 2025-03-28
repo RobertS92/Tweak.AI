@@ -6,11 +6,22 @@ import { useToast } from "@/hooks/use-toast";
 export default function InterviewSimulationPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState<string>("");
   const [transcript, setTranscript] = useState<string>("");
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+
+  // Simulated progress updates
+  useEffect(() => {
+    if (isLoading && progress < 90) {
+      const timer = setInterval(() => {
+        setProgress(prev => Math.min(prev + 10, 90));
+      }, 300);
+      return () => clearInterval(timer);
+    }
+  }, [isLoading, progress]);
 
   useEffect(() => {
     const initializeInterview = async () => {
