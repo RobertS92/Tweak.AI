@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -229,20 +228,27 @@ export default function InterviewPrep() {
       level: experienceLevel,
       jobType: jobType
     });
-    
+
     const jobDescription = `${experienceLevel} ${jobType} position requiring ${interviewType} expertise`;
-    
-const defaultJobDesc = `${jobType} position requiring ${interviewType} expertise`;
+    const defaultJobDesc = `${jobType} position requiring ${interviewType} expertise`;
     try {
       if (!interviewType || !experienceLevel || !jobType) {
         throw new Error("Please select all interview preferences");
       }
 
+      // Save interview preferences to localStorage
+      localStorage.setItem('interviewPrefs', JSON.stringify({
+        type: interviewType,
+        level: experienceLevel,
+        jobType: jobType,
+        jobDescription: jobDescription
+      }));
+
       const params = new URLSearchParams({
         type: interviewType,
         level: experienceLevel,
         jobType: jobType,
-        jobDescription: jobDescription || defaultJobDesc
+        jobDescription: jobDescription
       });
 
       const analysisResponse = await fetch('/api/interview/analyze', {
@@ -420,7 +426,7 @@ const defaultJobDesc = `${jobType} position requiring ${interviewType} expertise
                   </div>
                 </div>
 
-                
+
 
                 <div className="space-y-4">
                   <Button

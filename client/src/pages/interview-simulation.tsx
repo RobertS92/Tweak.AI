@@ -12,6 +12,21 @@ export default function InterviewSimulationPage() {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [interviewParams, setInterviewParams] = useState<any>(null);
+
+  // Load interview preferences on mount
+  useEffect(() => {
+    try {
+      const savedPrefs = localStorage.getItem('interviewPrefs');
+      if (!savedPrefs) {
+        throw new Error("No interview preferences found");
+      }
+      setInterviewParams(JSON.parse(savedPrefs));
+    } catch (err) {
+      setError("Failed to load interview preferences. Please return to setup.");
+      setIsLoading(false);
+    }
+  }, []);
 
   // Simulated progress updates
   useEffect(() => {
@@ -26,12 +41,16 @@ export default function InterviewSimulationPage() {
   useEffect(() => {
     const initializeInterview = async () => {
       try {
+        if (!interviewParams) {
+          throw new Error("Interview parameters not loaded");
+        }
+
         console.log("[DEBUG] Initializing interview simulation");
-        const searchParams = new URLSearchParams(window.location.search);
-        const type = searchParams.get("type");
-        const jobType = searchParams.get("jobType");
-        const level = searchParams.get("level");
-        const jobDescription = searchParams.get("jobDescription");
+        const { type, jobType, level, jobDescription } = interviewParams;
+
+        if (!type || !jobType || !level || !jobDescription) {
+          throw new Error("Missing required interview parameters");
+        }
 
         console.log("[DEBUG] Interview params:", { type, jobType, level, jobDescription });
 
