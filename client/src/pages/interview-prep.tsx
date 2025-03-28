@@ -1,3 +1,33 @@
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+
+const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const response = await fetch("/api/resume-parser", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to upload resume");
+    }
+
+    const data = await response.json();
+    // Handle the parsed resume data here
+    console.log("Resume parsed:", data);
+  } catch (error) {
+    console.error("Error uploading resume:", error);
+  }
+};
+
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "../components/ui/button";
@@ -341,7 +371,18 @@ export default function InterviewPrep() {
                     <Upload size={20} />
                     Upload your resume for more targeted questions
                   </span>
-                  <Button variant="secondary">Upload</Button>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.txt"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="resume-upload"
+                  />
+                  <label htmlFor="resume-upload">
+                    <Button variant="secondary" className="cursor-pointer" asChild>
+                      <span>Upload</span>
+                    </Button>
+                  </label>
                 </div>
 
                 <div className="space-y-4">
