@@ -16,10 +16,10 @@ export default function InterviewSimulationPage() {
     const initializeInterview = async () => {
       try {
         console.log("[DEBUG] Initializing interview simulation");
-        const params = new URLSearchParams(window.location.search);
-        const type = params.get("type");
-        const jobType = params.get("jobType");
-        const level = params.get("level");
+        const searchParams = new URLSearchParams(window.location.search);
+        const type = searchParams.get("type");
+        const jobType = searchParams.get("jobType");
+        const level = searchParams.get("level");
 
         console.log("[DEBUG] Interview params:", { type, jobType, level });
 
@@ -27,7 +27,7 @@ export default function InterviewSimulationPage() {
           throw new Error("Missing required interview parameters");
         }
 
-        const jobDescription = `${level} ${jobType} position requiring ${type} expertise`;
+        const jobDescription = searchParams.get('jobDescription') || `${level} ${jobType} position requiring ${type} expertise`;
         console.log("[DEBUG] Preparing interview request:", { 
           type, 
           jobType, 

@@ -230,10 +230,13 @@ export default function InterviewPrep() {
       jobType: jobType
     });
     
-    const params = new URLSearchParams({
+    const jobDescription = `${experienceLevel} ${jobType} position requiring ${interviewType} expertise`;
+    
+const params = new URLSearchParams({
       type: interviewType || '',
       level: experienceLevel || '',
-      jobType: jobType || ''
+      jobType: jobType || '',
+      jobDescription: jobDescription
     });
 
     window.location.href = `/interview-simulation?${params.toString()}`;
