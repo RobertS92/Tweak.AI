@@ -1,0 +1,40 @@
+# Instructions for Fixing Interview Simulation Application
+
+## Issue 1: Navigation Problem
+Fix the issue where the "Start Interview" button on the interview prep page isn't properly navigating to the interview simulation page:
+
+1. Ensure the button click handler properly uses the navigation function (such as `useNavigate` from React Router)
+2. Verify that all required data (resume and job role) is properly stored in state management or localStorage before navigation
+3. Check for any preventDefault() calls that might be interrupting the navigation flow
+4. Ensure there are no syntax errors in the onClick handler
+5. Add proper error handling if required data is missing
+
+## Issue 2: Resume Parsing Progress Indicator
+Implement a progress percentage indicator when parsing resumes:
+
+1. Add a state variable to track parsing progress (0-100%)
+2. Display a visual progress bar component that updates based on this percentage
+3. If your parsing library doesn't provide progress updates, implement a simulated progress:
+   - Start at 0% when parsing begins
+   - Increment gradually (e.g., every 300ms) up to 90%
+   - Set to 100% only when parsing is actually complete
+4. Add text showing the current percentage next to the progress bar
+5. Style the progress indicator to match your application's design
+
+## Issue 3: Uninitialized Variable Error
+Fix the "Cannot access uninitialized variable" runtime error:
+
+1. Add proper initialization for all variables used in the components
+2. Implement loading states to prevent rendering components that depend on data before it's available
+3. Use conditional rendering with null checks to avoid accessing properties of undefined objects
+4. Add try/catch blocks around code that might fail if data isn't loaded
+5. Implement graceful error handling with user-friendly messages when data is missing
+6. Set default values for all required variables and states
+7. Ensure async operations complete before accessing their results
+
+## Implementation Notes
+- Ensure your state management is consistent across the application
+- Use proper React lifecycle methods or hooks (useEffect) to load data at the right time
+- Implement error boundaries to catch and handle unexpected errors
+- Add logging to help diagnose issues in production
+- Test the navigation flow thoroughly with different scenarios (missing data, slow connections, etc.)
