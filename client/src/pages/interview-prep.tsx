@@ -459,15 +459,18 @@ export default function InterviewPrep() {
                 <div className="space-y-4">
                   <Button
                     className="w-full bg-[#4f8df9] hover:bg-[#3a7ad9] h-12"
-                    onClick={() => setShowPreview(true)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowPreview(true);
+                    }}
                     disabled={!jobType || !difficulty || !interviewType || !experienceLevel}
                   >
                     Preview Interview
                   </Button>
                   <Button
-                    type="submit" // Added type="submit"
+                    type="submit"
                     className="w-full bg-[#1e2a3b] hover:bg-[#2c3e50] h-12"
-                    onClick={startInterview}
+                    onClick={handleSubmit}
                     disabled={isAnalyzing || !jobType}
                   >
                     {isAnalyzing ? "Preparing Interview..." : "Start Interview"}
