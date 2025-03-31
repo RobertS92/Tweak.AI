@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import InterviewSimulation from "@/components/interview-simulation";
 import { useToast } from "@/hooks/use-toast";
@@ -17,7 +16,7 @@ export default function InterviewSimulationPage() {
   // Load interview preferences on mount
   useEffect(() => {
     try {
-      const savedPrefs = localStorage.getItem('interviewPrefs');
+      const savedPrefs = localStorage.getItem('interviewData'); // Changed to 'interviewData'
       if (!savedPrefs) {
         throw new Error("No interview preferences found");
       }
@@ -46,20 +45,16 @@ export default function InterviewSimulationPage() {
         }
 
         console.log("[DEBUG] Initializing interview simulation");
-        const { type, jobType, level, jobDescription } = interviewParams;
+        const { jobType, interviewType, level, jobDescription } = interviewParams; // Adjusted keys
 
-        if (!type || !jobType || !level || !jobDescription) {
+        if (!interviewType || !jobType || !level || !jobDescription) {
           throw new Error("Missing required interview parameters");
         }
 
-        console.log("[DEBUG] Interview params:", { type, jobType, level, jobDescription });
-
-        if (!type || !jobType || !level || !jobDescription) {
-          throw new Error("Missing required interview parameters");
-        }
+        console.log("[DEBUG] Interview params:", { interviewType, jobType, level, jobDescription });
 
         const requestBody = {
-          type,
+          type: interviewType, // Changed key
           jobType,
           level,
           jobDescription
@@ -135,6 +130,7 @@ export default function InterviewSimulationPage() {
         transcript={transcript}
         isRecording={isRecording}
         onStopInterview={handleStopInterview}
+        interviewParams={interviewParams} // Pass interviewParams to the component
       />
     </div>
   );

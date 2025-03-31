@@ -7,6 +7,14 @@ interface InterviewSimulationProps {
   isRecording: boolean;
   onStopInterview: () => void;
   progress?: number;
+  interviewData?: {
+    jobType: string;
+    experienceLevel: string;
+    interviewType: string;
+    difficulty: string;
+    duration: number;
+    interviewFocus: string;
+  };
 }
 
 export default function InterviewSimulation({

@@ -301,8 +301,36 @@ export default function InterviewPrep() {
   // Added form submission handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    //Simulate saving data - replace with actual saving logic
-    console.log("Interview Preferences Saved:", { interviewType, experienceLevel });
+    setIsAnalyzing(true);
+
+    const interviewData = {
+      jobType,
+      experienceLevel,
+      interviewType,
+      difficulty,
+      duration: interviewDuration,
+      interviewFocus
+    };
+
+    try {
+      if (!interviewType || !experienceLevel || !jobType) {
+        throw new Error("Please select all interview preferences");
+      }
+
+      // Store interview data in localStorage
+      localStorage.setItem('interviewData', JSON.stringify(interviewData));
+
+      // Navigate to interview simulation
+      window.location.href = `/interview-simulation`;
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
 
