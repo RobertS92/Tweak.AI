@@ -1,8 +1,119 @@
 
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { Resume } from "@shared/schema";
 
 export default function Home() {
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  
+  // Handle file upload
+  const uploadMutation = useMutation<Resume, Error, File>({
+    mutationFn: async (file: File) => {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append("resume", file);
+
+      return new Promise<Resume>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/api/resumes");
+
+        // Track upload progress
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const progress = (event.loaded / event.total) * 100;
+            setUploadProgress(Math.round(progress));
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const result = JSON.parse(xhr.responseText) as Resume;
+            resolve(result);
+          } else {
+            reject(new Error(xhr.statusText || "Upload failed"));
+          }
+        };
+
+        xhr.onerror = () => {
+          reject(new Error("Network error occurred"));
+        };
+
+        xhr.send(formData);
+      });
+    },
+    onSuccess: (data: Resume) => {
+      setUploading(false);
+      toast({
+        title: "Resume uploaded successfully",
+        description: "Your resume has been analyzed and scored.",
+      });
+      navigate(`/editor/${data.id}`);
+    },
+    onError: (error: Error) => {
+      setUploading(false);
+      toast({
+        title: "Upload failed",
+        description: error.message || "An error occurred during upload",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    handleFile(file);
+  };
+  
+  const handleButtonClick = () => {
+    document.getElementById("resume-file-input")?.click();
+  };
+  
+  const handleFile = (file: File | undefined) => {
+    if (!file) return;
+    
+    // Check if user is logged in
+    if (!user) {
+      toast({
+        title: "Login required",
+        description: "Please login or register to upload your resume",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+    
+    uploadMutation.mutate(file);
+  };
+  
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+  
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  };
+  
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    handleFile(file);
+  };
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
       <div className="container mx-auto px-6 py-16 text-center">
@@ -78,17 +189,45 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-lg shadow-sm mb-16 max-w-2xl mx-auto">
+        <div 
+          className={`bg-white p-8 rounded-lg shadow-sm mb-16 max-w-2xl mx-auto ${dragActive ? 'ring-2 ring-[#4f8df9]' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
           <div className="text-center">
             <div className="w-16 h-16 bg-[#f0f7ff] rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-[#4f8df9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13l-3 3m0 0l-3-3m3 3V8m0 13a9 9 0 110-18 9 9 0 010 18z" />
               </svg>
             </div>
+            <input
+              type="file"
+              id="resume-file-input"
+              className="hidden"
+              accept=".pdf,.txt"
+              onChange={handleFileUpload}
+            />
             <h3 className="text-xl font-semibold mb-2">Upload Your Resume</h3>
-            <p className="text-sm text-[#2c3e50] mb-4">Drag and drop your resume here or click to browse</p>
-            <p className="text-xs text-[#7f8c8d] mb-4">Supported formats: PDF or TXT (Max 5MB)</p>
-            <Button className="bg-[#4f8df9] text-white">Select File</Button>
+            
+            <div 
+              className={`border-2 border-dashed rounded-lg p-6 mb-4 transition-colors cursor-pointer
+                ${dragActive ? 'border-[#4f8df9] bg-[#f0f7ff]' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'}`}
+              onClick={handleButtonClick}
+            >
+              <p className="text-sm text-[#2c3e50] mb-2">
+                {dragActive ? "Drop your file here" : "Drag and drop your resume here or click to browse"}
+              </p>
+              <p className="text-xs text-[#7f8c8d]">Supported formats: PDF or TXT (Max 5MB)</p>
+            </div>
+            
+            <Button 
+              className="bg-[#4f8df9] text-white"
+              onClick={handleButtonClick}
+              disabled={uploading}
+            >
+              {uploading ? `Uploading (${uploadProgress}%)` : "Select File"}
+            </Button>
             <p className="text-xs text-[#7f8c8d] mt-4">You can upload multiple resumes by returning to this page</p>
           </div>
         </div>
