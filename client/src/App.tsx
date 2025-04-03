@@ -30,7 +30,7 @@ function Router() {
           <Route component={NotFound} />
         </Switch>
       </main>
-      <MobileNavigation />
+      <MobileNavigation className="md:hidden" />
     </div>
   );
 }
