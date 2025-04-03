@@ -96,7 +96,7 @@ const startServer = async (port: number): Promise<void> => {
   }
 };
 
-// Start server directly on port 5000
+// Start server on port 5000
 log("[DEBUG] Initiating server startup on port 5000...");
 startServer(5000).catch(error => {
   log(`Failed to start server: ${error.message}`);

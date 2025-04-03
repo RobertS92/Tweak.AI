@@ -203,10 +203,11 @@ export async function registerRoutes(app: Express) {
         if (!content || content.trim().length === 0) {
           throw new Error('No content could be extracted from the file');
         }
-      } catch (extractError) {
+      } catch (extractError: unknown) {
         console.error('Content extraction error:', extractError);
+        const errorMessage = extractError instanceof Error ? extractError.message : "Failed to extract content from file";
         return res.status(400).json({ 
-          message: extractError.message || "Failed to extract content from file" 
+          message: errorMessage
         });
       }
       
@@ -431,21 +432,41 @@ Return an optimized version that matches keywords and improves ATS score while m
           throw new Error("Missing optimized content in response");
         }
 
+        // Create a new analysis object 
+        // Using 'as any' to suppress TypeScript errors since we're dealing with dynamic data
+        const analysisObject: any = {
+          categoryScores: {},
+          improvements: [],
+          formattingFixes: [],
+          jobOptimization: {
+            jobId: null,
+            changes: optimization.changes || [],
+            matchScore: optimization.matchScore || 0,
+            keywordMatches: optimization.keywordMatches || [],
+            missingKeywords: optimization.missingKeywords || [],
+            formatImprovements: optimization.formatImprovements || [],
+            timestamp: new Date().toISOString()
+          }
+        };
+        
+        // Copy existing values using indexed access to avoid TypeScript errors
+        if (resume.analysis && typeof resume.analysis === 'object') {
+          const analysis = resume.analysis as Record<string, any>;
+          if (analysis['categoryScores']) {
+            analysisObject.categoryScores = analysis['categoryScores'];
+          }
+          if (analysis['improvements']) {
+            analysisObject.improvements = analysis['improvements'];
+          }
+          if (analysis['formattingFixes']) {
+            analysisObject.formattingFixes = analysis['formattingFixes'];
+          }
+        }
+        
         // Update the resume with optimized content and detailed analysis
         await storage.updateResume(resumeId, {
           enhancedContent: optimization.optimizedContent,
-          analysis: {
-            ...resume.analysis,
-            jobOptimization: {
-              jobId: null,
-              changes: optimization.changes || [],
-              matchScore: optimization.matchScore || 0,
-              keywordMatches: optimization.keywordMatches || [],
-              missingKeywords: optimization.missingKeywords || [],
-              formatImprovements: optimization.formatImprovements || [],
-              timestamp: new Date().toISOString()
-            }
-          }
+          analysis: analysisObject
         });
 
         res.json({
@@ -456,11 +477,11 @@ Return an optimized version that matches keywords and improves ATS score while m
           matchScore: optimization.matchScore || 0,
           formatImprovements: optimization.formatImprovements || []
         });
-      } catch (parseError) {
+      } catch (parseError: unknown) {
         console.error("[DEBUG] Failed to parse optimization response:", parseError);
         throw new Error("Invalid response format from optimization service");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("[DEBUG] Resume optimization error:", error);
       res.status(500).json({
         message: "Failed to optimize resume",
@@ -469,6 +490,91 @@ Return an optimized version that matches keywords and improves ATS score while m
     }
   });
 
+  // Function to generate CSS styles for PDF
+  function generateStyles(): string {
+    return `
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Arial', sans-serif;
+      }
+      
+      body {
+        padding: 0;
+        margin: 0;
+        background: #fff;
+        color: #333;
+      }
+      
+      .resume {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      
+      .resume-content {
+        width: 100%;
+      }
+      
+      h1 {
+        font-size: 26px;
+        margin-bottom: 10px;
+        color: #2463eb;
+      }
+      
+      h2 {
+        font-size: 20px;
+        margin-top: 20px;
+        margin-bottom: 10px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #ddd;
+        color: #2463eb;
+      }
+      
+      h3 {
+        font-size: 16px;
+        margin-top: 15px;
+        margin-bottom: 5px;
+        color: #444;
+      }
+      
+      p {
+        margin-bottom: 8px;
+        line-height: 1.5;
+      }
+      
+      .contact-info {
+        margin-bottom: 20px;
+        color: #666;
+      }
+      
+      section {
+        margin-bottom: 30px;
+      }
+      
+      .date {
+        color: #666;
+        font-style: italic;
+        margin-bottom: 5px;
+      }
+      
+      .experience-item, .education-item {
+        margin-bottom: 20px;
+      }
+      
+      ul {
+        margin-left: 20px;
+        margin-bottom: 15px;
+      }
+      
+      li {
+        margin-bottom: 5px;
+        list-style-type: disc;
+      }
+    `;
+  }
+
   // Added generatePDFTemplate function
   function generatePDFTemplate(resumeData: any): string {
     if (!resumeData) {
@@ -476,10 +582,10 @@ Return an optimized version that matches keywords and improves ATS score while m
     }
 
     const sections = resumeData.sections || [];
-    const workExperience = sections.find(s => s.id === 'work-experience')?.items || [];
-    const education = sections.find(s => s.id === 'education')?.items || [];
-    const skills = sections.find(s => s.id === 'skills')?.categories || [];
-    const summary = sections.find(s => s.id === 'professional-summary')?.content || '';
+    const workExperience = sections.find((s: any) => s.id === 'work-experience')?.items || [];
+    const education = sections.find((s: any) => s.id === 'education')?.items || [];
+    const skills = sections.find((s: any) => s.id === 'skills')?.categories || [];
+    const summary = sections.find((s: any) => s.id === 'professional-summary')?.content || '';
 
     return `
       <div class="resume-content">
@@ -495,7 +601,7 @@ Return an optimized version that matches keywords and improves ATS score while m
 
         <section>
           <h2>Experience</h2>
-          ${workExperience.map(exp => `
+          ${workExperience.map((exp: any) => `
             <div class="experience-item">
               <h3>${exp.title} at ${exp.subtitle}</h3>
               <p class="date">${exp.date}</p>
@@ -506,7 +612,7 @@ Return an optimized version that matches keywords and improves ATS score while m
 
         <section>
           <h2>Education</h2>
-          ${education.map(edu => `
+          ${education.map((edu: any) => `
             <div class="education-item">
               <h3>${edu.title}</h3>
               <p>${edu.subtitle}</p>
@@ -517,10 +623,10 @@ Return an optimized version that matches keywords and improves ATS score while m
 
         <section>
           <h2>Skills</h2>
-          ${skills.map(category => `
+          ${skills.map((category: any) => `
             <h3>${category.name}</h3>
             <ul>
-              ${category.skills.map(skill => `<li>${skill}</li>`).join('')}
+              ${category.skills.map((skill: string) => `<li>${skill}</li>`).join('')}
             </ul>
           `).join('')}
         </section>
@@ -528,7 +634,101 @@ Return an optimized version that matches keywords and improves ATS score while m
     `;
   }
 
-  // PDF generation moved to client-side
+  // PDF generation endpoint for enhanced resumes
+  app.post("/api/resumes/:id/download-pdf", async (req, res) => {
+    try {
+      console.log("[DEBUG] Received PDF download request");
+      const resumeId = parseInt(req.params.id);
+      console.log(`[DEBUG] Processing resume ID: ${resumeId}`);
+      
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        console.log("[DEBUG] Authentication required for PDF download");
+        return res.status(401).json({ 
+          message: "You must be logged in to download a resume as PDF",
+          requiresAuth: true
+        });
+      }
+      
+      console.log("[DEBUG] User authenticated, fetching resume");
+      const resume = await storage.getResume(resumeId);
+      if (!resume) {
+        console.log(`[DEBUG] Resume with ID ${resumeId} not found`);
+        return res.status(404).json({ message: "Resume not found" });
+      }
+      
+      console.log("[DEBUG] Resume found, preparing HTML content");
+      // Use either enhanced content or original content
+      const htmlContent = resume.enhancedContent || `<div>${resume.content.replace(/\n/g, '<br>')}</div>`;
+      
+      try {
+        console.log("[DEBUG] Initializing Puppeteer for PDF generation");
+        // Generate PDF using Puppeteer
+        const browser = await puppeteer.launch({
+          args: chromium.args,
+          defaultViewport: chromium.defaultViewport,
+          executablePath: await chromium.executablePath(),
+          headless: true,
+        });
+        
+        console.log("[DEBUG] Creating new page in browser");
+        const page = await browser.newPage();
+        
+        // Add styling
+        console.log("[DEBUG] Preparing HTML with styling");
+        const styledHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>${generateStyles()}</style>
+          </head>
+          <body>
+            <div class="resume">
+              ${htmlContent}
+            </div>
+          </body>
+          </html>
+        `;
+        
+        console.log("[DEBUG] Setting page content");
+        await page.setContent(styledHtml, { waitUntil: 'networkidle0' });
+        
+        console.log("[DEBUG] Generating PDF buffer");
+        // Generate PDF
+        const pdfBuffer = await page.pdf({
+          format: 'A4',
+          printBackground: true,
+          margin: {
+            top: '20mm',
+            right: '20mm',
+            bottom: '20mm',
+            left: '20mm'
+          }
+        });
+        
+        console.log("[DEBUG] Closing browser");
+        await browser.close();
+        
+        console.log("[DEBUG] PDF generated successfully, sending response");
+        // Send the PDF
+        res.contentType('application/pdf');
+        res.send(pdfBuffer);
+        
+      } catch (pdfError: unknown) {
+        console.error("[DEBUG] PDF generation error:", pdfError);
+        const errorMessage = pdfError instanceof Error ? pdfError.message : "Unknown error";
+        return res.status(500).json({ 
+          message: "Failed to generate PDF",
+          details: errorMessage
+        });
+      }
+    } catch (error: unknown) {
+      console.error("[DEBUG] Resume PDF download error:", error);
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ message });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
