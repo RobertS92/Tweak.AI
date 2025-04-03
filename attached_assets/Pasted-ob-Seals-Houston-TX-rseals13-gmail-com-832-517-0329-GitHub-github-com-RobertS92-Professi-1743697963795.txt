@@ -1,0 +1,162 @@
+ob Seals 
+Houston, TX | rseals13@gmail.com | 832-517-0329 | GitHub: github.com/RobertS92 
+ 
+Professional Summary 
+AI/ML Developer with over 5 years of experience in developing, deploying, and scaling machine 
+learning models, with a focus on recommendation systems, real-time data processing, and 
+personalization. Expertise in Python, TensorFlow, PyTorch, and scalable ML infrastructure. 
+Proven ability to collaborate with cross-functional teams to build high-performing systems, 
+enhance personalization capabilities, and improve user experience. Skilled in transforming 
+complex ML algorithms into production-ready solutions that drive business value at scale. 
+ 
+Work Experience 
+AI / ML Engineer 
+Tata Consultancy Services (TCS) — June 2024 – October 2024 
+● Developed an NLP-based AI assistant for a large retail client, improving customer 
+engagement through generative responses and intent classification. 
+● Fine-tuned LLMs (GPT, Llama, Claude) to enhance context-aware dialogues and 
+retrieval-augmented generation (RAG) for better user experiences. 
+● Integrated speech recognition and optimized MLOps pipelines, ensuring efficient 
+deployment and lifecycle management using AWS Lambda. 
+● Collaborated with data scientists and product teams to integrate real-time 
+recommendations into user-facing platforms, optimizing personalization. 
+● Improved model performance through continuous monitoring, A/B testing, and 
+hyperparameter tuning, contributing to a significant increase in recommendation 
+relevance. 
+NLP / Conversational AI Scientist 
+Charter Communications (Spectrum) — June 2023 – June 2024 
+● Fine-tuned 7 domain-specific models for NLU tasks, achieving a 95% F1 score across 
+various industries. 
+● Designed and implemented custom text data preprocessing pipelines for intent 
+recognition, sentiment analysis, entity recognition, and text classification. 
+● Sourced, Processed, Analyzed text data to discover insights and patterns to build 
+training corpus for modeling 
+● Evaluated text data to analyze model performance and business insights to enhance 
+customer experience 
+
+● Optimized, distilled, Quantized models to improve inference, training efficiency, and 
+latency.  
+● Developed  custom semantic search algorithms and prompt engineering strategies, 
+improving the intent recognition of conversational AI systems. 
+● Deployed real-time systems using cloud technologies (AWS, Azure) for trading models, 
+improving adaptive decision-making. 
+Machine Learning Engineer 
+Vision R&D — August 2021 – June 2023 
+● Built and deployed real-time predictive models for various business solutions. 
+● Built traditional ML,  LLM, NLP, Computer Vision, Chatbot based solutions 
+● Implemented personalized experiences using collaborative filtering and content-based 
+filtering techniques. 
+● Implemented scalable ML infrastructure on AWS and Azure, optimizing system 
+performance and ensuring high availability in production environments. 
+Financial Data Analyst 
+Hudson Way Capital — October 2020 – June 2021 
+● Developed and optimized predictive models using machine learning algorithms for 
+financial decision-making and market trend forecasting. 
+● Engineered real-time data pipelines for accurate, timely financial analysis, integrating 
+data from multiple sources into predictive models. 
+● Worked with cross-functional teams to assess risk and improve trading strategies using 
+machine learning techniques. 
+ 
+Projects 
+Star Wars GPT Transformer 
+● Built a GPT-based transformer model from scratch, trained on the Star Wars episode 
+books to generate personalized narratives and dialogue. 
+● Developed and fine-tuned the model for text generation, enhancing its ability to produce 
+coherent and context-aware content based on user inputs. 
+● Implemented custom tokenization and transformer layers using PyTorch, optimizing the 
+model for real-time text generation. 
+● Technologies: PyTorch, TensorFlow, Huggingface, Python 
+CryptoSenti: Fine-Tuned BERT for Crypto Sentiment Analysis - Real time 
+● Fine-tuned BERT models for crypto sentiment analysis, generating actionable signals for 
+real-time trading strategies. 
+
+● Added a sentence streamer and deduplication using semantic similarity to score 
+sentiment on crypto tweets, headlines, post to create a real-time sentiment analysis 
+system for financial news or social media data using GPU acceleration 200ML per 
+sentence 
+● Focused on improving the real-time recommendation systems by incorporating 
+sentiment-driven insights, enhancing prediction accuracy in volatile markets. 
+● Technologies: TensorFlow, Huggingface, Python 
+Real-Time Multi-Object Tracking from Security Camera Feeds 
+● Developed a real-time object detection and multi-object tracking system that ingests live 
+RTSP streams from security cameras. Leveraged YOLOv5 for detection and integrated 
+Kalman Filter + Hungarian Algorithm for robust data association, ensuring stable tracking 
+IDs across frames in varied lighting and viewing conditions. Enabled continuous 
+monitoring and potential alerting for security purposes. 
+● Technologies: Python, PyTorch, YOLOv5, OpenCV, Kalman Filter, Hungarian Algorithm, 
+Docker, AWS 
+AutoML System for Financial Signal Data 
+● Technologies: Python, scikit-learn, TensorFlow, PyTorch, Optuna, Flask, Docker, 
+Kubernetes, AWS (S3, EC2), Git 
+● Built an AutoML pipeline for stock and financial data, automating preprocessing, model 
+selection, and hyperparameter tuning to enhance prediction accuracy. 
+NLP Pipeline for Financial Data Analysis 
+● Developed an NLP pipeline to extract key insights from financial news and market 
+sentiment, informing trading strategies and improving portfolio decisions. 
+● Leveraged real-time data streams and sentiment analysis models to adapt to market 
+shifts and provide actionable insights. 
+● Technologies: Python, spaCy, NLTK, Gensim, Huggingface 
+Monopoly Agent Using Deep Reinforcement Learning 
+● Developed a deep reinforcement learning (DRL) agent fine-tuned with Group Reward 
+GROP to master gameplay and negotiation strategies in the board game Monopoly. The 
+model utilized Proximal Policy Optimization (PPO) for decision-making and was trained 
+to optimize long-term rewards in competitive scenarios. 
+● Technologies: Python, TensorFlow, Stable-Baselines3, GROP, Proximal Policy 
+Optimization (PPO), Docker, AWS 
+ 
+
+ 
+Core Skills 
+Programming Languages: 
+Python, Java, JavaScript 
+Machine Learning Frameworks: 
+TensorFlow, Keras, PyTorch, Scikit-learn, Huggingface, JAX 
+Predictive modeling: 
+Intent recognition, NLU Modeling, Classification, Semantic similarity, Regression 
+Deep Learning & Algorithms: 
+LSTM, Time Series Forecasting, Neural Networks, Reinforcement Learning, Hyperparameter 
+Tuning, Computer Vision 
+Optimization:  
+Bayesian Optimization, Grid Search, Optuna 
+Inference Acceleration:  
+ONNX, TensorRT, Knowledge Distillation, Model Pruning 
+Generative Models  
+GANs, Diffusion Models, Agentic AI 
+Model Distillation & Inference Acceleration  
+knowledge distillation, pruning, ONNX, TensorRT 
+Recommendation Systems: 
+Collaborative Filtering, Content-Based Filtering, Real-Time Personalization, Ranking Algorithms 
+Natural Language Processing (NLP): 
+spaCy, NLTK, Huggingface, LLM Fine-Tuning (GPT, BERT), Sentiment Analysis, Named Entity 
+Recognition (NER), Language Modeling, NLU, Generative AI, Conversational AI, Chatbot 
+Algorithmic & Analysis Techniques: 
+Trend Prediction, Risk Management, Algorithmic Implementation, Backtesting, Anomalies 
+Detection 
+Fine-Tuning: 
+Standard, LoRA, Peft, PPO, GRPO 
+Cloud & Technologies: 
+AWS (Lambda, EC2, S3), Azure, Databricks, Docker, Kubernetes, Faiss 
+MLOps & Deployment: 
+Model Lifecycle Management, CI/CD, Model Versioning, Deployment Pipelines, Real-Time 
+Systems, Model Monitoring 
+Data Science & Analysis: 
+Exploratory Data Analysis (EDA), Statistical Analysis, Feature Engineering, Data Visualization, 
+Hypothesis Testing 
+Soft Skills: 
+Collaborative, Results-Driven, Analytical Thinker,Problem Solver, Detail-Oriented, Strong 
+Communication Skills 
+ 
+ 
+Education 
+ 
+MA, Data Science: Specialized in AIML 
+Southern Methodist University - December 2024 - December 2026 
+
+Postgraduate Certificate: Artificial Intelligence & Machine Learning 
+University of Texas — January 2022 – December 2023 
+Relevant Coursework: Advanced Machine Learning, Data Engineering, Cloud Computing for AI, 
+MLOps, NLP, Deep Learning, Reinforcement Learning 
+MBA, Finance 
+Southern Methodist University — January 2020 – February 2021 
+B.A., Sociology & Computer Science 
+Southern Methodist University — July 2011 – December 2015

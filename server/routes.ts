@@ -405,26 +405,25 @@ export async function registerRoutes(app: Express) {
             role: "system",
             content: `You are an expert ATS optimization specialist. Your task is to optimize resumes for job descriptions.
 
-MOST IMPORTANT RULE: DO NOT SHORTEN THE RESUME AT ALL.
+MOST IMPORTANT RULE: NEVER SHORTEN OR REDUCE THE RESUME AT ALL.
 
 Follow these instructions exactly:
-1. Keep ALL sections, bullet points, skills, and experiences from the original resume
+1. Keep ALL sections, bullet points, skills, and experiences from the original resume - preserve EVERYTHING
 2. Simply ADD relevant keywords from the job description by enhancing existing bullet points
-3. NEVER remove any skills, experiences, or projects - this is critical
-4. You may rephrase/enhance existing bullets but maintain all the original information
-5. The optimized content must be nearly identical in length to the original resume
-6. Focus only on KEYWORD MATCHING, not content reduction
+3. NEVER remove any skills, experiences, or projects - this is absolutely critical
+4. You may rephrase/enhance existing bullets but maintain all the original information and length
+5. The optimized content MUST be equal or longer than the original resume - never shorter
+6. Focus only on KEYWORD MATCHING by enhancing the existing content, NEVER removing anything
+7. For each skill, experience, and qualification in the original resume, find a way to enhance it with relevant keywords
 
-Your response must be VALID JSON only, with this strict format:
-{
-  "optimizedContent": "full text of optimized resume with no shortening",
-  "changes": ["specific change 1", "specific change 2"],
-  "matchScore": 85,
-  "keywordMatches": ["keyword1", "keyword2"],
-  "missingKeywords": ["missing1", "missing2"]
-}
+Format your entire response as a single valid JSON object with these exact fields:
+{"optimizedContent": "full resume text with ALL original content preserved", 
+"changes": ["specific change 1", "specific change 2"], 
+"matchScore": 85, 
+"keywordMatches": ["keyword1", "keyword2"], 
+"missingKeywords": ["missing1", "missing2"]}
 
-DO NOT include any text outside of the JSON. Make sure the JSON is properly escaped.`
+Return ONLY valid JSON in your response, nothing else. Format your entire response as a single JSON object.`
           },
           {
             role: "user",
@@ -436,10 +435,9 @@ ${cleanJobDescription}
 *** CURRENT RESUME ***
 ${resume.content}
 
-Create an optimized version that matches keywords while PRESERVING ALL ORIGINAL CONTENT AND LENGTH. The optimized content should not be shorter than the original resume. Do not remove any experience, skills or content.`
+Create an optimized version that matches keywords while PRESERVING ALL ORIGINAL CONTENT AND LENGTH. The optimized content MUST NOT be shorter than the original resume. DO NOT remove any experience, skills or content whatsoever - this is critical. Enhance, don't reduce. Return your entire response as a single valid JSON object.`
           }
         ],
-        response_format: { type: "json_object" },
         temperature: 0.1
       });
 
@@ -707,7 +705,7 @@ Create an optimized version that matches keywords while PRESERVING ALL ORIGINAL 
       // Clean job description
       const cleanJobDescription = jobDescription.replace(/\r\n/g, '\n').trim();
       
-      // Enhanced optimization with the completely revised approach and response_format
+      // Enhanced optimization with the completely revised approach - removed response_format
       const response = await openai.chat.completions.create({
         model: "gpt-4",
         messages: [
@@ -722,10 +720,10 @@ Follow these instructions exactly:
 2. Simply ADD relevant keywords from the job description by enhancing existing bullet points
 3. NEVER remove any skills, experiences, or projects - this is critical
 4. You may rephrase/enhance existing bullets but maintain all the original information
-5. The optimized content must be nearly identical in length to the original resume
+5. The optimized content must be equal or longer in length than the original resume
 6. Focus only on KEYWORD MATCHING, not content reduction
 
-Your response must be VALID JSON only, with this strict format:
+Your response must be VALID JSON with this exact format:
 {
   "optimizedContent": "full text of optimized resume with no shortening",
   "changes": ["specific change 1", "specific change 2"],
@@ -734,7 +732,7 @@ Your response must be VALID JSON only, with this strict format:
   "missingKeywords": ["missing1", "missing2"]
 }
 
-DO NOT include any text outside of the JSON. Make sure the JSON is properly escaped.`
+Important: Return ONLY valid JSON in your response, nothing else. Format your entire response as a single JSON object.`
           },
           {
             role: "user",
@@ -746,10 +744,9 @@ ${cleanJobDescription}
 *** CURRENT RESUME ***
 ${resume.content}
 
-Create an optimized version that matches keywords while PRESERVING ALL ORIGINAL CONTENT AND LENGTH. The optimized content should not be shorter than the original resume. Do not remove any experience, skills or content.`
+Create an optimized version that matches keywords while PRESERVING ALL ORIGINAL CONTENT AND LENGTH. The optimized content should not be shorter than the original resume. Do not remove any experience, skills or content. Return your entire response as a single valid JSON object with the format specified.`
           }
         ],
-        response_format: { type: "json_object" },
         temperature: 0.1
       });
       
