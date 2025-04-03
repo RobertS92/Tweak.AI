@@ -364,6 +364,8 @@ Return an optimized version that matches keywords and improves ATS score while m
           optimizedContent: optimization.optimizedContent,
           changes: optimization.changes || [],
           keywordMatches: optimization.keywordMatches || [],
+          missingKeywords: optimization.missingKeywords || [],
+          matchScore: optimization.matchScore || 0,
           formatImprovements: optimization.formatImprovements || []
         });
       } catch (parseError) {

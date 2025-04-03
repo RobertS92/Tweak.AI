@@ -11,6 +11,7 @@ import ResumeBuilder from "@/pages/resume-builder";
 import InterviewPrep from "@/pages/interview-prep";
 import InterviewSimulation from "@/pages/interview-simulation";
 import InterviewAnalysis from "@/pages/interview-analysis";
+import JobMatching from "@/pages/job-matching";
 import AuthPage from "@/pages/auth-page";
 import NavigationBar from "@/components/navigation-bar";
 import MobileNavigation from "@/components/mobile-navigation";
@@ -32,6 +33,7 @@ function Router() {
           <ProtectedRoute path="/interview-prep" component={InterviewPrep} />
           <ProtectedRoute path="/interview-simulation" component={InterviewSimulation} />
           <ProtectedRoute path="/interview-analysis" component={InterviewAnalysis} />
+          <ProtectedRoute path="/job-matching" component={JobMatching} />
           <Route path="/auth" component={AuthPage} />
           <Route component={NotFound} />
         </Switch>

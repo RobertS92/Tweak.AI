@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "wouter";
-import { FileText, LayoutDashboard, FileEdit, Briefcase, User, LogOut, Settings } from 'lucide-react';
+import { FileText, LayoutDashboard, FileEdit, Briefcase, User, LogOut, Settings, ArrowRightLeft } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -67,6 +67,10 @@ export default function NavigationBar({ className }: { className?: string }) {
             <Link href="/builder" 
               className={`text-sm ${isActive('/builder') ? 'text-[#4f8df9]' : 'text-white hover:text-[#4f8df9]'} transition-colors`}>
               Resume Builder
+            </Link>
+            <Link href="/job-matching" 
+              className={`text-sm ${isActive('/job-matching') ? 'text-[#4f8df9]' : 'text-white hover:text-[#4f8df9]'} transition-colors`}>
+              Resume Tweaking
             </Link>
             <Link href="/interview-prep" 
               className={`text-sm ${isActive('/interview') ? 'text-[#4f8df9]' : 'text-white hover:text-[#4f8df9]'} transition-colors`}>

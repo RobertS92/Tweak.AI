@@ -1,6 +1,6 @@
 
 import { Link } from "wouter";
-import { LayoutDashboard, FileEdit, FileText, Briefcase } from 'lucide-react';
+import { LayoutDashboard, FileEdit, FileText, Briefcase, ArrowRightLeft } from 'lucide-react';
 
 export default function MobileNavigation({ className = "" }) {
   return (
@@ -10,17 +10,17 @@ export default function MobileNavigation({ className = "" }) {
           <LayoutDashboard className="h-5 w-5" />
           <span className="text-xs mt-1">Dashboard</span>
         </Link>
-        <Link href="/builder" className="flex flex-col items-center p-2 text-[#4f8df9]">
+        <Link href="/builder" className="flex flex-col items-center p-2 text-white hover:text-[#4f8df9] transition-colors">
           <FileText className="h-5 w-5" />
           <span className="text-xs mt-1">Build</span>
+        </Link>
+        <Link href="/job-matching" className="flex flex-col items-center p-2 text-white hover:text-[#4f8df9] transition-colors">
+          <ArrowRightLeft className="h-5 w-5" />
+          <span className="text-xs mt-1">Tweak</span>
         </Link>
         <Link href="/interview-prep" className="flex flex-col items-center p-2 text-white hover:text-[#4f8df9] transition-colors">
           <Briefcase className="h-5 w-5" />
           <span className="text-xs mt-1">Interview</span>
-        </Link>
-        <Link href="/ai-assistant" className="flex flex-col items-center p-2 text-white hover:text-[#4f8df9] transition-colors">
-          <FileEdit className="h-5 w-5" />
-          <span className="text-xs mt-1">AI Chat</span>
         </Link>
       </div>
     </nav>

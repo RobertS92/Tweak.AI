@@ -384,9 +384,9 @@ export default function AuthPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold">Smart Job Matching</h3>
+                <h3 className="font-semibold">Resume Tweaking</h3>
                 <p className="text-gray-300 text-sm">
-                  Tailor your resume to match specific job descriptions
+                  Tweak your resume to match your target job
                 </p>
               </div>
             </div>
