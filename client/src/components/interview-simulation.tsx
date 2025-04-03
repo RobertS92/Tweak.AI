@@ -13,6 +13,10 @@ interface InterviewSimulationProps {
   transcript: string;
   isRecording: boolean;
   onStopInterview: () => void;
+  onStartRecording?: () => void;
+  onStopRecording?: () => void;
+  onSubmitAnswer?: () => Promise<void>;
+  isSpeaking?: boolean;
   progress?: number;
   sessionId?: string | null;
   interviewData?: {
@@ -68,7 +72,11 @@ export default function InterviewSimulation({
   progress = 0,
   interviewData,
   sessionId: externalSessionId = null,
-  onStopInterview = () => window.location.href = '/interview-prep'
+  onStopInterview = () => window.location.href = '/interview-prep',
+  onStartRecording,
+  onStopRecording,
+  onSubmitAnswer,
+  isSpeaking = false
 }: Partial<InterviewSimulationProps>) {
   const [localTranscript, setLocalTranscript] = useState(transcript);
   const [recording, setRecording] = useState(isRecording);
@@ -172,11 +180,19 @@ export default function InterviewSimulation({
         recognitionRef.current.stop();
       }
       setRecording(false);
+      // Use parent callback if provided
+      if (onStopRecording) {
+        onStopRecording();
+      }
     } else {
       if (recognitionRef.current) {
         recognitionRef.current.start();
       }
       setRecording(true);
+      // Use parent callback if provided
+      if (onStartRecording) {
+        onStartRecording();
+      }
     }
   };
 
@@ -199,6 +215,47 @@ export default function InterviewSimulation({
     });
     
     setTextInput("");
+  };
+
+  const completeInterview = async () => {
+    if (!sessionId) {
+      console.error("[DEBUG] Cannot complete interview - no session ID available");
+      alert("Interview session not properly initialized. Please try refreshing the page.");
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      console.log("[DEBUG] Completing interview for session:", sessionId);
+      
+      const response = await fetch(`/api/interview/complete/${sessionId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to complete interview');
+      }
+      
+      const data = await response.json();
+      console.log("[DEBUG] Interview completed successfully:", data);
+      
+      // Forward to analysis if parent provided a handler
+      if (onSubmitAnswer) {
+        await onSubmitAnswer();
+      } else {
+        // Direct redirect to feedback page if no parent handler
+        window.location.href = `/interview-analysis?sessionId=${sessionId}`;
+      }
+      
+    } catch (error) {
+      console.error("[DEBUG] Error completing interview:", error);
+      alert("There was an error completing the interview. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSendResponse = async () => {
@@ -447,12 +504,22 @@ export default function InterviewSimulation({
           
           <div className="bg-white rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Controls</h2>
-            <button
-              onClick={onStopInterview}
-              className="w-full bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
-            >
-              End Interview
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={completeInterview}
+                disabled={isLoading}
+                className="w-full bg-[#4f8df9] text-white px-4 py-2 rounded-lg hover:bg-[#3a7ad9] disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {isLoading ? "Processing..." : "Complete & Get Feedback"}
+              </button>
+              
+              <button
+                onClick={onStopInterview}
+                className="w-full bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+              >
+                Cancel Interview
+              </button>
+            </div>
           </div>
         </div>
       </div>

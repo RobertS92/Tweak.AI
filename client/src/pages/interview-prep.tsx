@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import InterviewAnalysis from "@/components/interview-analysis";
 
 // Add type definition for SpeechRecognition
 interface SpeechRecognitionEvent extends Event {
@@ -96,6 +97,20 @@ export default function InterviewPrep() {
   // Added state for form data
   const [interviewType, setInterviewType] = useState("");
   const [experienceLevel, setExperienceLevel] = useState("");
+  const [analysisData, setAnalysisData] = useState<{
+    scores: {
+      technical: number;
+      communication: number;
+      problemSolving: number;
+      jobFit: number;
+    };
+    overallScore: number;
+    questions: Array<{
+      question: string;
+      performance: 'Excellent' | 'Very Good' | 'Good';
+      observation: string;
+    }>;
+  } | null>(null);
 
 
   useEffect(() => {
@@ -207,19 +222,29 @@ export default function InterviewPrep() {
     recognition.stop();
   };
 
-  const evaluateAnswer = async () => {
-    if (!transcript.trim()) return;
-
+  const evaluateAnswer = async (isCompleteInterview = false) => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/interview/evaluate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          answer: transcript
-        }),
+      // If this is the final answer and we're completing the interview
+      if (isCompleteInterview) {
+        // First get the feedback to generate analysis
+        const completeResponse = await fetch(`/api/interview/complete/${sessionId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!completeResponse.ok) {
+          throw new Error("Failed to complete interview");
+        }
+        
+        // Proceed to get the feedback data
+      }
+      
+      // Get feedback data (whether completing the interview or not)
+      const response = await fetch('/api/interview/feedback/' + sessionId, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
       });
 
       if (!response.ok) {
@@ -231,10 +256,14 @@ export default function InterviewPrep() {
       setCurrentAudioData(data.audio);
       setTranscript("");
       setFeedback(data.feedback);
-      await playAudio(data.audio);
+      
+      if (data.audio) {
+        await playAudio(data.audio);
+      }
 
       if (!data.nextQuestion) {
         setIsComplete(true);
+        getInterviewFeedback();
       }
 
     } catch (error) {
@@ -246,6 +275,59 @@ export default function InterviewPrep() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+  
+  const getInterviewFeedback = async () => {
+    if (!sessionId) {
+      toast({
+        title: "Error",
+        description: "No active interview session found.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      // Get detailed feedback
+      const response = await fetch(`/api/interview/feedback/${sessionId}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to get feedback');
+      }
+
+      const data = await response.json();
+      setAnalysisData({
+        scores: data.scores,
+        overallScore: data.overallScore,
+        questions: data.questions
+      });
+      
+      toast({
+        title: "Interview Completed",
+        description: "Thank you for completing the interview. Your feedback is ready.",
+      });
+    } catch (error) {
+      console.error("Error getting feedback:", error);
+      toast({
+        title: "Error",
+        description: "Failed to get feedback. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const resetInterview = () => {
+    setIsComplete(false);
+    setInterviewStarted(false);
+    setSessionId("");
+    setCurrentQuestion("");
+    setTranscript("");
+    setCurrentAudioData("");
+    setFeedback(null);
+    setAnalysisData(null);
   };
 
   const startInterview = async () => {
@@ -301,7 +383,13 @@ export default function InterviewPrep() {
       const response = await fetch('/api/interview/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobDescription: interviewJobDescription, durationMinutes: interviewDuration }),
+        body: JSON.stringify({ 
+          jobDescription: interviewJobDescription, 
+          durationMinutes: interviewDuration,
+          type: interviewType,
+          level: experienceLevel,
+          jobType: jobType
+        }),
       });
 
       if (!response.ok) {
@@ -314,6 +402,7 @@ export default function InterviewPrep() {
       setCurrentQuestion(data.question);
       setCurrentAudioData(data.audio);
       setInterviewStarted(true);
+      setIsLiveInterview(true);
       setTranscript("");
 
       await playAudio(data.audio);
@@ -330,6 +419,45 @@ export default function InterviewPrep() {
       });
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+  
+  const completeInterview = async () => {
+    if (!sessionId) {
+      toast({
+        title: "Error",
+        description: "No active interview session found.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      // Complete the interview early
+      const response = await fetch(`/api/interview/complete/${sessionId}`, {
+        method: 'POST'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to complete interview');
+      }
+
+      setIsComplete(true);
+      setIsLiveInterview(false);
+      
+      // Get the feedback
+      getInterviewFeedback();
+      
+    } catch (error) {
+      console.error("Error completing interview:", error);
+      toast({
+        title: "Error",
+        description: "Failed to complete the interview. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -605,17 +733,43 @@ export default function InterviewPrep() {
           )}
         </div>
       </div>
-      {isLiveInterview ? (
+      {isLiveInterview && !isComplete ? (
         <InterviewSimulation
           currentQuestion={currentQuestion}
           transcript={transcript}
           isRecording={isRecording}
           onStopInterview={() => setIsLiveInterview(false)}
+          onStartRecording={startRecording}
+          onStopRecording={stopRecording}
+          onSubmitAnswer={completeInterview}
+          isSpeaking={isSpeaking}
         />
-      ) : (
+      ) : !isLiveInterview && !isComplete ? (
         // Preparation UI content here
         <div className="max-w-[1200px] mx-auto px-6 py-4">
           {/* Rest of your preparation UI */}
+        </div>
+      ) : null}
+      
+      {isComplete && analysisData && (
+        <div className="fixed inset-0 bg-white overflow-auto p-6 z-50">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl font-bold text-[#2c3e50]">Interview Results</h2>
+              <Button 
+                onClick={resetInterview}
+                variant="outline"
+              >
+                Start New Interview
+              </Button>
+            </div>
+            
+            <InterviewAnalysis
+              scores={analysisData.scores}
+              overallScore={analysisData.overallScore}
+              questions={analysisData.questions}
+            />
+          </div>
         </div>
       )}
     </div>

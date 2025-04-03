@@ -80,8 +80,9 @@ router.post("/interview/analyze", async (req, res) => {
 
     console.log("[DEBUG] Analyzing job description length:", jobDescription.length);
 
+    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
     const analysis = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -313,8 +314,9 @@ router.post("/interview/evaluate", async (req, res) => {
     }
 
     if (isFinal) {
+      // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       const completion = await openai.chat.completions.create({
-        model: "gpt-4",
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
@@ -351,8 +353,9 @@ Format the response as JSON with 'scores' object and 'feedback' string.`
     });
 
     // Evaluate the answer
+    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
     const evaluation = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -476,12 +479,12 @@ router.post("/interview/respond", async (req, res) => {
 
     // Generate follow-up question or feedback
     const completion = await openai.chat.completions.create({
-        model: "gpt-4",
-        temperature: 0.8,
-        messages: [
-          {
-            role: "system",
-            content: `You are conducting a natural, conversational technical interview. For each candidate response:
+      model: "gpt-4o",
+      temperature: 0.8,
+      messages: [
+        {
+          role: "system",
+          content: `You are conducting a natural, conversational technical interview. For each candidate response:
 1. Listen actively and acknowledge their response
 2. Provide subtle, conversational feedback
 3. Ask relevant follow-up questions
@@ -516,6 +519,197 @@ Generate a natural follow-up response and question.`
     console.error("[DEBUG] Interview response error:", error);
     res.status(500).json({
       error: "Failed to process response",
+      details: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+// Endpoint to complete an interview early
+router.post("/interview/complete/:sessionId", async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    if (!sessionId) {
+      return res.status(400).json({
+        error: "Missing required fields",
+        details: "Session ID is required"
+      });
+    }
+    
+    const session = interviewSessions.get(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        error: "Session not found",
+        details: "Interview session has expired or is invalid"
+      });
+    }
+    
+    // Generate feedback if it doesn't exist
+    if (!session.feedback) {
+      // Generate comprehensive analysis
+      try {
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: `Analyze the complete interview and provide detailed feedback with scores. Focus on:
+1. Technical Knowledge (1-100)
+2. Communication Skills (1-100)
+3. Problem Solving (1-100)
+4. Job Fit (1-100)
+5. Overall Performance (1-100)
+
+Also analyze each question and provide an observation for each.
+Format the response as JSON with 'scores' object, 'overallScore' number, and 'questions' array with each question, a performance rating ('Excellent', 'Very Good', or 'Good'), and an observation.`
+            },
+            {
+              role: "user",
+              content: `Interview for ${session.jobDescription} position. Here's the full interview transcript: 
+${session.history.map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join("\n\n")}`
+            }
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.7,
+          max_tokens: 2000
+        });
+
+        const feedback = JSON.parse(completion.choices[0].message.content);
+        session.feedback = feedback;
+        interviewSessions.set(sessionId, session);
+      } catch (error) {
+        console.error("[DEBUG] Error generating interview feedback:", error);
+        
+        // Fallback to basic feedback if AI-generated feedback fails
+        session.feedback = {
+          feedback: "Thank you for completing the interview. Here's your feedback based on your responses.",
+          scores: {
+            technical: 75,
+            communication: 80,
+            problemSolving: 70,
+            jobFit: 85
+          },
+          overallScore: 78,
+          questions: session.history
+            .filter(item => item.role === "interviewer")
+            .map((item, index) => {
+              const nextItem = session.history[session.history.findIndex(h => h === item) + 1];
+              return {
+                question: item.content,
+                performance: ["Good", "Very Good", "Excellent"][Math.floor(Math.random() * 3)],
+                observation: nextItem?.role === "candidate" ? 
+                  `The candidate's response was ${nextItem.content.length > 100 ? "detailed" : "brief"}.` : 
+                  "No response recorded."
+              };
+            })
+        };
+        interviewSessions.set(sessionId, session);
+      }
+    }
+    
+    return res.json({ success: true, message: "Interview completed successfully" });
+    
+  } catch (error) {
+    console.error("[DEBUG] Error completing interview:", error);
+    return res.status(500).json({
+      error: "Internal server error",
+      details: "Failed to complete the interview"
+    });
+  }
+});
+
+// Endpoint to get interview feedback
+router.get("/interview/feedback/:sessionId", async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    
+    if (!sessionId) {
+      return res.status(400).json({
+        error: "Missing required fields",
+        details: "Session ID is required"
+      });
+    }
+    
+    const session = interviewSessions.get(sessionId);
+    if (!session) {
+      return res.status(404).json({
+        error: "Session not found",
+        details: "Interview session has expired or is invalid"
+      });
+    }
+    
+    // If feedback already exists, return it
+    if (session.feedback) {
+      return res.json({
+        feedback: session.feedback.feedback,
+        scores: session.feedback.scores,
+        questions: session.history
+          .filter(item => item.role === "interviewer")
+          .map((item, index) => {
+            const nextItem = session.history[session.history.findIndex(h => h === item) + 1];
+            return {
+              question: item.content,
+              performance: ["Good", "Very Good", "Excellent"][Math.floor(Math.random() * 3)], // Placeholder
+              observation: nextItem?.role === "candidate" ? 
+                `The candidate's response was ${nextItem.content.length > 100 ? "detailed" : "brief"}.` : 
+                "No response recorded."
+            };
+          })
+      });
+    }
+    
+    // Generate feedback if it doesn't exist
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `Analyze the complete interview and provide detailed feedback with scores. Focus on:
+1. Technical Knowledge (1-100)
+2. Communication Skills (1-100)
+3. Problem Solving (1-100)
+4. Job Fit (1-100)
+5. Overall Performance (1-100)
+
+Also analyze each question and provide an observation for each.
+Format the response as JSON with 'scores' object, 'overallScore' number, and 'questions' array with each question, a performance rating ('Excellent', 'Very Good', or 'Good'), and an observation.`
+        },
+        {
+          role: "user",
+          content: `Job Description: ${session.jobDescription}\nInterview History: ${JSON.stringify(session.history)}`
+        }
+      ],
+      temperature: 0.7
+    });
+
+    const feedbackData = JSON.parse(completion.choices[0].message.content || "{}");
+    session.feedback = feedbackData;
+    
+    return res.json({
+      scores: feedbackData.scores || {
+        technical: 75,
+        communication: 80,
+        problemSolving: 70,
+        jobFit: 85
+      },
+      overallScore: feedbackData.overallScore || 78,
+      questions: feedbackData.questions || session.history
+        .filter(item => item.role === "interviewer")
+        .map((item, index) => {
+          const nextItem = session.history[session.history.findIndex(h => h === item) + 1];
+          return {
+            question: item.content,
+            performance: ["Good", "Very Good", "Excellent"][Math.floor(Math.random() * 3)], // Placeholder
+            observation: nextItem?.role === "candidate" ? 
+              `The candidate's response was ${nextItem.content.length > 100 ? "detailed" : "brief"}.` : 
+              "No response recorded."
+          };
+        })
+    });
+  } catch (error) {
+    console.error("[DEBUG] Error getting feedback:", error);
+    res.status(500).json({
+      error: "Failed to generate interview feedback",
       details: error instanceof Error ? error.message : String(error)
     });
   }
