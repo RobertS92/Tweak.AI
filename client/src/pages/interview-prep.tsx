@@ -546,36 +546,6 @@ export default function InterviewPrep() {
               </CardContent>
             </Card>
           )}
-
-          <div>
-            <div className="space-y-2">
-              <h3 className="font-bold">Post-Interview Analysis Will Include:</h3>
-              <ul className="space-y-2">
-                {[
-                  "Detailed performance score for each question",
-                  "Speech analysis (filler words, pacing, clarity)",
-                  "Keyword usage compared to job description",
-                  "Personalized improvement suggestions"
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-[#2ecc71]" />
-                    <span className="text-sm">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="bg-[#f0f7ff] border border-[#4f8df9] rounded-lg p-4">
-              <div className="flex gap-3">
-                <span className="text-xl">💡</span>
-                <div>
-                  <p className="font-semibold text-[#2c3e50]">How it works:</p>
-                  <p className="text-sm text-[#2c3e50]">
-                    Our AI will ask relevant questions, analyze your responses in real-time, and provide comprehensive feedback to help improve your interview skills.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
       {isLiveInterview ? (
