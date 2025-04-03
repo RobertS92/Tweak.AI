@@ -13,6 +13,7 @@ import OpenAI from "openai";
 import puppeteer from 'puppeteer';
 import chromium from '@sparticuz/chromium';
 import { db } from "./db";
+import { setupAuth } from "./auth";
 
 // Add type definitions
 declare module 'express-serve-static-core' {
@@ -173,6 +174,9 @@ export async function registerRoutes(app: Express) {
   app.use(express.json({ limit: '50mb', strict: false }));
   app.use(express.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
   app.use(express.text({ limit: '50mb' }));
+  
+  // Setup authentication
+  setupAuth(app);
 
   // Resume routes
   app.post("/api/resumes", upload.single("resume"), async (req, res) => {
@@ -206,9 +210,14 @@ export async function registerRoutes(app: Express) {
         });
       }
 
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "You must be logged in to upload a resume" });
+      }
+      
       // First create the resume record
       const resume = await storage.createResume({
-        userId: "temp-user", // TODO: Add proper user management
+        userId: req.user.id.toString(), // Convert to string to match schema 
         title: file.originalname,
         content: content,
         fileType: file.mimetype,
@@ -251,7 +260,12 @@ export async function registerRoutes(app: Express) {
 
   app.get("/api/resumes", async (req, res) => {
     try {
-      const resumes = await storage.getUserResumes("temp-user");
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "You must be logged in to view resumes" });
+      }
+      
+      const resumes = await storage.getUserResumes(req.user.id);
       res.json(resumes);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "An unknown error occurred";

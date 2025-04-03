@@ -11,8 +11,11 @@ import ResumeBuilder from "@/pages/resume-builder";
 import InterviewPrep from "@/pages/interview-prep";
 import InterviewSimulation from "@/pages/interview-simulation";
 import InterviewAnalysis from "@/pages/interview-analysis";
+import AuthPage from "@/pages/auth-page";
 import NavigationBar from "@/components/navigation-bar";
 import MobileNavigation from "@/components/mobile-navigation";
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
   return (
@@ -20,15 +23,16 @@ function Router() {
       <NavigationBar />
       <main className="flex-1 pb-16 md:pb-0"> {/* Add padding bottom for mobile nav */}
         <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/editor" component={ResumeEditor} />
-          <Route path="/editor/:id" component={ResumeEditor} />
-          <Route path="/dashboard" component={Dashboard} />
-          <Route path="/upload" component={ResumeUpload} />
-          <Route path="/builder" component={ResumeBuilder} />
-          <Route path="/interview-prep" component={InterviewPrep} />
-          <Route path="/interview-simulation" component={InterviewSimulation} />
-          <Route path="/interview-analysis" component={InterviewAnalysis} />
+          <ProtectedRoute path="/" component={Home} />
+          <ProtectedRoute path="/editor" component={ResumeEditor} />
+          <ProtectedRoute path="/editor/:id" component={ResumeEditor} />
+          <ProtectedRoute path="/dashboard" component={Dashboard} />
+          <ProtectedRoute path="/upload" component={ResumeUpload} />
+          <ProtectedRoute path="/builder" component={ResumeBuilder} />
+          <ProtectedRoute path="/interview-prep" component={InterviewPrep} />
+          <ProtectedRoute path="/interview-simulation" component={InterviewSimulation} />
+          <ProtectedRoute path="/interview-analysis" component={InterviewAnalysis} />
+          <Route path="/auth" component={AuthPage} />
           <Route component={NotFound} />
         </Switch>
       </main>
@@ -40,8 +44,10 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <AuthProvider>
+        <Router />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
