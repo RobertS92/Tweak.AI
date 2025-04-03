@@ -320,8 +320,24 @@ export default function InterviewPrep() {
 
       console.log("[DEBUG] Saving interview data:", interviewData);
 
+      // Validate all required fields are present
+      const requiredFields = ['jobType', 'experienceLevel', 'interviewType', 'jobDescription'];
+      const missingFields = requiredFields.filter(field => !interviewData[field]);
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      }
+
       // Store interview data in localStorage
       localStorage.setItem('interviewData', JSON.stringify(interviewData));
+
+      // Verify data was stored correctly
+      const storedData = localStorage.getItem('interviewData');
+      const parsedData = storedData ? JSON.parse(storedData) : null;
+      
+      if (!parsedData || !parsedData.jobType || !parsedData.experienceLevel || !parsedData.interviewType) {
+        throw new Error("Failed to save interview data");
+      }
 
       // Verify data was stored
       const storedData = localStorage.getItem('interviewData');

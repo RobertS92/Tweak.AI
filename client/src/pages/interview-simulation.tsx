@@ -51,12 +51,12 @@ export default function InterviewSimulationPage() {
           throw new Error("Missing required interview parameters");
         }
 
-        console.log("[DEBUG] Interview params:", { interviewType, jobType, level, jobDescription });
+        console.log("[DEBUG] Interview params:", { interviewType, jobType, experienceLevel, jobDescription });
 
         const requestBody = {
-          type: interviewType, // Changed key
+          type: interviewType,
           jobType,
-          level,
+          level: experienceLevel,
           jobDescription
         };
 
