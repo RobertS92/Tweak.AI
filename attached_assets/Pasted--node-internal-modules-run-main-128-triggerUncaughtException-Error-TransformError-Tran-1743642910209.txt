@@ -1,0 +1,40 @@
+
+node:internal/modules/run_main:128
+    triggerUncaughtException(
+    ^
+Error [TransformError]: Transform failed with 1 error:
+/home/runner/workspace/server/routes/interview-ai.ts:141:17: ERROR: Expected ")" but found ":"
+    at failureErrorWithLog (/home/runner/workspace/node_modules/tsx/node_modules/esbuild/lib/main.js:1476:15)
+    at /home/runner/workspace/node_modules/tsx/node_modules/esbuild/lib/main.js:755:50
+    at responseCallbacks.<computed> (/home/runner/workspace/node_modules/tsx/node_modules/esbuild/lib/main.js:622:9)
+    at handleIncomingPacket (/home/runner/workspace/node_modules/tsx/node_modules/esbuild/lib/main.js:677:12)
+    at Socket.readFromStdout (/home/runner/workspace/node_modules/tsx/node_modules/esbuild/lib/main.js:600:7)
+    at Socket.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:191:23)
+
+Node.js v20.18.1
+
+> rest-express@1.0.0 dev
+> tsx server/index.ts --host 0.0.0.0 --port 5000
+
+
+node:internal/modules/run_main:128
+    triggerUncaughtException(
+    ^
+Error [TransformError]: Transform failed with 1 error:
+/home/runner/workspace/server/routes/interview-ai.ts:141:17: ERROR: Expected ")" but found ":"
+    at failureErrorWithLog (/home/runner/workspace/node_modules/tsx/node_modules/esbuild/lib/main.js:1476:15)
+    at /home/runner/workspace/node_modules/tsx/node_modules/esbuild/lib/main.js:755:50
+    at responseCallbacks.<computed> (/home/runner/workspace/node_modules/tsx/node_modules/esbuild/lib/main.js:622:9)
+    at handleIncomingPacket (/home/runner/workspace/node_modules/tsx/node_modules/esbuild/lib/main.js:677:12)
+    at Socket.readFromStdout (/home/runner/workspace/node_modules/tsx/node_modules/esbuild/lib/main.js:600:7)
+    at Socket.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:191:23)
+
+Node.js v20.18.1
