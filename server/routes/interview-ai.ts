@@ -262,9 +262,11 @@ Keep the response under 60 seconds when spoken.`
     console.log("[DEBUG] Interview session created");
     console.log("[DEBUG] Audio buffer size:", speechBuffer.length);
 
+    // Make sure to use the same value for both session.currentQuestion and the response question field
+    // This ensures consistency between backend stored state and what's sent to the client
     res.json({
       sessionId,
-      question: response,
+      question: responseText, // Use responseText which is already set in the session
       audio: speechBuffer.toString('base64')
     });
     } catch (error) {
@@ -402,6 +404,7 @@ Format the response as JSON with 'scores' object and 'feedback' string.`
       { role: "interviewer", content: nextQuestion }
     );
     session.currentQuestion = nextQuestion;
+    session.lastInteractionTime = Date.now(); // Update last interaction time to prevent session expiration
 
     console.log("[DEBUG] Updated session history. New length:", session.history.length);
 
@@ -432,9 +435,19 @@ Format the response as JSON with 'scores' object and 'feedback' string.`
 
 function shouldEndInterview(session: any) {
   // End if key topics have been covered or time exceeded
-  const interviewDuration = Date.now() - parseInt(session.sessionId);
+  const interviewDuration = Date.now() - session.startTime;
   const maxDuration = session.durationMinutes * 60 * 1000; 
-  return interviewDuration > maxDuration;
+  
+  if (interviewDuration > maxDuration) {
+    console.log("[DEBUG] Interview timed out:", {
+      duration: Math.round(interviewDuration/1000) + " seconds",
+      maxDuration: Math.round(maxDuration/1000) + " seconds",
+      startTime: new Date(session.startTime).toISOString()
+    });
+    return true;
+  }
+  
+  return false;
 }
 
 router.post("/interview/respond", async (req, res) => {
@@ -492,6 +505,7 @@ Generate a natural follow-up response and question.`
     const response = completion.choices[0].message.content;
     session.history.push({ role: "interviewer", content: response });
     session.currentQuestion = response;
+    session.lastInteractionTime = Date.now(); // Update last interaction time to prevent session expiration
 
     console.log("[DEBUG] Generated follow-up response");
     res.json({

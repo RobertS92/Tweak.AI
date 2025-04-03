@@ -2,6 +2,13 @@ import { useState, useEffect } from "react";
 import InterviewSimulation from "@/components/interview-simulation";
 import { useToast } from "@/hooks/use-toast";
 
+// Declare global function for child component to parent communication
+declare global {
+  interface Window {
+    updateInterviewQuestion?: (newQuestion: string) => void;
+  }
+}
+
 const MAX_RETRIES = 5;
 const RETRY_DELAY = 3000;
 
@@ -84,6 +91,18 @@ export default function InterviewSimulationPage() {
       if (!interviewType || !jobType || !experienceLevel || !jobDescription) {
         throw new Error("Missing required interview parameters");
       }
+      
+      // Get resume data if available
+      let resumeData = null;
+      try {
+        const savedResume = localStorage.getItem('parsedResume');
+        if (savedResume) {
+          resumeData = JSON.parse(savedResume);
+          console.log("[DEBUG] Using parsed resume data for interview context");
+        }
+      } catch (e) {
+        console.warn("[DEBUG] Could not load resume data:", e);
+      }
 
       const response = await fetch('/api/interview/start', {
         method: 'POST',
@@ -94,7 +113,8 @@ export default function InterviewSimulationPage() {
           type: interviewType,
           jobType,
           level: experienceLevel,
-          jobDescription
+          jobDescription,
+          resumeData // Include resume data for targeted questions
         })
       });
 
@@ -117,23 +137,79 @@ export default function InterviewSimulationPage() {
       // Play audio if available
       if (data.audio) {
         try {
-          const audioBytes = atob(data.audio);
-          const audioArray = new Uint8Array(audioBytes.length);
-          for (let i = 0; i < audioBytes.length; i++) {
-            audioArray[i] = audioBytes.charCodeAt(i);
-          }
+          console.log("[DEBUG] Processing initial audio, length:", data.audio.length);
           
-          const audioBlob = new Blob([audioArray], { type: 'audio/mpeg' });
-          const audioUrl = URL.createObjectURL(audioBlob);
-          const audio = new Audio(audioUrl);
-          audio.oncanplaythrough = () => {
-            console.log("[DEBUG] Audio ready to play");
-            audio.play().catch(e => console.error("[DEBUG] Audio play error:", e));
+          // Helper function to play audio
+          const playAudio = async (base64Data: string) => {
+            try {
+              // Convert base64 to array buffer
+              const binaryString = atob(base64Data);
+              const len = binaryString.length;
+              const bytes = new Uint8Array(len);
+              for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+              }
+              
+              // Create audio element
+              const blob = new Blob([bytes.buffer], { type: 'audio/mpeg' });
+              const audioUrl = URL.createObjectURL(blob);
+              const audio = new Audio(audioUrl);
+              
+              return new Promise<void>((resolve, reject) => {
+                audio.addEventListener('canplaythrough', () => {
+                  console.log("[DEBUG] Initial audio ready to play");
+                  
+                  // User must interact with the page before audio will play in many browsers
+                  // We'll log this fact but still attempt to play
+                  console.log("[DEBUG] Attempting to play initial audio (may need user interaction)");
+                  
+                  audio.play()
+                    .then(() => {
+                      console.log("[DEBUG] Initial audio playback started");
+                      
+                      audio.addEventListener('ended', () => {
+                        console.log("[DEBUG] Initial audio playback completed");
+                        URL.revokeObjectURL(audioUrl);
+                        resolve();
+                      });
+                    })
+                    .catch(playError => {
+                      console.error("[DEBUG] Initial audio autoplay error:", playError);
+                      console.log("[DEBUG] Audio will play on first user interaction");
+                      URL.revokeObjectURL(audioUrl);
+                      reject(playError);
+                    });
+                });
+                
+                audio.addEventListener('error', (e) => {
+                  console.error("[DEBUG] Initial audio loading error:", e);
+                  URL.revokeObjectURL(audioUrl);
+                  reject(e);
+                });
+                
+                // Set timeout in case the audio never loads
+                setTimeout(() => {
+                  if (audio.readyState < 4) { // HAVE_ENOUGH_DATA
+                    console.error("[DEBUG] Audio loading timeout");
+                    URL.revokeObjectURL(audioUrl);
+                    reject(new Error("Audio loading timeout"));
+                  }
+                }, 10000); // 10 second timeout
+              });
+            } catch (innerErr) {
+              console.error("[DEBUG] Error in audio processing:", innerErr);
+              throw innerErr;
+            }
           };
-          audio.onerror = (e) => console.error("[DEBUG] Audio error:", e);
-          console.log("[DEBUG] Audio blob created");
+          
+          // Attempt to play the audio
+          playAudio(data.audio)
+            .catch(audioErr => {
+              console.error("[DEBUG] Final initial audio error:", audioErr);
+            });
+            
         } catch (audioErr) {
-          console.error("[DEBUG] Error playing audio:", audioErr);
+          console.error("[DEBUG] Fatal error processing audio:", audioErr);
         }
       } else {
         console.warn("[DEBUG] No audio received from server");
@@ -144,14 +220,16 @@ export default function InterviewSimulationPage() {
       setError(null);
       setRetryCount(0);
     } catch (err) {
-      console.error("[DEBUG] Interview initialization error:", err);
-      console.error("[DEBUG] Error details:", 
-        err instanceof Error ? {
+      // Properly log the error with type checking
+      if (err instanceof Error) {
+        console.error("[DEBUG] Interview initialization error:", {
           message: err.message,
           stack: err.stack,
           name: err.name
-        } : String(err)
-      );
+        });
+      } else {
+        console.error("[DEBUG] Interview initialization error:", String(err));
+      }
       
       // Log the request payload for debugging
       try {
@@ -182,6 +260,12 @@ export default function InterviewSimulationPage() {
   };
 
   useEffect(() => {
+    // Expose the updateQuestion function globally for the child component to call
+    window.updateInterviewQuestion = (newQuestion: string) => {
+      console.log("[DEBUG] Parent component received new question:", newQuestion);
+      setCurrentQuestion(newQuestion);
+    };
+
     const initialize = async () => {
       const dataLoaded = await loadInterviewData();
       if (dataLoaded) {
@@ -191,6 +275,11 @@ export default function InterviewSimulationPage() {
       }
     };
     initialize();
+
+    // Cleanup global callback on unmount
+    return () => {
+      window.updateInterviewQuestion = undefined;
+    };
   }, []);
 
   useEffect(() => {
@@ -289,6 +378,7 @@ export default function InterviewSimulationPage() {
         isRecording={isRecording}
         onStopInterview={handleStopInterview}
         interviewData={interviewParams}
+        sessionId={sessionId}
       />
     </div>
   );
