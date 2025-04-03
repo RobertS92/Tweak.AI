@@ -141,11 +141,29 @@ Keep the response under 60 seconds when spoken.`
     });
 
     console.log("[DEBUG] Generated initial interview response");
-    const response = completion.choices[0].message.content;
-    console.log("[DEBUG] Response length:", response?.length);
+    const responseText = await aiService.complete([
+      {
+        role: "system",
+        content: `You are an experienced technical interviewer. Create a natural, conversational interview opening that:
+1. Introduces yourself briefly
+2. Makes the candidate comfortable
+3. Sets expectations for the interview
+4. Asks an engaging first question
+
+Keep your response conversational and natural, as it will be spoken aloud.
+Focus on building rapport while staying professional.
+Keep the response under 60 seconds when spoken.`
+      },
+      {
+        role: "user",
+        content: `Start an interview for this job description, introducing yourself and asking the first question:\n\n${jobDescription}`
+      }
+    ]);
+
+    console.log("[DEBUG] Response length:", responseText?.length);
 
     console.log("[DEBUG] Generating speech for initial response");
-    const speechBuffer = await generateSpeech(response || "");
+    const speechBuffer = await generateSpeech(responseText || "");
 
     const sessionId = Date.now().toString();
     console.log("[DEBUG] Created session ID:", sessionId);
@@ -153,8 +171,8 @@ Keep the response under 60 seconds when spoken.`
     // Store interview context
     interviewSessions.set(sessionId, {
       jobDescription,
-      currentQuestion: response,
-      history: [{ role: "interviewer", content: response }],
+      currentQuestion: responseText,
+      history: [{ role: "interviewer", content: responseText }],
       analysis: null,
       durationMinutes
     });
