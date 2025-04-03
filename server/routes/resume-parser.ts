@@ -58,7 +58,8 @@ function cleanTextContent(text: string): string {
 async function parseResume(content: string) {
   console.log("[DEBUG] Starting resume parsing with OpenAI");
 
-  const response = await openai.chat.completions.create({
+  try {
+    const response = await openai.chat.completions.create({
     model: "gpt-4",
     messages: [
       {
@@ -258,10 +259,53 @@ IMPORTANT:
     console.log(`[DEBUG] Total Skills: ${parsedData.sections.find(s => s.id === 'skills')?.categories?.reduce((acc, cat) => acc + cat.skills.length, 0) || 0}`);
 
     return parsedData;
-  } catch (error) {
-    console.error("[DEBUG] JSON parse error:", error);
+  } catch (parseError) {
+    console.error("[DEBUG] JSON parse error:", parseError);
     console.log("[DEBUG] Raw response:", response.choices[0].message.content);
     throw new Error("Failed to parse OpenAI response as JSON");
+  }
+  } catch (error) {
+    console.log("[DEBUG] OpenAI API failed, falling back to local model");
+    
+    // Basic parsing logic as fallback
+    const lines = content.split('\n');
+    const parsedData = {
+      personalInfo: {
+        name: lines.find(l => /^[A-Z][a-z]+ [A-Z][a-z]+/.test(l))?.trim() || '',
+        email: lines.find(l => l.includes('@'))?.match(/\S+@\S+\.\S+/)?.[0] || '',
+        phone: lines.find(l => /\d{3}[-.)]\d{3}[-.)]\d{4}/.test(l))?.match(/\d{3}[-.)]\d{3}[-.)]\d{4}/)?.[0] || '',
+        location: lines.find(l => /, [A-Z]{2}/.test(l))?.trim() || '',
+        linkedin: lines.find(l => l.toLowerCase().includes('linkedin'))?.trim() || '',
+        website: lines.find(l => l.toLowerCase().includes('github'))?.trim() || '',
+        objective: ''
+      },
+      sections: [
+        {
+          id: 'professional-summary',
+          title: 'Professional Summary',
+          content: content.split('Professional Summary')[1]?.split('\n\n')[0]?.trim() || ''
+        },
+        {
+          id: 'work-experience',
+          title: 'Work Experience',
+          items: []
+        },
+        {
+          id: 'education',
+          title: 'Education',
+          items: []
+        },
+        {
+          id: 'skills',
+          title: 'Skills',
+          categories: [
+            { name: "Technical Skills", skills: [] },
+            { name: "Soft Skills", skills: [] }
+          ]
+        }
+      ]
+    };
+    return parsedData;
   }
 }
 
