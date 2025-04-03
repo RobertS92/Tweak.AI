@@ -157,83 +157,57 @@ export default function InterviewSimulation({
       
       console.log("[DEBUG] Received response:", data);
       
-      // Play audio if available
+      // Process and store follow-up audio if available
       if (data.audio) {
         try {
-          console.log("[DEBUG] Processing audio data, length:", data.audio.length);
+          console.log("[DEBUG] Processing follow-up audio data, length:", data.audio.length);
           
-          // Create a safer function to play audio using a promise pattern
-          const playAudio = async (base64Data: string) => {
-            try {
-              // Convert base64 to array buffer
-              const binaryString = atob(base64Data);
-              const len = binaryString.length;
-              const bytes = new Uint8Array(len);
-              for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-              }
-              
-              // Create audio element
-              const blob = new Blob([bytes.buffer], { type: 'audio/mpeg' });
-              const audioUrl = URL.createObjectURL(blob);
-              const audio = new Audio(audioUrl);
-              
-              return new Promise<void>((resolve, reject) => {
-                audio.addEventListener('canplaythrough', () => {
-                  console.log("[DEBUG] Audio ready to play");
-                  
-                  // Attempt to play the audio
-                  audio.play()
-                    .then(() => {
-                      console.log("[DEBUG] Audio playback started");
-                      
-                      // Clean up the URL object when playback ends
-                      audio.addEventListener('ended', () => {
-                        URL.revokeObjectURL(audioUrl);
-                        console.log("[DEBUG] Audio playback completed");
-                        resolve();
-                      });
-                    })
-                    .catch(playError => {
-                      console.error("[DEBUG] Audio play error:", playError);
-                      URL.revokeObjectURL(audioUrl);
-                      reject(playError);
-                    });
-                });
-                
-                audio.addEventListener('error', (e) => {
-                  console.error("[DEBUG] Audio loading error:", e);
-                  URL.revokeObjectURL(audioUrl);
-                  reject(e);
-                });
-                
-                // Set timeout in case the audio never loads
-                setTimeout(() => {
-                  if (audio.readyState < 4) { // HAVE_ENOUGH_DATA
-                    console.error("[DEBUG] Audio loading timeout");
-                    URL.revokeObjectURL(audioUrl);
-                    reject(new Error("Audio loading timeout"));
-                  }
-                }, 10000); // 10 second timeout
-              });
-            } catch (innerErr) {
-              console.error("[DEBUG] Error in audio processing:", innerErr);
-              throw innerErr;
-            }
-          };
+          // Convert base64 to array buffer
+          const binaryString = atob(data.audio);
+          const len = binaryString.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
           
-          // Attempt to play audio
-          console.log("[DEBUG] Attempting to play audio...");
-          playAudio(data.audio)
-            .catch(audioErr => {
-              console.error("[DEBUG] Final audio playback error:", audioErr);
+          // Create audio blob and URL
+          const blob = new Blob([bytes.buffer], { type: 'audio/mpeg' });
+          const audioUrl = URL.createObjectURL(blob);
+          
+          // Store the URL in localStorage so the play button can access it
+          localStorage.setItem('currentInterviewAudio', audioUrl);
+          console.log("[DEBUG] Follow-up audio URL stored in localStorage for play button");
+          
+          // Attempt to play audio (will likely fail due to browser policies)
+          try {
+            const audio = new Audio(audioUrl);
+            audio.addEventListener('canplaythrough', () => {
+              console.log("[DEBUG] Follow-up audio ready to play");
+              console.log("[DEBUG] Attempting to play follow-up audio...");
+              
+              audio.play()
+                .then(() => {
+                  console.log("[DEBUG] Follow-up audio playback started automatically");
+                })
+                .catch(playError => {
+                  console.error("[DEBUG] Follow-up audio autoplay error:", playError);
+                  console.log("[DEBUG] User will need to click play button to hear audio");
+                });
             });
             
+            audio.addEventListener('error', (e) => {
+              console.error("[DEBUG] Follow-up audio loading error:", e);
+            });
+          } catch (innerErr) {
+            console.error("[DEBUG] Error setting up follow-up audio element:", innerErr);
+          }
         } catch (audioErr) {
-          console.error("[DEBUG] Fatal error processing audio:", audioErr);
+          console.error("[DEBUG] Fatal error processing follow-up audio:", audioErr);
         }
       } else {
         console.log("[DEBUG] No audio data received in response");
+        // Don't remove existing audio from localStorage here, as that would clear
+        // the current question's audio which might still be useful
       }
       
       // Handle next question if provided
@@ -294,7 +268,34 @@ export default function InterviewSimulation({
       <div className="grid grid-cols-1 md:grid-cols-[2fr,1fr] gap-6">
         <div className="space-y-6">
           <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h2 className="text-xl font-semibold mb-4">Current Question</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Current Question</h2>
+              <button 
+                onClick={() => {
+                  // Allow user to manually trigger audio playback with button click
+                  const audioUrl = localStorage.getItem('currentInterviewAudio');
+                  if (audioUrl) {
+                    try {
+                      const audio = new Audio(audioUrl);
+                      audio.play()
+                        .then(() => console.log("[DEBUG] Audio played successfully via button"))
+                        .catch(e => console.error("[DEBUG] Error playing audio via button:", e));
+                    } catch (err) {
+                      console.error("[DEBUG] Error creating audio element:", err);
+                    }
+                  } else {
+                    console.log("[DEBUG] No audio URL found in localStorage");
+                  }
+                }}
+                className="bg-blue-600 text-white rounded-lg px-3 py-1 text-sm flex items-center gap-1"
+                title="Play current question audio"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                Play
+              </button>
+            </div>
             <p className="text-gray-700">{currentQuestion}</p>
           </div>
           

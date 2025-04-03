@@ -202,8 +202,8 @@ router.post("/interview/start", async (req, res) => {
       const response = await aiService.complete([
         {
           role: "system",
-          content: `You are an experienced technical interviewer. Create a natural, conversational interview opening that:
-1. Introduces yourself briefly
+          content: `You are an experienced technical interviewer named Alex. Create a natural, conversational interview opening that:
+1. Introduces yourself as Alex briefly
 2. Makes the candidate comfortable
 3. Sets expectations for the interview
 4. Asks an engaging first question
@@ -223,8 +223,8 @@ Keep the response under 60 seconds when spoken.`
     const responseText = await aiService.complete([
       {
         role: "system",
-        content: `You are an experienced technical interviewer. Create a natural, conversational interview opening that:
-1. Introduces yourself briefly
+        content: `You are an experienced technical interviewer named Alex. Create a natural, conversational interview opening that:
+1. Introduces yourself as Alex briefly
 2. Makes the candidate comfortable
 3. Sets expectations for the interview
 4. Asks an engaging first question

@@ -134,85 +134,52 @@ export default function InterviewSimulationPage() {
       setSessionId(data.sessionId);
       setCurrentQuestion(data.question || "");
       
-      // Play audio if available
+      // Process and store audio if available
       if (data.audio) {
         try {
           console.log("[DEBUG] Processing initial audio, length:", data.audio.length);
           
-          // Helper function to play audio
-          const playAudio = async (base64Data: string) => {
-            try {
-              // Convert base64 to array buffer
-              const binaryString = atob(base64Data);
-              const len = binaryString.length;
-              const bytes = new Uint8Array(len);
-              for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-              }
-              
-              // Create audio element
-              const blob = new Blob([bytes.buffer], { type: 'audio/mpeg' });
-              const audioUrl = URL.createObjectURL(blob);
-              const audio = new Audio(audioUrl);
-              
-              return new Promise<void>((resolve, reject) => {
-                audio.addEventListener('canplaythrough', () => {
-                  console.log("[DEBUG] Initial audio ready to play");
-                  
-                  // User must interact with the page before audio will play in many browsers
-                  // We'll log this fact but still attempt to play
-                  console.log("[DEBUG] Attempting to play initial audio (may need user interaction)");
-                  
-                  audio.play()
-                    .then(() => {
-                      console.log("[DEBUG] Initial audio playback started");
-                      
-                      audio.addEventListener('ended', () => {
-                        console.log("[DEBUG] Initial audio playback completed");
-                        URL.revokeObjectURL(audioUrl);
-                        resolve();
-                      });
-                    })
-                    .catch(playError => {
-                      console.error("[DEBUG] Initial audio autoplay error:", playError);
-                      console.log("[DEBUG] Audio will play on first user interaction");
-                      URL.revokeObjectURL(audioUrl);
-                      reject(playError);
-                    });
-                });
-                
-                audio.addEventListener('error', (e) => {
-                  console.error("[DEBUG] Initial audio loading error:", e);
-                  URL.revokeObjectURL(audioUrl);
-                  reject(e);
-                });
-                
-                // Set timeout in case the audio never loads
-                setTimeout(() => {
-                  if (audio.readyState < 4) { // HAVE_ENOUGH_DATA
-                    console.error("[DEBUG] Audio loading timeout");
-                    URL.revokeObjectURL(audioUrl);
-                    reject(new Error("Audio loading timeout"));
-                  }
-                }, 10000); // 10 second timeout
-              });
-            } catch (innerErr) {
-              console.error("[DEBUG] Error in audio processing:", innerErr);
-              throw innerErr;
-            }
-          };
+          // Convert base64 to array buffer
+          const binaryString = atob(data.audio);
+          const len = binaryString.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
           
-          // Attempt to play the audio
-          playAudio(data.audio)
-            .catch(audioErr => {
-              console.error("[DEBUG] Final initial audio error:", audioErr);
+          // Create audio element
+          const blob = new Blob([bytes.buffer], { type: 'audio/mpeg' });
+          const audioUrl = URL.createObjectURL(blob);
+          
+          // Store the URL in localStorage so the play button can access it
+          localStorage.setItem('currentInterviewAudio', audioUrl);
+          console.log("[DEBUG] Audio URL stored in localStorage for play button");
+          
+          // Still attempt autoplay, but it will likely fail due to browser restrictions
+          try {
+            const audio = new Audio(audioUrl);
+            audio.addEventListener('canplaythrough', () => {
+              console.log("[DEBUG] Initial audio ready to play");
+              console.log("[DEBUG] Attempting to play initial audio (may need user interaction)");
+              
+              audio.play()
+                .then(() => {
+                  console.log("[DEBUG] Initial audio playback started automatically");
+                })
+                .catch(playError => {
+                  console.error("[DEBUG] Initial audio autoplay error:", playError);
+                  console.log("[DEBUG] Audio will play on user click of the play button");
+                });
             });
-            
+          } catch (audioErr) {
+            console.error("[DEBUG] Error setting up audio element:", audioErr);
+          }
         } catch (audioErr) {
           console.error("[DEBUG] Fatal error processing audio:", audioErr);
         }
       } else {
         console.warn("[DEBUG] No audio received from server");
+        localStorage.removeItem('currentInterviewAudio');
       }
       
       setIsLoading(false);
