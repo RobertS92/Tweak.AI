@@ -137,8 +137,7 @@ Keep the response under 60 seconds when spoken.`
           role: "user",
           content: `Start an interview for this job description, introducing yourself and asking the first question:\n\n${jobDescription}`
         }
-      ],
-      temperature: 0.7
+      ]
     });
 
     console.log("[DEBUG] Generated initial interview response");
