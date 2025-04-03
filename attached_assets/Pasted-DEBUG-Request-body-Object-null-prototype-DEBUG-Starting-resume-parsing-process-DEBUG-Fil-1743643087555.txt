@@ -1,0 +1,50 @@
+DEBUG] Request body: [Object: null prototype] {}
+[DEBUG] Starting resume parsing process
+[DEBUG] File info: { filename: 'Rob ML-2.pdf', mimetype: 'application/pdf', size: 86736 }
+[DEBUG] Detected file type: application/pdf
+[DEBUG] Cleaning text content, initial length: 5536
+[DEBUG] Cleaned text length: 5466
+[DEBUG] Successfully extracted content, length: 5466
+[DEBUG] Content preview: Rob Seals 
+Houston, TX | rseals13@gmail.com | 832-517-0329 | GitHub: github.com/RobertS92 
+Professional Summary 
+ML Engineer with over 5 years of experience in developing and deploying machine learnin
+[DEBUG] Starting resume parsing with OpenAI
+[DEBUG] Content processing error: RateLimitError: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.
+    at Function.generate (/home/runner/workspace/node_modules/openai/src/error.ts:96:14)
+    at OpenAI.makeStatusError (/home/runner/workspace/node_modules/openai/src/core.ts:443:21)
+    at OpenAI.makeRequest (/home/runner/workspace/node_modules/openai/src/core.ts:507:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async parseResume (/home/runner/workspace/server/routes/resume-parser.ts:61:20)
+    at async <anonymous> (/home/runner/workspace/server/routes/resume-parser.ts:312:26) {
+  status: 429,
+  headers: {
+    'alt-svc': 'h3=":443"; ma=86400',
+    'cf-cache-status': 'DYNAMIC',
+    'cf-ray': '92a4ba435d12935d-SEA',
+    connection: 'keep-alive',
+    'content-length': '337',
+    'content-type': 'application/json; charset=utf-8',
+    date: 'Thu, 03 Apr 2025 01:17:39 GMT',
+    server: 'cloudflare',
+    'set-cookie': '__cf_bm=NXiCyEtA9rEUfnwIzibpeaRfEyi2.u0IY_1o3GAAE4Y-1743643059-1.0.1.1-ytMaJ4JqZbjaRgrA2kh1gg.j1.ycETCcZeRyHpxPY8E6aGsrXIRJngpYArruieViyrUMWN4HOiGuKF1oPnwwYJ73VzmDGYaTAFhOGprNHyg; path=/; expires=Thu, 03-Apr-25 01:47:39 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None, _cfuvid=xRLH.VVr7GryG3rzSKtR0VgQNPcB4NhTYu9taPaj4Es-1743643059800-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None',
+    'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+    vary: 'Origin',
+    'x-content-type-options': 'nosniff',
+    'x-request-id': 'req_3f1bce894b19cc99e9c2d1590cb1c8bd'
+  },
+  request_id: 'req_3f1bce894b19cc99e9c2d1590cb1c8bd',
+  error: {
+    message: 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.',
+    type: 'insufficient_quota',
+    param: null,
+    code: 'insufficient_quota'
+  },
+  code: 'insufficient_quota',
+  param: null,
+  type: 'insufficient_quota'
+}
+[DEBUG] Resume parsing error: Error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.
+    at <anonymous> (/home/runner/workspace/server/routes/resume-parser.ts:358:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+1:17:39 AM [express] POST /api/resume-parser 500 in 2100ms :: {"error":"Unable to process your resum…
