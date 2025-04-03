@@ -228,6 +228,31 @@ export default function InterviewSimulation({
     try {
       console.log("[DEBUG] Completing interview for session:", sessionId);
       
+      // If there's a transcript that hasn't been sent, send it first
+      if (localTranscript.trim() && !currentQuestion.includes("Thank you for your time")) {
+        console.log("[DEBUG] Sending final response before completion");
+        
+        const submitResponse = await fetch('/api/interview/evaluate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            sessionId,
+            answer: localTranscript,
+            isFinal: true
+          })
+        });
+        
+        if (!submitResponse.ok) {
+          console.warn("[DEBUG] Warning: Could not submit final response", await submitResponse.text());
+        } else {
+          console.log("[DEBUG] Final response submitted successfully");
+          // Wait a moment to ensure server has processed the response
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+      
       const response = await fetch(`/api/interview/complete/${sessionId}`, {
         method: 'POST',
         headers: {

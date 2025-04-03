@@ -35,7 +35,7 @@ export default function InterviewAnalysis({ scores, overallScore, questions }: I
           <div className="flex-1 space-y-4">
             {Object.entries(scores).map(([key, value]) => {
               // Determine color based on score
-              const getScoreColor = (score) => {
+              const getScoreColor = (score: number) => {
                 if (score >= 90) return 'bg-[#2ecc71]';
                 if (score >= 75) return 'bg-[#3498db]';
                 if (score >= 60) return 'bg-[#f39c12]';

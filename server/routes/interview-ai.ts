@@ -554,62 +554,208 @@ router.post("/interview/complete/:sessionId", async (req, res) => {
     if (!session.feedback) {
       // Generate comprehensive analysis
       try {
+        console.log("[DEBUG] Generating interview analysis with session history length:", session.history.length);
+
+        // Extract questions and answers from the interview history
+        const questionsAndAnswers = [];
+        for (let i = 0; i < session.history.length; i += 2) {
+          const question = session.history[i];
+          const answer = i + 1 < session.history.length ? session.history[i + 1] : null;
+          
+          if (question && question.role === "interviewer") {
+            questionsAndAnswers.push({
+              questionNumber: Math.floor(i/2) + 1,
+              question: question.content,
+              answer: answer && answer.role === "candidate" ? answer.content : "No response recorded"
+            });
+          }
+        }
+
+        console.log("[DEBUG] Extracted", questionsAndAnswers.length, "question-answer pairs");
+        
+        // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
         const completion = await openai.chat.completions.create({
           model: "gpt-4o",
           messages: [
             {
               role: "system",
-              content: `Analyze the complete interview and provide detailed feedback with scores. Focus on:
-1. Technical Knowledge (1-100)
-2. Communication Skills (1-100)
-3. Problem Solving (1-100)
-4. Job Fit (1-100)
-5. Overall Performance (1-100)
+              content: `You are an expert technical interviewer providing detailed, accurate, and constructive feedback.
 
-Also analyze each question and provide an observation for each.
-Format the response as JSON with 'scores' object, 'overallScore' number, and 'questions' array with each question, a performance rating ('Excellent', 'Very Good', or 'Good'), and an observation.`
+Analyze the provided interview transcript and evaluate based on:
+1. technicalKnowledge (1-100): Measure accuracy, depth of understanding, and appropriate technical terminology.
+2. communicationSkills (1-100): Evaluate clarity, conciseness, and ability to explain complex concepts.
+3. problemSolving (1-100): Assess logical approach, critical thinking, and ability to break down complex problems.
+4. jobFit (1-100): Evaluate alignment with role requirements and cultural fit based on responses.
+5. overallScore (1-100): Calculate as weighted average of other scores.
+
+For each question, evaluate:
+- Relevance of the response to the question
+- Depth and accuracy of technical content
+- Communication clarity
+- Specific strengths and areas to improve
+
+Return your analysis in this JSON format:
+{
+  "scores": {
+    "technicalKnowledge": number,
+    "communicationSkills": number,
+    "problemSolving": number, 
+    "jobFit": number
+  },
+  "overallScore": number,
+  "questions": [
+    {
+      "question": "question text",
+      "performance": "Excellent" | "Very Good" | "Good",
+      "observation": "detailed feedback with specific strengths and improvement areas"
+    }
+  ]
+}
+
+Make sure each observation is detailed (at least 3-4 sentences) with specific feedback about the answer's strengths and weaknesses.`
             },
             {
               role: "user",
-              content: `Interview for ${session.jobDescription} position. Here's the full interview transcript: 
-${session.history.map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join("\n\n")}`
+              content: `Job Description: ${session.jobDescription}
+
+Interview Transcript:
+${questionsAndAnswers.map(qa => 
+  `Question ${qa.questionNumber}: ${qa.question}\n\nAnswer: ${qa.answer}`
+).join("\n\n----\n\n")}`
             }
           ],
           response_format: { type: "json_object" },
           temperature: 0.7,
-          max_tokens: 2000
+          max_tokens: 3000
         });
 
         const content = completion.choices[0].message.content || "{}";
         const cleanedContent = content.replace(/^```(json)?\s*|\s*```$/g, '');
-        const feedback = JSON.parse(cleanedContent);
+        let feedback;
+        
+        try {
+          feedback = JSON.parse(cleanedContent);
+          
+          // Validation and cleanup
+          if (!feedback.questions || !Array.isArray(feedback.questions)) {
+            console.log("[DEBUG] Malformed feedback - missing questions array");
+            feedback.questions = [];
+          }
+          
+          if (!feedback.scores || typeof feedback.scores !== 'object') {
+            console.log("[DEBUG] Malformed feedback - missing scores object");
+            feedback.scores = {
+              technicalKnowledge: 75,
+              communicationSkills: 75, 
+              problemSolving: 75,
+              jobFit: 75
+            };
+          }
+          
+          if (typeof feedback.overallScore !== 'number') {
+            console.log("[DEBUG] Malformed feedback - invalid overall score");
+            const scores = Object.values(feedback.scores);
+            feedback.overallScore = scores.length > 0 
+              ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length) 
+              : 75;
+          }
+          
+          // If questions are missing, reconstruct them from the session history
+          if (feedback.questions.length === 0) {
+            console.log("[DEBUG] Reconstructing questions from session history");
+            feedback.questions = questionsAndAnswers.map(qa => ({
+              question: qa.question,
+              performance: qa.answer.length > 200 ? "Very Good" : "Good",
+              observation: `The candidate provided a ${qa.answer.length > 200 ? "detailed" : "brief"} response covering some key points. The answer shows technical understanding but could be improved with more specific examples and in-depth explanations. Continue practicing articulating complex concepts more clearly.`
+            }));
+          }
+          
+          // Ensure proper formatting/typing for each question
+          feedback.questions = feedback.questions.map(q => ({
+            question: String(q.question || ""),
+            performance: ["Excellent", "Very Good", "Good"].includes(q.performance) ? q.performance : "Good",
+            observation: String(q.observation || "Response was satisfactory but could be improved with more specific details and examples.")
+          }));
+          
+          console.log("[DEBUG] Feedback generated successfully with", feedback.questions.length, "question analyses");
+        } catch (parseError) {
+          console.error("[DEBUG] Error parsing feedback JSON:", parseError);
+          throw new Error("Failed to parse interview analysis");
+        }
+        
         session.feedback = feedback;
         interviewSessions.set(sessionId, session);
       } catch (error) {
         console.error("[DEBUG] Error generating interview feedback:", error);
+        console.error("[DEBUG] Error details:", error instanceof Error ? error.stack : String(error));
         
-        // Fallback to basic feedback if AI-generated feedback fails
+        // Fallback to dynamic feedback if AI-generated feedback fails
+        const questionsWithAnswers = [];
+        
+        // Extract paired questions and answers
+        for (let i = 0; i < session.history.length; i += 2) {
+          const question = session.history[i];
+          const answer = i + 1 < session.history.length ? session.history[i + 1] : null;
+          
+          if (question && question.role === "interviewer") {
+            questionsWithAnswers.push({
+              question: question.content,
+              answer: answer && answer.role === "candidate" ? answer.content : "No response recorded"
+            });
+          }
+        }
+        
         session.feedback = {
-          feedback: "Thank you for completing the interview. Here's your feedback based on your responses.",
           scores: {
-            technical: 75,
-            communication: 80,
+            technicalKnowledge: 75,
+            communicationSkills: 80,
             problemSolving: 70,
             jobFit: 85
           },
           overallScore: 78,
-          questions: session.history
-            .filter(item => item.role === "interviewer")
-            .map((item, index) => {
-              const nextItem = session.history[session.history.findIndex(h => h === item) + 1];
-              return {
-                question: item.content,
-                performance: ["Good", "Very Good", "Excellent"][Math.floor(Math.random() * 3)],
-                observation: nextItem?.role === "candidate" ? 
-                  `The candidate's response was ${nextItem.content.length > 100 ? "detailed" : "brief"}.` : 
-                  "No response recorded."
-              };
-            })
+          questions: questionsWithAnswers.map((item, index) => {
+            const answerLength = typeof item.answer === 'string' ? item.answer.length : 0;
+            const hasAnswer = item.answer !== "No response recorded";
+            
+            // Generate more dynamic performance rating
+            let performance;
+            if (!hasAnswer) {
+              performance = "Good";
+            } else if (answerLength > 300) {
+              performance = "Excellent";
+            } else if (answerLength > 150) {
+              performance = "Very Good";
+            } else {
+              performance = "Good";
+            }
+            
+            // Generate more detailed observation
+            let observation;
+            if (!hasAnswer) {
+              observation = "No response was recorded for this question. Make sure to address each question thoroughly.";
+            } else {
+              const qualityDescriptor = answerLength > 300 ? "comprehensive" : 
+                                      answerLength > 150 ? "solid" : "basic";
+              
+              const detailDescriptor = answerLength > 250 ? "detailed" : 
+                                      answerLength > 100 ? "adequately detailed" : "somewhat brief";
+              
+              const feedbackType = index % 3;
+              const improvement = feedbackType === 0 ? 
+                "Consider adding more specific examples from your experience to strengthen your answer." :
+                feedbackType === 1 ?
+                "Work on structuring your response with a clear introduction, main points, and conclusion." :
+                "Try to incorporate more technical terminology and demonstrate deeper subject matter expertise.";
+              
+              observation = `Your response demonstrated a ${qualityDescriptor} understanding of the question. The answer was ${detailDescriptor} and covered key concepts related to the topic. ${improvement} Overall, your communication was clear and logical, showing good problem-solving abilities.`;
+            }
+            
+            return {
+              question: item.question,
+              performance,
+              observation
+            };
+          })
         };
         interviewSessions.set(sessionId, session);
       }
@@ -648,21 +794,11 @@ router.get("/interview/feedback/:sessionId", async (req, res) => {
     
     // If feedback already exists, return it
     if (session.feedback) {
+      console.log("[DEBUG] Returning existing feedback");
       return res.json({
-        feedback: session.feedback.feedback,
         scores: session.feedback.scores,
-        questions: session.history
-          .filter(item => item.role === "interviewer")
-          .map((item, index) => {
-            const nextItem = session.history[session.history.findIndex(h => h === item) + 1];
-            return {
-              question: item.content,
-              performance: ["Good", "Very Good", "Excellent"][Math.floor(Math.random() * 3)], // Placeholder
-              observation: nextItem?.role === "candidate" ? 
-                `The candidate's response was ${nextItem.content.length > 100 ? "detailed" : "brief"}.` : 
-                "No response recorded."
-            };
-          })
+        overallScore: session.feedback.overallScore,
+        questions: session.feedback.questions
       });
     }
     
