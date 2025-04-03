@@ -309,13 +309,13 @@ export default function InterviewPrep() {
       }
 
       const interviewData = {
-        jobType,
+        jobType: jobType.trim(),
         experienceLevel,
         interviewType,
         difficulty,
         duration: interviewDuration,
-        interviewFocus,
-        jobDescription: jobDescription || `${experienceLevel} ${jobType} position requiring ${interviewType} expertise`
+        jobDescription: jobDescription || `${experienceLevel} ${jobType.trim()} position requiring ${interviewType} expertise`,
+        sessionId: Date.now().toString()
       };
 
       console.log("[DEBUG] Saving interview data:", interviewData);

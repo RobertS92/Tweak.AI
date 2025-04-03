@@ -8,7 +8,28 @@ const router = Router();
 import { aiService } from "../services/ai-service";
 
 // Store interview contexts
-const interviewSessions = new Map();
+interface InterviewSession {
+  jobDescription: string;
+  currentQuestion: string;
+  history: Array<{role: string; content: string}>;
+  analysis: any;
+  durationMinutes: number;
+  startTime: number;
+  questionCount: number;
+  lastInteractionTime: number;
+}
+
+const interviewSessions = new Map<string, InterviewSession>();
+
+// Clean up expired sessions every 30 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [sessionId, session] of interviewSessions.entries()) {
+    if (now - session.lastInteractionTime > 30 * 60 * 1000) {
+      interviewSessions.delete(sessionId);
+    }
+  }
+}, 30 * 60 * 1000);
 
 async function generateSpeech(text: string): Promise<Buffer> {
   try {
@@ -127,11 +148,15 @@ router.post("/interview/start", async (req, res) => {
 
     // Generate initial response even if OpenAI fails
     let response;
-    try {
-      response = await aiService.complete([
-        {
-          role: "system",
-          content: `You are an experienced technical interviewer. Create a natural, conversational interview opening that:
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        response = await aiService.complete([
+          {
+            role: "system",
+            content: `You are an experienced technical interviewer. Create a natural, conversational interview opening that:
 1. Introduces yourself briefly
 2. Makes the candidate comfortable
 3. Sets expectations for the interview
@@ -143,9 +168,26 @@ router.post("/interview/start", async (req, res) => {
         }
       ]);
     } catch (error) {
-      console.log("[DEBUG] OpenAI failed, using fallback response");
-      response = `Hello! I'll be conducting your ${type} interview today for the ${level} ${jobType} position. Let's start with: Could you tell me about your background and experience in this field?`;
+      retryCount++;
+      if (retryCount >= maxRetries) {
+        console.log("[DEBUG] OpenAI failed after retries, using fallback response");
+        response = getFallbackQuestion(type, level, jobType);
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+      continue;
     }
+    break;
+  }
+
+  function getFallbackQuestion(type: string, level: string, jobType: string) {
+    const questions = {
+      'Technical': `Hello! I'll be conducting your technical interview for the ${level} ${jobType} position. Could you walk me through your technical background and experience with key technologies in this field?`,
+      'Behavioral': `Hi there! Today we'll focus on your experiences and approaches to workplace scenarios for the ${level} ${jobType} role. Could you tell me about a challenging project you've worked on?`,
+      'Mixed': `Welcome! I'll be conducting a comprehensive interview for the ${level} ${jobType} position, covering both technical and behavioral aspects. Let's start with your background in this field.`
+    };
+    return questions[type] || questions['Mixed'];
+  }
 
     console.log("[DEBUG] Creating interview plan");
 

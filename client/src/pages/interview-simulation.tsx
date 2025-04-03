@@ -40,6 +40,23 @@ export default function InterviewSimulationPage() {
       const params = JSON.parse(savedPrefs);
       setInterviewParams(params);
 
+      // Validate required fields
+      const requiredFields = ['jobType', 'experienceLevel', 'interviewType'];
+      const missingFields = requiredFields.filter(field => !params[field]);
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      }
+
+      // Default fallback values if needed
+      const normalizedParams = {
+        ...params,
+        jobType: params.jobType || 'Software Developer',
+        experienceLevel: params.experienceLevel || 'Mid-Level',
+        interviewType: params.interviewType || 'Technical',
+        jobDescription: params.jobDescription || `${params.experienceLevel} ${params.jobType} position`
+      };
+
       if (!params.jobType || !params.experienceLevel || !params.interviewType || !params.jobDescription) {
         throw new Error("Missing required interview parameters");
       }
