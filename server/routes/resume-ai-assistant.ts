@@ -312,11 +312,14 @@ Return your analysis with specific suggestions.`;
         revisedText = revisedText.substring(markerIndex + marker.length).trim();
       }
     }
+    
+    // Declare markerIndex for use in the response
+    const hasRevisionMarker = revisedText.indexOf(marker) !== -1;
 
     return res.json({
       revision: revisedText.toLowerCase().includes(sectionId.replace(/-/g, ' ')) ? revisedText : getFallbackMessage(sectionId),
       isContentCreation: isContentCreationQuery,
-      hasRevisionMarker: markerIndex !== -1,
+      hasRevisionMarker: hasRevisionMarker,
       improvements: [],
     });
   } catch (error) {

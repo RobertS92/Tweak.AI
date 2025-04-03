@@ -10,6 +10,7 @@ import ResumeUpload from "@/components/resume-upload";
 import ResumeBuilder from "@/pages/resume-builder";
 import InterviewPrep from "@/pages/interview-prep";
 import InterviewSimulation from "@/pages/interview-simulation";
+import InterviewAnalysis from "@/pages/interview-analysis";
 import NavigationBar from "@/components/navigation-bar";
 import MobileNavigation from "@/components/mobile-navigation";
 
@@ -27,6 +28,7 @@ function Router() {
           <Route path="/builder" component={ResumeBuilder} />
           <Route path="/interview-prep" component={InterviewPrep} />
           <Route path="/interview-simulation" component={InterviewSimulation} />
+          <Route path="/interview-analysis" component={InterviewAnalysis} />
           <Route component={NotFound} />
         </Switch>
       </main>

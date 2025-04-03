@@ -30,11 +30,11 @@ const interviewSessions = new Map<string, InterviewSession>();
 // Clean up expired sessions every 30 minutes
 setInterval(() => {
   const now = Date.now();
-  for (const [sessionId, session] of interviewSessions.entries()) {
+  Array.from(interviewSessions.entries()).forEach(([sessionId, session]) => {
     if (now - session.lastInteractionTime > 30 * 60 * 1000) {
       interviewSessions.delete(sessionId);
     }
-  }
+  });
 }, 30 * 60 * 1000);
 
 async function generateSpeech(text: string): Promise<Buffer> {
