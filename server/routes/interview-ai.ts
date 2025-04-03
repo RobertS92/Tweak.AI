@@ -138,7 +138,7 @@ Keep the response under 60 seconds when spoken.`
           content: `Start an interview for this job description, introducing yourself and asking the first question:\n\n${jobDescription}`
         }
       ]
-    });
+    );
 
     console.log("[DEBUG] Generated initial interview response");
     const responseText = await aiService.complete([
@@ -253,7 +253,7 @@ Format the response as JSON with 'scores' object and 'feedback' string.`
 
       const feedback = JSON.parse(completion.choices[0].message.content || "{}");
       session.feedback = feedback;
-      
+
       return res.json({
         feedback: feedback.feedback,
         scores: feedback.scores,
@@ -381,11 +381,12 @@ router.post("/interview/respond", async (req, res) => {
 
     // Generate follow-up question or feedback
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: `You are conducting a natural, conversational technical interview. For each candidate response:
+        model: "gpt-4",
+        temperature: 0.8,
+        messages: [
+          {
+            role: "system",
+            content: `You are conducting a natural, conversational technical interview. For each candidate response:
 1. Listen actively and acknowledge their response
 2. Provide subtle, conversational feedback
 3. Ask relevant follow-up questions
@@ -394,18 +395,17 @@ router.post("/interview/respond", async (req, res) => {
 Format your response conversationally, as it will be spoken aloud.
 Guide the conversation while keeping it natural and engaging.
 Focus on exploring the candidate's experience and knowledge.`
-        },
-        {
-          role: "user",
-          content: `Job Description: ${session.jobDescription}
+          },
+          {
+            role: "user",
+            content: `Job Description: ${session.jobDescription}
 Previous Conversation: ${JSON.stringify(session.history)}
 Latest Answer: ${answer}
 
 Generate a natural follow-up response and question.`
-        }
-      ],
-      temperature: 0.8
-    });
+          }
+        ]
+      });
 
     const response = completion.choices[0].message.content;
     session.history.push({ role: "interviewer", content: response });
