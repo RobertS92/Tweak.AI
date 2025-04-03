@@ -83,6 +83,7 @@ const startServer = async (port: number): Promise<void> => {
       log(`[DEBUG] Binding to port ${port}...`);
       server.listen(port, "0.0.0.0", () => {
         log(`[DEBUG] Server successfully started on port ${port}`);
+        log(`[DEBUG] Server is accessible at http://0.0.0.0:${port}`);
         resolve();
       }).on('error', (error: NodeJS.ErrnoException) => {
         log(`[DEBUG] Server startup error: ${error.message}`);
