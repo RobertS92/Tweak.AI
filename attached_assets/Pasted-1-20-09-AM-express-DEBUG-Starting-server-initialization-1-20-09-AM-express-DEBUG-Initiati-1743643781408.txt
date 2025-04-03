@@ -1,0 +1,41 @@
+1:20:09 AM [express] [DEBUG] Starting server initialization...
+1:20:09 AM [express] [DEBUG] Initiating server startup on port 5000...
+1:20:09 AM [express] [DEBUG] Attempting to start server on port 5000...
+1:20:09 AM [express] [DEBUG] Registering routes...
+1:20:09 AM [express] [DEBUG] Setting up Vite development server...
+1:20:10 AM [express] [DEBUG] Binding to port 5000...
+1:20:10 AM [express] [DEBUG] Server successfully started on port 5000
+1:20:10 AM [express] [DEBUG] Server is accessible at http://0.0.0.0:5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[DEBUG] Resume parser request received
+[DEBUG] Request body: [Object: null prototype] {}
+[DEBUG] Starting resume parsing process
+[DEBUG] File info: { filename: 'Rob ML-2.pdf', mimetype: 'application/pdf', size: 86736 }
+[DEBUG] Detected file type: application/pdf
+[DEBUG] Cleaning text content, initial length: 5536
+[DEBUG] Cleaned text length: 5466
+[DEBUG] Successfully extracted content, length: 5466
+[DEBUG] Content preview: Rob Seals 
+Houston, TX | rseals13@gmail.com | 832-517-0329 | GitHub: github.com/RobertS92 
+Professional Summary 
+ML Engineer with over 5 years of experience in developing and deploying machine learnin
+[DEBUG] Starting resume parsing with OpenAI
+[DEBUG] OpenAI API failed, falling back to local model
+1:26:28 AM [vite] hmr update /src/pages/interview-simulation.tsx, /src/index.css?v=W3RSbJipzL_2-PzfGZu90
+[DEBUG] Resume parser request received
+[DEBUG] Request body: [Object: null prototype] {}
+[DEBUG] Starting resume parsing process
+[DEBUG] File info: { filename: 'Rob ML-2.pdf', mimetype: 'application/pdf', size: 86736 }
+[DEBUG] Detected file type: application/pdf
+[DEBUG] Cleaning text content, initial length: 5536
+[DEBUG] Cleaned text length: 5466
+[DEBUG] Successfully extracted content, length: 5466
+[DEBUG] Content preview: Rob Seals 
+Houston, TX | rseals13@gmail.com | 832-517-0329 | GitHub: github.com/RobertS92 
+Professional Summary 
+ML Engineer with over 5 years of experience in developing and deploying machine learnin
+[DEBUG] Starting resume parsing with OpenAI
+[DEBUG] OpenAI API failed, falling back to local model
+1:27:51 AM [express] POST /api/resume-parser 200 in 1766ms :: {"personalInfo":{"name":"Rob Seals","e…
