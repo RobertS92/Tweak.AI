@@ -1,6 +1,10 @@
+
 import { useState, useEffect } from "react";
 import InterviewSimulation from "@/components/interview-simulation";
 import { useToast } from "@/hooks/use-toast";
+
+const MAX_RETRIES = 5;
+const RETRY_DELAY = 3000;
 
 export default function InterviewSimulationPage() {
   const { toast } = useToast();
@@ -12,84 +16,87 @@ export default function InterviewSimulationPage() {
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [interviewParams, setInterviewParams] = useState<any>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
-  // Load interview preferences on mount
-  useEffect(() => {
+  const loadInterviewData = async () => {
     try {
-      const savedPrefs = localStorage.getItem('interviewData'); // Changed to 'interviewData'
+      const savedPrefs = localStorage.getItem('interviewData');
       if (!savedPrefs) {
         throw new Error("No interview preferences found");
       }
       setInterviewParams(JSON.parse(savedPrefs));
+      return true;
     } catch (err) {
-      setError("Failed to load interview preferences. Please return to setup.");
-      setIsLoading(false);
+      return false;
     }
-  }, []);
+  };
 
-  // Simulated progress updates
-  useEffect(() => {
-    if (isLoading && progress < 90) {
-      const timer = setInterval(() => {
-        setProgress(prev => Math.min(prev + 10, 90));
-      }, 300);
-      return () => clearInterval(timer);
-    }
-  }, [isLoading, progress]);
-
-  useEffect(() => {
-    const initializeInterview = async () => {
-      try {
-        if (!interviewParams) {
+  const initializeInterview = async () => {
+    try {
+      if (!interviewParams) {
+        const loaded = await loadInterviewData();
+        if (!loaded) {
           throw new Error("Interview parameters not loaded");
         }
+      }
 
-        console.log("[DEBUG] Initializing interview simulation");
-        const { jobType, experienceLevel, interviewType, difficulty, jobDescription } = interviewParams;
+      console.log("[DEBUG] Initializing interview simulation");
+      const { jobType, experienceLevel, interviewType, difficulty, jobDescription } = interviewParams;
 
-        if (!interviewType || !jobType || !experienceLevel || !jobDescription) {
-          throw new Error("Missing required interview parameters");
-        }
+      if (!interviewType || !jobType || !experienceLevel || !jobDescription) {
+        throw new Error("Missing required interview parameters");
+      }
 
-        console.log("[DEBUG] Interview params:", { interviewType, jobType, experienceLevel, jobDescription });
-
-        const requestBody = {
+      const response = await fetch('/api/interview/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           type: interviewType,
           jobType,
           level: experienceLevel,
           jobDescription
-        };
+        })
+      });
 
-        console.log("[DEBUG] Sending request body:", requestBody);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to start interview");
+      }
 
-        const response = await fetch('/api/interview/start', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(requestBody)
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || "Failed to start interview");
-        }
-
-        const data = await response.json();
-        console.log("[DEBUG] Interview started successfully:", data);
-
-        setSessionId(data.sessionId);
-        setCurrentQuestion(data.question);
-        setIsLoading(false);
-      } catch (err) {
-        console.error("[DEBUG] Interview initialization error:", err);
+      const data = await response.json();
+      setSessionId(data.sessionId);
+      setCurrentQuestion(data.question);
+      setIsLoading(false);
+      setProgress(100);
+      setError(null);
+      setRetryCount(0);
+    } catch (err) {
+      console.error("[DEBUG] Interview initialization error:", err);
+      if (retryCount < MAX_RETRIES) {
+        setRetryCount(prev => prev + 1);
+        setTimeout(initializeInterview, RETRY_DELAY);
+      } else {
         setError(err instanceof Error ? err.message : "Failed to start interview");
         setIsLoading(false);
       }
-    };
+    }
+  };
 
+  useEffect(() => {
     initializeInterview();
   }, []);
+
+  useEffect(() => {
+    if (isLoading && progress < 90) {
+      const progressIncrement = 90 / (MAX_RETRIES + 1);
+      const timer = setInterval(() => {
+        setProgress(prev => Math.min(prev + progressIncrement, 90));
+      }, RETRY_DELAY / 10);
+      return () => clearInterval(timer);
+    }
+  }, [isLoading, progress]);
 
   const handleStopInterview = () => {
     window.location.href = '/interview-prep';
@@ -102,8 +109,20 @@ export default function InterviewSimulationPage() {
           <h2 className="text-xl font-semibold text-red-600 mb-4">Error</h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button 
+            onClick={() => {
+              setError(null);
+              setIsLoading(true);
+              setProgress(0);
+              setRetryCount(0);
+              initializeInterview();
+            }}
+            className="bg-[#4f8df9] text-white px-6 py-2 rounded-lg mr-4"
+          >
+            Retry
+          </button>
+          <button 
             onClick={() => window.location.href = '/interview-prep'}
-            className="bg-[#4f8df9] text-white px-6 py-2 rounded-lg"
+            className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg"
           >
             Return to Interview Prep
           </button>
@@ -115,10 +134,18 @@ export default function InterviewSimulationPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#f5f7fa] p-6 flex flex-col items-center justify-center gap-4">
-        <div className="text-[#4f8df9] text-xl font-semibold">Initializing interview...</div>
-        <div className="w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div className="h-full bg-[#4f8df9] animate-pulse rounded-full"></div>
+        <div className="text-[#4f8df9] text-xl font-semibold">
+          {retryCount > 0 ? `Retrying... (Attempt ${retryCount}/${MAX_RETRIES})` : 'Initializing interview...'}
         </div>
+        <div className="w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-[#4f8df9] transition-all duration-300" 
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <p className="text-sm text-gray-500">
+          {progress < 100 ? 'Setting up your interview...' : 'Almost ready...'}
+        </p>
       </div>
     );
   }
@@ -130,7 +157,7 @@ export default function InterviewSimulationPage() {
         transcript={transcript}
         isRecording={isRecording}
         onStopInterview={handleStopInterview}
-        interviewParams={interviewParams} // Pass interviewParams to the component
+        interviewParams={interviewParams}
       />
     </div>
   );
