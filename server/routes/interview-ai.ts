@@ -337,7 +337,9 @@ Format the response as JSON with 'scores' object and 'feedback' string.`
         temperature: 0.7
       });
 
-      const feedback = JSON.parse(completion.choices[0].message.content || "{}");
+      const content = completion.choices[0].message.content || "{}";
+      const cleanedContent = content.replace(/^```(json)?\s*|\s*```$/g, '');
+      const feedback = JSON.parse(cleanedContent);
       session.feedback = feedback;
 
       return res.json({
@@ -378,7 +380,11 @@ Format the response as JSON with 'scores' object and 'feedback' string.`
     });
 
     console.log("[DEBUG] Got evaluation response");
-    const evaluationResult = JSON.parse(evaluation.choices[0].message.content);
+    // Handle markdown formatting in the response
+    const content = evaluation.choices[0].message.content || "{}";
+    // Remove markdown formatting if present (```json, ```, etc.)
+    const cleanedContent = content.replace(/^```(json)?\s*|\s*```$/g, '');
+    const evaluationResult = JSON.parse(cleanedContent);
     console.log("[DEBUG] Evaluation results:", {
       completeness: evaluationResult.completeness,
       clarity: evaluationResult.clarity,
@@ -505,7 +511,7 @@ Generate a natural follow-up response and question.`
       ]
       });
 
-    const response = completion.choices[0].message.content;
+    const response = completion.choices[0].message.content || "I'm not sure how to respond to that. Let's move to the next question. Can you tell me about your technical skills?";
     session.history.push({ role: "interviewer", content: response });
     session.currentQuestion = response;
     session.lastInteractionTime = Date.now(); // Update last interaction time to prevent session expiration
@@ -574,7 +580,9 @@ ${session.history.map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join("
           max_tokens: 2000
         });
 
-        const feedback = JSON.parse(completion.choices[0].message.content);
+        const content = completion.choices[0].message.content || "{}";
+        const cleanedContent = content.replace(/^```(json)?\s*|\s*```$/g, '');
+        const feedback = JSON.parse(cleanedContent);
         session.feedback = feedback;
         interviewSessions.set(sessionId, session);
       } catch (error) {
@@ -682,7 +690,9 @@ Format the response as JSON with 'scores' object, 'overallScore' number, and 'qu
       temperature: 0.7
     });
 
-    const feedbackData = JSON.parse(completion.choices[0].message.content || "{}");
+    const content = completion.choices[0].message.content || "{}";
+    const cleanedContent = content.replace(/^```(json)?\s*|\s*```$/g, '');
+    const feedbackData = JSON.parse(cleanedContent);
     session.feedback = feedbackData;
     
     return res.json({
