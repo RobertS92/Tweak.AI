@@ -494,15 +494,15 @@ Format your response conversationally, as it will be spoken aloud.
 Guide the conversation while keeping it natural and engaging.
 Focus on exploring the candidate's experience and knowledge.`
           },
-          {
-            role: "user",
-            content: `Job Description: ${session.jobDescription}
+        {
+          role: "user",
+          content: `Job Description: ${session.jobDescription}
 Previous Conversation: ${JSON.stringify(session.history)}
 Latest Answer: ${answer}
 
 Generate a natural follow-up response and question.`
-          }
-        ]
+        }
+      ]
       });
 
     const response = completion.choices[0].message.content;
