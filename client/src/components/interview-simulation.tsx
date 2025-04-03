@@ -22,6 +22,7 @@ export default function InterviewSimulation({
   transcript = "",
   isRecording = false,
   progress = 0,
+  interviewData,
   onStopInterview = () => window.location.href = '/interview-prep'
 }: Partial<InterviewSimulationProps>) {
 

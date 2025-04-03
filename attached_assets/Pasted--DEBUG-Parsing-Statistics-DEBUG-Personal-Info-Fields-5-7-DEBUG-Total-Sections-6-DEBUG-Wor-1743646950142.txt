@@ -1,0 +1,54 @@
+
+[DEBUG] Parsing Statistics:
+[DEBUG] Personal Info Fields: 5/7
+[DEBUG] Total Sections: 6
+[DEBUG] Work Experience Items: 4
+[DEBUG] Education Items: 4
+[DEBUG] Total Skills: 47
+[DEBUG] Speech generation request successful
+[DEBUG] Generated initial interview response
+[DEBUG] Response length: 823
+[DEBUG] Generating speech for initial response
+[DEBUG] Starting speech generation
+[DEBUG] Text to convert: Hello there, I'm [Your Name], a seasoned technical interviewer and I'll be conducting your interview...
+[DEBUG] Text length: 823
+[DEBUG] Creating interview plan
+[DEBUG] Speech generation request successful
+[DEBUG] Response length: 658
+[DEBUG] Generating speech for initial response
+[DEBUG] Starting speech generation
+[DEBUG] Text to convert: Hello, I'm Alex, a technical recruiter with extensive experience in the insurance sector. I’m glad t...
+[DEBUG] Text length: 658
+[DEBUG] Speech generation request successful
+[DEBUG] Generated initial interview response
+[DEBUG] Generated speech buffer size: 1338240
+[DEBUG] Speech generation completed successfully
+[DEBUG] Created session ID: 1743646905793
+[DEBUG] Interview session created
+[DEBUG] Audio buffer size: 1338240
+2:21:45 AM [express] POST /api/interview/start 200 in 35074ms :: {"sessionId":"1743646905793","quest…
+2:21:46 AM [vite] hmr update /src/components/interview-simulation.tsx, /src/index.css?v=ypK3VyZFQZOtURsz3me91
+[DEBUG] Generated speech buffer size: 1018560
+[DEBUG] Speech generation completed successfully
+[DEBUG] Created session ID: 1743646907413
+[DEBUG] Interview session created
+[DEBUG] Audio buffer size: 1018560
+2:21:47 AM [express] POST /api/interview/start 200 in 26323ms :: {"sessionId":"1743646907413","quest…
+[DEBUG] Generated speech buffer size: 807360
+[DEBUG] Speech generation completed successfully
+[DEBUG] Created session ID: 1743646909812
+[DEBUG] Interview session created
+[DEBUG] Audio buffer size: 807360
+2:21:49 AM [express] POST /api/interview/start 200 in 24287ms :: {"sessionId":"1743646909812","quest…
+[DEBUG] Response length: 808
+[DEBUG] Generating speech for initial response
+[DEBUG] Starting speech generation
+[DEBUG] Text to convert: Hello! I'm glad to have you here. My name is [Your Name], and I've been conducting technical intervi...
+[DEBUG] Text length: 808
+[DEBUG] Speech generation request successful
+2:21:55 AM [vite] hmr update /src/pages/interview-simulation.tsx, /src/index.css?v=ypK3VyZFQZOtURsz3me91
+[DEBUG] Starting interview session setup
+[DEBUG] Generated speech buffer size: 988320
+[DEBUG] Speech generation completed successfully
+[DEBUG] Created session ID: 1743646916677
+[DEBUG] Interview session created

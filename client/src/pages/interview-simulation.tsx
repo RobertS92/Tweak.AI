@@ -77,8 +77,9 @@ export default function InterviewSimulationPage() {
         throw new Error("Missing required interview parameters");
       }
 
-      console.log("[DEBUG] Initializing interview simulation");
-      const { jobType, experienceLevel, interviewType, difficulty, jobDescription } = interviewParams;
+      console.log("[DEBUG] Initializing interview simulation with params:", normalizedParams);
+      // Use the normalized params directly instead of interviewParams which might not be set yet in state
+      const { jobType, experienceLevel, interviewType, difficulty, jobDescription } = normalizedParams;
 
       if (!interviewType || !jobType || !experienceLevel || !jobDescription) {
         throw new Error("Missing required interview parameters");
@@ -97,24 +98,83 @@ export default function InterviewSimulationPage() {
         })
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to start interview");
+        throw new Error(data.error || "Failed to start interview");
       }
 
-      const data = await response.json();
+      console.log("[DEBUG] Received interview data:", {
+        sessionId: data.sessionId,
+        hasQuestion: !!data.question,
+        hasAudio: !!data.audio,
+        audioLength: data.audio ? data.audio.length : 0,
+      });
+      
       setSessionId(data.sessionId);
-      setCurrentQuestion(data.question);
+      setCurrentQuestion(data.question || "");
+      
+      // Play audio if available
+      if (data.audio) {
+        try {
+          const audioBytes = atob(data.audio);
+          const audioArray = new Uint8Array(audioBytes.length);
+          for (let i = 0; i < audioBytes.length; i++) {
+            audioArray[i] = audioBytes.charCodeAt(i);
+          }
+          
+          const audioBlob = new Blob([audioArray], { type: 'audio/mpeg' });
+          const audioUrl = URL.createObjectURL(audioBlob);
+          const audio = new Audio(audioUrl);
+          audio.oncanplaythrough = () => {
+            console.log("[DEBUG] Audio ready to play");
+            audio.play().catch(e => console.error("[DEBUG] Audio play error:", e));
+          };
+          audio.onerror = (e) => console.error("[DEBUG] Audio error:", e);
+          console.log("[DEBUG] Audio blob created");
+        } catch (audioErr) {
+          console.error("[DEBUG] Error playing audio:", audioErr);
+        }
+      } else {
+        console.warn("[DEBUG] No audio received from server");
+      }
+      
       setIsLoading(false);
       setProgress(100);
       setError(null);
       setRetryCount(0);
     } catch (err) {
       console.error("[DEBUG] Interview initialization error:", err);
+      console.error("[DEBUG] Error details:", 
+        err instanceof Error ? {
+          message: err.message,
+          stack: err.stack,
+          name: err.name
+        } : String(err)
+      );
+      
+      // Log the request payload for debugging
+      try {
+        // Get params from localStorage as a fallback if normalizedParams is not available
+        const savedPrefs = localStorage.getItem('interviewData');
+        const params = savedPrefs ? JSON.parse(savedPrefs) : {};
+        
+        console.log("[DEBUG] Interview request payload (from localStorage):", JSON.stringify({
+          type: params.interviewType,
+          jobType: params.jobType,
+          level: params.experienceLevel,
+          jobDescription: params.jobDescription?.substring(0, 100) + "..." // Truncate for logging
+        }));
+      } catch (e) {
+        console.error("[DEBUG] Error logging request payload:", e);
+      }
+      
       if (retryCount < MAX_RETRIES) {
+        console.log(`[DEBUG] Retrying (${retryCount + 1}/${MAX_RETRIES}) in ${RETRY_DELAY}ms`);
         setRetryCount(prev => prev + 1);
         setTimeout(initializeInterview, RETRY_DELAY);
       } else {
+        console.error("[DEBUG] Max retries reached, showing error UI");
         setError(err instanceof Error ? err.message : "Failed to start interview");
         setIsLoading(false);
       }
@@ -228,7 +288,7 @@ export default function InterviewSimulationPage() {
         transcript={transcript}
         isRecording={isRecording}
         onStopInterview={handleStopInterview}
-        interviewParams={interviewParams}
+        interviewData={interviewParams}
       />
     </div>
   );
