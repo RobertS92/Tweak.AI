@@ -25,6 +25,9 @@ export default function Home() {
       return new Promise<Resume>((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", "/api/resumes");
+        
+        // Include credentials in the request
+        xhr.withCredentials = true;
 
         // Track upload progress
         xhr.upload.onprogress = (event) => {
@@ -38,8 +41,16 @@ export default function Home() {
           if (xhr.status >= 200 && xhr.status < 300) {
             const result = JSON.parse(xhr.responseText) as Resume;
             resolve(result);
+          } else if (xhr.status === 401) {
+            // Handle unauthorized specifically
+            reject(new Error("You must be logged in to upload. Please log in and try again."));
           } else {
-            reject(new Error(xhr.statusText || "Upload failed"));
+            try {
+              const errorResponse = JSON.parse(xhr.responseText);
+              reject(new Error(errorResponse.message || xhr.statusText || "Upload failed"));
+            } catch {
+              reject(new Error(xhr.statusText || "Upload failed"));
+            }
           }
         };
 
