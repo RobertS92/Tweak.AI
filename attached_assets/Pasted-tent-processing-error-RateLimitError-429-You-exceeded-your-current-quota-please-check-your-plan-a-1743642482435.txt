@@ -1,0 +1,38 @@
+tent processing error: RateLimitError: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.
+    at Function.generate (/home/runner/workspace/node_modules/openai/src/error.ts:96:14)
+    at OpenAI.makeStatusError (/home/runner/workspace/node_modules/openai/src/core.ts:443:21)
+    at OpenAI.makeRequest (/home/runner/workspace/node_modules/openai/src/core.ts:507:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async parseResume (/home/runner/workspace/server/routes/resume-parser.ts:61:20)
+    at async <anonymous> (/home/runner/workspace/server/routes/resume-parser.ts:312:26) {
+  status: 429,
+  headers: {
+    'alt-svc': 'h3=":443"; ma=86400',
+    'cf-cache-status': 'DYNAMIC',
+    'cf-ray': '92a4abc38f157205-SEA',
+    connection: 'keep-alive',
+    'content-length': '337',
+    'content-type': 'application/json; charset=utf-8',
+    date: 'Thu, 03 Apr 2025 01:07:45 GMT',
+    server: 'cloudflare',
+    'set-cookie': '__cf_bm=ySn6AxlKzFeE70gAyJWKk3XRsCd2S2Z.FexuLJGAaI4-1743642465-1.0.1.1-gUS7XPaDDJrFoHSnRqEWe8QFtYCPRQQTaROWBdKHNVFTBn3kBsACv9hzA3cGmtIRNsRlpCV9rNcnPKGKOpqiGAFXQ7RfvXpkIlIj6NCmG4Q; path=/; expires=Thu, 03-Apr-25 01:37:45 GMT; domain=.api.openai.com; HttpOnly; Secure; SameSite=None, _cfuvid=ZcLJapa5YntPKGc5YlG8BN7esKrR.EMum3ADK5vmOT8-1743642465904-0.0.1.1-604800000; path=/; domain=.api.openai.com; HttpOnly; Secure; SameSite=None',
+    'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+    vary: 'Origin',
+    'x-content-type-options': 'nosniff',
+    'x-request-id': 'req_960dcc3f342e3554d350c3cb1f06a7f3'
+  },
+  request_id: 'req_960dcc3f342e3554d350c3cb1f06a7f3',
+  error: {
+    message: 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.',
+    type: 'insufficient_quota',
+    param: null,
+    code: 'insufficient_quota'
+  },
+  code: 'insufficient_quota',
+  param: null,
+  type: 'insufficient_quota'
+}
+[DEBUG] Resume parsing error: Error: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.
+    at <anonymous> (/home/runner/workspace/server/routes/resume-parser.ts:358:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+1:07:45 AM [express] POST /api/resume-parser 500 in 1768ms :: {"error":"Unable to process your resum…
