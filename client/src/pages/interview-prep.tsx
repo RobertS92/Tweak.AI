@@ -318,13 +318,9 @@ export default function InterviewPrep() {
         sessionId: Date.now().toString()
       };
 
-      // Validate all required fields have values
-      const requiredFields = ['jobType', 'experienceLevel', 'interviewType'];
+      // Validate all required fields
+      const requiredFields = ['jobType', 'experienceLevel', 'interviewType', 'jobDescription'];
       const missingFields = requiredFields.filter(field => !interviewData[field]);
-      
-      if (missingFields.length > 0) {
-        throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
-      }
 
       // Set default job description if none provided
       if (!interviewData.jobDescription) {
@@ -332,10 +328,6 @@ export default function InterviewPrep() {
       }
 
       console.log("[DEBUG] Saving interview data:", interviewData);
-
-      // Validate all required fields are present
-      const requiredFields = ['jobType', 'experienceLevel', 'interviewType', 'jobDescription'];
-      const missingFields = requiredFields.filter(field => !interviewData[field]);
 
       if (missingFields.length > 0) {
         throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
