@@ -303,25 +303,32 @@ export default function InterviewPrep() {
     e.preventDefault();
     setIsAnalyzing(true);
 
-    const interviewData = {
-      jobType,
-      experienceLevel,
-      interviewType,
-      difficulty,
-      duration: interviewDuration,
-      interviewFocus
-    };
-
     try {
       if (!interviewType || !experienceLevel || !jobType) {
         throw new Error("Please select all interview preferences");
       }
 
+      const interviewData = {
+        jobType,
+        experienceLevel,
+        interviewType,
+        difficulty,
+        duration: interviewDuration,
+        interviewFocus,
+        jobDescription: jobDescription || `${experienceLevel} ${jobType} position requiring ${interviewType} expertise`
+      };
+
       // Store interview data in localStorage
       localStorage.setItem('interviewData', JSON.stringify(interviewData));
 
+      // Verify data was stored
+      const storedData = localStorage.getItem('interviewData');
+      if (!storedData) {
+        throw new Error("Failed to save interview data");
+      }
+
       // Navigate to interview simulation
-      window.location.href = `/interview-simulation`;
+      window.location.href = '/interview-simulation';
     } catch (error) {
       toast({
         title: "Error",
