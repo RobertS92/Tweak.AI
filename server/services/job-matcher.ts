@@ -51,7 +51,7 @@ export async function matchJob(resumeContent: string, jobDescription: string) {
 
     const response = await openai.chat.completions.create({
       model: "gpt-4",
-      response_format: { type: "json_object" },
+      // Remove response_format since it's causing issues with the model
       messages: [
         {
           role: "system",
@@ -137,21 +137,28 @@ export async function tweakResume(resumeContent: string, jobDescription: string)
 
     const sanitizedJobDesc = jobDescription.replace(/\r\n/g, '\n').trim();
     const sanitizedResume = resumeContent.replace(/\r\n/g, '\n').trim();
+    
+    // Log original content length for comparison
+    console.log("[DEBUG] Original resume length:", sanitizedResume.length);
 
+    // Remove response_format since it's causing issues with the model
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      response_format: { type: "json_object" },
+      model: "gpt-4", 
       messages: [
         {
           role: "system",
-          content: `You are an expert ATS optimization specialist. Enhance the provided resume to better match the job description while maintaining authenticity and truthfulness. Keep all original contact information and structure. Include these sections in order if present in original:
-1. Personal Information
-2. Professional Summary
-3. Work Experience
-4. Skills
-5. Education
-6. Projects (if any)
-7. Certifications (if any)
+          content: `You are an expert ATS optimization specialist. Enhance the provided resume to better match the job description.
+
+MOST IMPORTANT RULE: DO NOT SHORTEN THE RESUME AT ALL.
+
+Follow these instructions exactly:
+1. Keep ALL sections, bullet points, skills, and experiences from the original resume
+2. Simply ADD relevant keywords from the job description by enhancing existing bullet points
+3. NEVER remove any skills, experiences, or projects - this is critical
+4. You may rephrase/enhance existing bullets but maintain all the original information
+5. The optimized content must be equal or longer in length than the original resume
+6. Focus only on KEYWORD MATCHING, not content reduction
+7. Create a detailed list of all specific changes made
 
 Return a JSON response with this exact structure:
 {
@@ -161,11 +168,11 @@ Return a JSON response with this exact structure:
   "formattingImprovements": ["List of formatting changes"]
 }
 
-Important: Maintain all original sections and information, only enhance content to better match job requirements. Do not fabricate experience or credentials.`
+Important: Return ONLY valid JSON in your response, nothing else. Format your entire response as a single JSON object.`
         },
         {
           role: "user",
-          content: `Resume Content:\n${sanitizedResume}\n\nJob Description:\n${sanitizedJobDesc}\n\nEnhance this resume to better match the job requirements while preserving all original sections and truthfulness.`
+          content: `Resume Content:\n${sanitizedResume}\n\nJob Description:\n${sanitizedJobDesc}\n\nEnhance this resume to better match the job requirements while preserving all original sections and truthfulness. The enhanced content MUST be equal or longer in length than the original resume.`
         }
       ],
       temperature: 0.3,
@@ -175,11 +182,16 @@ Important: Maintain all original sections and information, only enhance content 
       throw new Error("No optimization received from OpenAI");
     }
 
-    console.log("[DEBUG] Raw tweak response:", response.choices[0].message.content);
+    console.log("[DEBUG] Raw tweak response:", response.choices[0].message.content.substring(0, 100) + "...");
 
     let result;
     try {
-      result = JSON.parse(response.choices[0].message.content);
+      // Handle potential non-JSON content by extracting the JSON portion
+      const content = response.choices[0].message.content.trim();
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      const jsonString = jsonMatch ? jsonMatch[0] : content;
+      
+      result = JSON.parse(jsonString);
     } catch (parseError) {
       console.error("[DEBUG] JSON parse error:", parseError);
       throw new Error("Failed to parse optimization response");
@@ -187,6 +199,19 @@ Important: Maintain all original sections and information, only enhance content 
 
     if (!result.enhancedContent) {
       throw new Error("Missing enhanced content in response");
+    }
+    
+    // Check if enhanced content preserves resume length
+    console.log("[DEBUG] Enhanced resume length:", result.enhancedContent.length);
+    
+    if (result.enhancedContent.length < sanitizedResume.length * 0.95) {
+      console.log("[WARNING] Enhanced content is significantly shorter than original!");
+      console.log("[WARNING] Original length:", sanitizedResume.length, "Enhanced length:", result.enhancedContent.length);
+      
+      // For significantly shortened content (less than 85%), reject the enhancement
+      if (result.enhancedContent.length < sanitizedResume.length * 0.85) {
+        throw new Error("AI produced a significantly shortened resume. Using original content instead.");
+      }
     }
 
     return {

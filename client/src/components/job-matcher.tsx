@@ -30,6 +30,9 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
   const [showEnhanced, setShowEnhanced] = useState(false);
   const [originalContent, setOriginalContent] = useState("");
   const [enhancedContent, setEnhancedContent] = useState("");
+  const [improvements, setImprovements] = useState<string[]>([]);
+  const [keywordMatches, setKeywordMatches] = useState<string[]>([]);
+  const [matchScore, setMatchScore] = useState<number | null>(null);
 
   const tweakResumeMutation = useMutation({
     mutationFn: async () => {
@@ -67,7 +70,12 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
       setEnhancedContent(optimizedContent);
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      // Save all the improvement information
+      setImprovements(result.improvements || result.changes || []);
+      setKeywordMatches(result.keywordMatches || []);
+      setMatchScore(result.matchScore || null);
+      
       toast({
         title: "Resume Optimized",
         description: "Your resume has been optimized for this job",
@@ -240,6 +248,8 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
                 )}
               </div>
             </div>
+            
+            {/* Resume Content */}
             <Card className="bg-muted/50">
               <ScrollArea className="h-[400px]">
                 <div className="p-6 whitespace-pre-wrap font-mono text-sm">
@@ -252,6 +262,47 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
                 </div>
               </ScrollArea>
             </Card>
+            
+            {/* Changes Made Section */}
+            {showEnhanced && improvements.length > 0 && (
+              <div className="space-y-2">
+                <h5 className="font-medium text-base">Changes Made:</h5>
+                <Card className="bg-muted/30 p-4">
+                  <ScrollArea className="max-h-[200px]">
+                    <ul className="list-disc pl-5 space-y-1">
+                      {improvements.map((improvement, idx) => (
+                        <li key={idx} className="text-sm">{improvement}</li>
+                      ))}
+                    </ul>
+                  </ScrollArea>
+                </Card>
+              </div>
+            )}
+            
+            {/* Keyword Matches Section */}
+            {showEnhanced && keywordMatches.length > 0 && (
+              <div className="space-y-2">
+                <h5 className="font-medium text-base">Matched Keywords:</h5>
+                <div className="flex flex-wrap gap-2">
+                  {keywordMatches.map((keyword, idx) => (
+                    <Badge key={idx} variant="secondary" className="text-xs py-1">
+                      {keyword}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Match Score */}
+            {showEnhanced && matchScore !== null && (
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <h5 className="font-medium text-base">ATS Match Score:</h5>
+                  <span className="font-semibold">{matchScore}%</span>
+                </div>
+                <Progress value={matchScore} className="h-2" />
+              </div>
+            )}
           </div>
         )}
       </CardContent>

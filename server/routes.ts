@@ -463,6 +463,23 @@ Create an optimized version that matches keywords while PRESERVING ALL ORIGINAL 
         
         const optimization = JSON.parse(rawResponse);
         console.log("[DEBUG] Successfully parsed optimization JSON");
+        
+        // Check that optimization preserves resume length
+        const originalLength = resume.content.length;
+        const optimizedLength = optimization.optimizedContent ? optimization.optimizedContent.length : 0;
+        console.log(`[DEBUG] Original length: ${originalLength}, Optimized length: ${optimizedLength}`);
+        
+        // If optimized content is significantly shorter (less than 95% of original), issue a warning
+        // and possibly reject the optimization
+        if (optimizedLength > 0 && optimizedLength < originalLength * 0.95) {
+          console.log("[WARNING] Optimized content is significantly shorter than original!");
+          console.log("[WARNING] Original length:", originalLength, "Optimized length:", optimizedLength);
+          
+          // For significantly shortened content (less than 85%), reject the optimization
+          if (optimizedLength < originalLength * 0.85) {
+            throw new Error("AI produced a significantly shortened resume. Using original content instead.");
+          }
+        }
 
         if (!optimization.optimizedContent) {
           throw new Error("Missing optimized content in response");
