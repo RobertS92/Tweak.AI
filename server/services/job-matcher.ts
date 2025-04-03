@@ -149,16 +149,19 @@ export async function tweakResume(resumeContent: string, jobDescription: string)
           role: "system",
           content: `You are an expert ATS optimization specialist. Enhance the provided resume to better match the job description.
 
-MOST IMPORTANT RULE: DO NOT SHORTEN THE RESUME AT ALL.
+⚠️ CRITICAL REQUIREMENT: NEVER REMOVE OR SHORTEN ANY CONTENT FROM THE RESUME. THIS IS THE HIGHEST PRIORITY RULE.
 
-Follow these instructions exactly:
-1. Keep ALL sections, bullet points, skills, and experiences from the original resume
-2. Simply ADD relevant keywords from the job description by enhancing existing bullet points
-3. NEVER remove any skills, experiences, or projects - this is critical
-4. You may rephrase/enhance existing bullets but maintain all the original information
-5. The optimized content must be equal or longer in length than the original resume
-6. Focus only on KEYWORD MATCHING, not content reduction
-7. Create a detailed list of all specific changes made
+Follow these instructions explicitly:
+1. PRESERVE EVERY SINGLE DETAIL from the original resume - this is non-negotiable
+2. COPY ALL ORIGINAL TEXT VERBATIM before making any enhancements
+3. Keep ALL sections, bullet points, skills, and experiences from the original resume
+4. Simply ADD relevant keywords from the job description by enhancing existing bullet points
+5. NEVER remove any skills, experiences, or projects - this is critical
+6. You may rephrase/enhance existing bullets but maintain all the original information
+7. The optimized content MUST be LONGER than the original resume - never shorter
+8. Focus only on KEYWORD MATCHING and CONTENT ADDITION, never reduction
+9. If you're considering removing anything, DON'T - preserve it exactly as is
+10. Create a detailed list of all specific changes made
 
 Return a JSON response with this exact structure:
 {
@@ -172,7 +175,14 @@ Important: Return ONLY valid JSON in your response, nothing else. Format your en
         },
         {
           role: "user",
-          content: `Resume Content:\n${sanitizedResume}\n\nJob Description:\n${sanitizedJobDesc}\n\nEnhance this resume to better match the job requirements while preserving all original sections and truthfulness. The enhanced content MUST be equal or longer in length than the original resume.`
+          content: `Resume Content:\n${sanitizedResume}\n\nJob Description:\n${sanitizedJobDesc}\n\nEnhance this resume to better match the job requirements. 
+
+CRITICAL REQUIREMENTS:
+1. COPY 100% OF THE ORIGINAL CONTENT before making any enhancements
+2. NEVER remove any details from the original resume
+3. The enhanced version MUST be longer than the original - never shorter
+4. If in doubt about any content, KEEP IT EXACTLY AS IS
+5. Provide specific details on what keywords you've matched and what improvements you've made`
         }
       ],
       temperature: 0.3,
@@ -203,14 +213,32 @@ Important: Return ONLY valid JSON in your response, nothing else. Format your en
     
     // Check if enhanced content preserves resume length
     console.log("[DEBUG] Enhanced resume length:", result.enhancedContent.length);
+    console.log("[DEBUG] Original resume length:", sanitizedResume.length);
     
-    if (result.enhancedContent.length < sanitizedResume.length * 0.95) {
-      console.log("[WARNING] Enhanced content is significantly shorter than original!");
+    // Modified validation with more sophisticated approach
+    // For plain text content, do a direct length comparison
+    if (result.enhancedContent.length < sanitizedResume.length) {
+      console.log("[WARNING] Enhanced content appears shorter than original content!");
       console.log("[WARNING] Original length:", sanitizedResume.length, "Enhanced length:", result.enhancedContent.length);
       
       // For significantly shortened content (less than 85%), reject the enhancement
       if (result.enhancedContent.length < sanitizedResume.length * 0.85) {
+        console.log("[ERROR] Enhanced content is significantly shorter, rejecting analysis");
         throw new Error("AI produced a significantly shortened resume. Using original content instead.");
+      }
+    }
+    
+    // Perform a character count comparison as well to ensure content preservation
+    const originalChars = new Set(sanitizedResume.replace(/\s+/g, '').split('')).size;
+    const enhancedChars = new Set(result.enhancedContent.replace(/\s+/g, '').split('')).size;
+    
+    if (enhancedChars < originalChars * 0.9) {
+      console.log("[WARNING] Enhanced content may be missing characters from original!");
+      console.log("[WARNING] Original unique chars:", originalChars, "Enhanced unique chars:", enhancedChars);
+      
+      if (enhancedChars < originalChars * 0.8) {
+        console.log("[ERROR] Enhanced content is missing too many characters, rejecting");
+        throw new Error("Enhanced content appears to have lost significant information");
       }
     }
 
