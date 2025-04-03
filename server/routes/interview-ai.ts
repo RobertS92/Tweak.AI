@@ -109,10 +109,19 @@ router.post("/interview/start", async (req, res) => {
     console.log("[DEBUG] Starting interview session setup");
     const { type, jobType, level, jobDescription, durationMinutes = 30 } = req.body;
 
-    if (!type || !jobType || !level || !jobDescription) {
+    if (!type || !level || !jobDescription) {
       return res.status(400).json({
         error: "Missing required fields",
-        details: "Interview type, job type, experience level and job description are required"
+        details: "Interview type, experience level and job description are required"
+      });
+    }
+
+    const normalizedJobType = jobType?.trim() || "Software Developer";
+    
+    if (normalizedJobType.length < 2) {
+      return res.status(400).json({
+        error: "Invalid job title",
+        details: "Please enter a valid job title"
       });
     }
 

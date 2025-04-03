@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import InterviewSimulation from "@/components/interview-simulation";
 import { useToast } from "@/hooks/use-toast";
@@ -140,7 +139,7 @@ export default function InterviewSimulationPage() {
     return (
       <div className="min-h-screen bg-[#f5f7fa] p-6 flex flex-col items-center justify-center gap-4">
         <div className="text-[#4f8df9] text-xl font-semibold">
-          {retryCount > 0 ? `Retrying... (Attempt ${retryCount}/${MAX_RETRIES})` : 'Initializing interview...'}
+          {isLoading ? 'Setting up your interview...' : 'Interview Ready'}
         </div>
         <div className="w-64 h-2 bg-gray-200 rounded-full overflow-hidden">
           <div 
@@ -151,6 +150,22 @@ export default function InterviewSimulationPage() {
         <p className="text-sm text-gray-500">
           {progress < 100 ? 'Setting up your interview...' : 'Almost ready...'}
         </p>
+        {error && (
+          <div className="mt-4 text-center">
+            <p className="text-red-600 mb-4">Failed to start interview</p>
+            <button 
+              onClick={() => {
+                setError(null);
+                setIsLoading(true);
+                setProgress(0);
+                initializeInterview();
+              }}
+              className="bg-[#4f8df9] text-white px-6 py-2 rounded-lg"
+            >
+              Retry
+            </button>
+          </div>
+        )}
       </div>
     );
   }

@@ -323,7 +323,7 @@ export default function InterviewPrep() {
       // Validate all required fields are present
       const requiredFields = ['jobType', 'experienceLevel', 'interviewType', 'jobDescription'];
       const missingFields = requiredFields.filter(field => !interviewData[field]);
-      
+
       if (missingFields.length > 0) {
         throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
       }
@@ -334,7 +334,7 @@ export default function InterviewPrep() {
       // Verify data was stored correctly
       const storedData = localStorage.getItem('interviewData');
       const parsedData = storedData ? JSON.parse(storedData) : null;
-      
+
       if (!parsedData || !parsedData.jobType || !parsedData.experienceLevel || !parsedData.interviewType) {
         throw new Error("Failed to save interview data");
       }
@@ -399,18 +399,15 @@ export default function InterviewPrep() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="font-semibold text-[#2c3e50]">Job Type</label>
-                  <Select value={jobType} onValueChange={setJobType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select job type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Software Engineer">Software Engineer</SelectItem>
-                      <SelectItem value="Data Scientist">Data Scientist</SelectItem>
-                      <SelectItem value="Product Manager">Product Manager</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                    <label className="font-semibold text-[#2c3e50]">Job Title</label>
+                    <input
+                      type="text"
+                      value={jobType}
+                      onChange={(e) => setJobType(e.target.value)}
+                      placeholder="Enter job title (e.g. Frontend Developer)"
+                      className="w-full px-4 py-3 rounded-md border"
+                    />
+                  </div>
 
                 <div className="space-y-2">
                   <label className="font-semibold text-[#2c3e50]">Job Description</label>
