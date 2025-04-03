@@ -112,6 +112,63 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
       setUploadedFile(null);
     }
   };
+  
+  const downloadOptimizedPDF = async () => {
+    if (!enhancedContent || !jobDescription) {
+      toast({
+        title: "No Optimized Content",
+        description: "Please optimize your resume first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      toast({
+        title: "Generating PDF",
+        description: "Please wait while we prepare your optimized resume...",
+      });
+      
+      // Call the new endpoint for job-matched PDF generation
+      const response = await fetch(`/api/resumes/${resumeId}/job-match-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ jobDescription }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to generate PDF');
+      }
+      
+      // Get the PDF blob
+      const pdfBlob = await response.blob();
+      
+      // Create a download link
+      const downloadUrl = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `optimized_resume_${resumeId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(downloadUrl);
+      
+      toast({
+        title: "PDF Downloaded",
+        description: "Your optimized resume has been downloaded",
+      });
+    } catch (error) {
+      console.error('PDF download error:', error);
+      toast({
+        title: "Download Failed",
+        description: error instanceof Error ? error.message : "Failed to download PDF. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <Card>
@@ -170,6 +227,17 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
                   <ArrowLeftRight className="w-4 h-4" />
                   Toggle Version
                 </Button>
+                {enhancedContent && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => downloadOptimizedPDF()}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download PDF
+                  </Button>
+                )}
               </div>
             </div>
             <Card className="bg-muted/50">

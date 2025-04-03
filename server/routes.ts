@@ -397,13 +397,24 @@ export async function registerRoutes(app: Express) {
 
       console.log("[DEBUG] Found resume, starting optimization");
 
-      // Enhanced optimization using OpenAI
+      // Enhanced optimization using OpenAI - with improved prompt to preserve content
       const response = await openai.chat.completions.create({
         model: "gpt-4",
         messages: [
           {
             role: "system",
-            content: 'You are an expert ATS optimization specialist. Your response must be a valid JSON string that can be parsed. Use this exact format: {"optimizedContent": "...", "changes": ["..."], "matchScore": 85, "keywordMatches": ["..."], "missingKeywords": ["..."], "formatImprovements": ["..."]}. Escape special characters properly.'
+            content: `You are an expert ATS optimization specialist. Your job is to optimize resumes to match job descriptions while preserving the original content and structure.
+            
+Important guidelines:
+1. DO NOT shorten the resume significantly - maintain all sections and most bullet points
+2. DO NOT remove skills, experiences, or projects unless they're completely irrelevant
+3. DO add relevant keywords from the job description
+4. DO emphasize experiences that align with the job description
+5. DO improve formatting for better ATS parsing
+6. ALL changes should be aimed at better keyword matching, not shortening
+
+Your response must be a valid JSON string that can be parsed. Use this exact format: 
+{"optimizedContent": "...", "changes": ["..."], "matchScore": 85, "keywordMatches": ["..."], "missingKeywords": ["..."], "formatImprovements": ["..."]}. Escape special characters properly.`
           },
           {
             role: "user",
@@ -413,10 +424,10 @@ ${cleanJobDescription}
 Current Resume:
 ${resume.content}
 
-Return an optimized version that matches keywords and improves ATS score while maintaining truthfulness. Return ONLY valid JSON.`
+Return an optimized version that matches keywords and improves ATS score while maintaining truthfulness and the FULL CONTENT of the original resume. Do not significantly shorten sections. Return ONLY valid JSON.`
           }
         ],
-        temperature: 0.3
+        temperature: 0.2
       });
 
       if (!response.choices[0].message.content) {
@@ -634,6 +645,186 @@ Return an optimized version that matches keywords and improves ATS score while m
     `;
   }
 
+  // Add PDF download endpoint for job-matched resumes
+  app.post("/api/resumes/:id/job-match-pdf", async (req, res) => {
+    try {
+      console.log("[DEBUG] Received job-matched PDF download request");
+      const resumeId = parseInt(req.params.id);
+      const { jobDescription } = req.body;
+      
+      if (!jobDescription) {
+        return res.status(400).json({ message: "Job description is required" });
+      }
+      
+      console.log(`[DEBUG] Processing job-matched resume ID: ${resumeId}`);
+      
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        console.log("[DEBUG] Authentication required for PDF download");
+        return res.status(401).json({ 
+          message: "You must be logged in to download a resume as PDF",
+          requiresAuth: true
+        });
+      }
+      
+      console.log("[DEBUG] User authenticated, fetching resume");
+      const resume = await storage.getResume(resumeId);
+      if (!resume) {
+        console.log(`[DEBUG] Resume with ID ${resumeId} not found`);
+        return res.status(404).json({ message: "Resume not found" });
+      }
+      
+      // Optimize the resume for the job description
+      console.log("[DEBUG] Optimizing resume for job description");
+      
+      // Clean job description
+      const cleanJobDescription = jobDescription.replace(/\r\n/g, '\n').trim();
+      
+      // Enhanced optimization using the same improved prompt as the tweak endpoint
+      const response = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert ATS optimization specialist. Your job is to optimize resumes to match job descriptions while preserving the original content and structure.
+            
+Important guidelines:
+1. DO NOT shorten the resume significantly - maintain all sections and most bullet points
+2. DO NOT remove skills, experiences, or projects unless they're completely irrelevant
+3. DO add relevant keywords from the job description
+4. DO emphasize experiences that align with the job description
+5. DO improve formatting for better ATS parsing
+6. ALL changes should be aimed at better keyword matching, not shortening
+
+Your response must be a valid JSON string that can be parsed. Use this exact format: 
+{"optimizedContent": "...", "changes": ["..."], "matchScore": 85, "keywordMatches": ["..."], "missingKeywords": ["..."], "formatImprovements": ["..."]}. Escape special characters properly.`
+          },
+          {
+            role: "user",
+            content: `Here is the job description and resume to optimize:
+Job Description:
+${cleanJobDescription}
+Current Resume:
+${resume.content}
+
+Return an optimized version that matches keywords and improves ATS score while maintaining truthfulness and the FULL CONTENT of the original resume. Do not significantly shorten sections. Return ONLY valid JSON.`
+          }
+        ],
+        temperature: 0.2
+      });
+      
+      if (!response.choices[0].message.content) {
+        throw new Error("No optimization response received");
+      }
+      
+      console.log("[DEBUG] Received optimization response for PDF generation");
+      
+      const optimization = JSON.parse(response.choices[0].message.content.trim());
+      
+      if (!optimization.optimizedContent) {
+        throw new Error("Missing optimized content in response");
+      }
+      
+      console.log("[DEBUG] Preparing HTML content for job-matched PDF");
+      
+      // Extract only the resume content, not the entire page
+      const resumeContent = optimization.optimizedContent || resume.content;
+      
+      // Convert plain text to properly formatted HTML with appropriate styling
+      const htmlContent = `
+        <div class="resume-content">
+          <h1>${resumeContent.split('\n')[0]}</h1>
+          <div class="contact-info">
+            ${resumeContent.split('\n')[1] || ''}
+          </div>
+          ${resumeContent
+            .split('\n\n')
+            .slice(1) // Skip the name and contact info we've already included
+            .map(section => {
+              const lines = section.split('\n');
+              const title = lines[0];
+              const content = lines.slice(1).join('<br>');
+              
+              return `
+                <section>
+                  <h2>${title}</h2>
+                  <p>${content}</p>
+                </section>
+              `;
+            })
+            .join('')}
+        </div>
+      `;
+      
+      try {
+        console.log("[DEBUG] Initializing Puppeteer for PDF generation");
+        // Generate PDF using Puppeteer
+        const browser = await puppeteer.launch({
+          args: chromium.args,
+          defaultViewport: chromium.defaultViewport,
+          executablePath: await chromium.executablePath(),
+          headless: true,
+        });
+        
+        console.log("[DEBUG] Creating new page in browser");
+        const page = await browser.newPage();
+        
+        // Add styling
+        console.log("[DEBUG] Preparing HTML with styling");
+        const styledHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>${generateStyles()}</style>
+          </head>
+          <body>
+            <div class="resume">
+              ${htmlContent}
+            </div>
+          </body>
+          </html>
+        `;
+        
+        console.log("[DEBUG] Setting page content");
+        await page.setContent(styledHtml, { waitUntil: 'networkidle0' });
+        
+        console.log("[DEBUG] Generating PDF buffer");
+        // Generate PDF
+        const pdfBuffer = await page.pdf({
+          format: 'A4',
+          printBackground: true,
+          margin: {
+            top: '20mm',
+            right: '20mm',
+            bottom: '20mm',
+            left: '20mm'
+          }
+        });
+        
+        console.log("[DEBUG] Closing browser");
+        await browser.close();
+        
+        console.log("[DEBUG] Job-matched PDF generated successfully, sending response");
+        // Send the PDF
+        res.contentType('application/pdf');
+        res.send(pdfBuffer);
+        
+      } catch (pdfError: unknown) {
+        console.error("[DEBUG] Job-matched PDF generation error:", pdfError);
+        const errorMessage = pdfError instanceof Error ? pdfError.message : "Unknown error";
+        return res.status(500).json({ 
+          message: "Failed to generate job-matched PDF",
+          details: errorMessage
+        });
+      }
+    } catch (error: unknown) {
+      console.error("[DEBUG] Job-matched resume PDF download error:", error);
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ message });
+    }
+  });
+
   // PDF generation endpoint for enhanced resumes
   app.post("/api/resumes/:id/download-pdf", async (req, res) => {
     try {
@@ -658,8 +849,11 @@ Return an optimized version that matches keywords and improves ATS score while m
       }
       
       console.log("[DEBUG] Resume found, preparing HTML content");
-      // Use either enhanced content or original content
-      const htmlContent = resume.enhancedContent || `<div>${resume.content.replace(/\n/g, '<br>')}</div>`;
+      // Extract only the resume content, not the entire page
+      const resumeContent = resume.enhancedContent || resume.content;
+      
+      // Convert plain text to properly formatted HTML with line breaks
+      const htmlContent = `<div class="resume-content">${generatePDFTemplate(JSON.parse(resumeContent))}</div>`;
       
       try {
         console.log("[DEBUG] Initializing Puppeteer for PDF generation");
