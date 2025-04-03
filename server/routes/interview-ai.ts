@@ -107,13 +107,35 @@ router.post("/interview/analyze", async (req, res) => {
 router.post("/interview/start", async (req, res) => {
   try {
     console.log("[DEBUG] Starting interview session setup");
-    const { jobDescription, durationMinutes = 30 } = req.body;
+    const { type, jobType, level, jobDescription, durationMinutes = 30 } = req.body;
 
-    if (!jobDescription) {
+    if (!type || !jobType || !level || !jobDescription) {
       return res.status(400).json({
         error: "Missing required fields",
-        details: "Job description is required"
+        details: "Interview type, job type, experience level and job description are required"
       });
+    }
+
+    // Generate initial response even if OpenAI fails
+    let response;
+    try {
+      response = await aiService.complete([
+        {
+          role: "system",
+          content: `You are an experienced technical interviewer. Create a natural, conversational interview opening that:
+1. Introduces yourself briefly
+2. Makes the candidate comfortable
+3. Sets expectations for the interview
+4. Asks an engaging first question`
+        },
+        {
+          role: "user", 
+          content: `Start an interview for a ${level} ${jobType} position, focusing on ${type} questions.`
+        }
+      ]);
+    } catch (error) {
+      console.log("[DEBUG] OpenAI failed, using fallback response");
+      response = `Hello! I'll be conducting your ${type} interview today for the ${level} ${jobType} position. Let's start with: Could you tell me about your background and experience in this field?`;
     }
 
     console.log("[DEBUG] Creating interview plan");

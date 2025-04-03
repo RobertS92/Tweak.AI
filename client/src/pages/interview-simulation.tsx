@@ -33,11 +33,16 @@ export default function InterviewSimulationPage() {
 
   const initializeInterview = async () => {
     try {
-      if (!interviewParams) {
-        const loaded = await loadInterviewData();
-        if (!loaded) {
-          throw new Error("Interview parameters not loaded");
-        }
+      const savedPrefs = localStorage.getItem('interviewData');
+      if (!savedPrefs) {
+        throw new Error("No interview preferences found");
+      }
+
+      const params = JSON.parse(savedPrefs);
+      setInterviewParams(params);
+
+      if (!params.jobType || !params.experienceLevel || !params.interviewType || !params.jobDescription) {
+        throw new Error("Missing required interview parameters");
       }
 
       console.log("[DEBUG] Initializing interview simulation");
