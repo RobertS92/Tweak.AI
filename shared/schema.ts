@@ -17,7 +17,7 @@ export const users = pgTable("users", {
 
 export const resumes = pgTable("resumes", {
   id: serial("id").primaryKey(),
-  userId: text("user_id").notNull(), // Keep as text to prevent data loss
+  userId: text("user_id"), // Removed .notNull() to allow anonymous resumes
   title: text("title").notNull(),
   content: text("content").notNull(),
   fileType: text("file_type").notNull(),

@@ -209,19 +209,26 @@ export async function registerRoutes(app: Express) {
           message: extractError.message || "Failed to extract content from file" 
         });
       }
-
-      // Check if user is authenticated
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "You must be logged in to upload a resume" });
-      }
       
       // First create the resume record
-      const resume = await storage.createResume({
-        userId: req.user.id.toString(), // Convert to string to match schema 
-        title: file.originalname,
-        content: content,
-        fileType: file.mimetype,
-      });
+      let resume;
+      
+      if (req.isAuthenticated()) {
+        // If user is authenticated, associate resume with their account
+        resume = await storage.createResume({
+          userId: req.user.id.toString(), // Convert to string to match schema 
+          title: file.originalname,
+          content: content,
+          fileType: file.mimetype,
+        });
+      } else {
+        // If user is not authenticated, create an anonymous resume with null userId
+        resume = await storage.createResume({
+          title: file.originalname,
+          content: content,
+          fileType: file.mimetype,
+        });
+      }
 
       // Analyze the resume using OpenAI
       const analysis = await analyzeResume(content);
@@ -257,6 +264,38 @@ export async function registerRoutes(app: Express) {
       res.status(500).json({ message });
     }
   });
+  
+  // New route for downloading a resume that requires authentication
+  app.get("/api/resumes/:id/download", async (req, res) => {
+    try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ 
+          message: "You must be logged in to download a resume",
+          requiresAuth: true
+        });
+      }
+      
+      const resume = await storage.getResume(parseInt(req.params.id));
+      if (!resume) {
+        return res.status(404).json({ message: "Resume not found" });
+      }
+      
+      // Return the resume content formatted for download
+      // This can be enhanced with more formatting options later
+      const formattedContent = resume.enhancedContent || resume.content;
+      
+      res.json({ 
+        id: resume.id,
+        title: resume.title,
+        content: formattedContent,
+        canDownload: true
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ message });
+    }
+  });
 
   app.get("/api/resumes", async (req, res) => {
     try {
@@ -267,6 +306,55 @@ export async function registerRoutes(app: Express) {
       
       const resumes = await storage.getUserResumes(req.user.id);
       res.json(resumes);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ message });
+    }
+  });
+  
+  // Endpoint to get all anonymous resumes (available for claiming)
+  app.get("/api/resumes/anonymous", async (req, res) => {
+    try {
+      const anonymousResumes = await storage.getAnonymousResumes();
+      res.json(anonymousResumes);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ message });
+    }
+  });
+  
+  // API endpoint to claim anonymous resumes after login
+  app.post("/api/resumes/claim/:id", async (req, res) => {
+    try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ 
+          message: "You must be logged in to claim a resume",
+          requiresAuth: true
+        });
+      }
+      
+      const resumeId = parseInt(req.params.id);
+      const resume = await storage.getResume(resumeId);
+      
+      if (!resume) {
+        return res.status(404).json({ message: "Resume not found" });
+      }
+      
+      // If resume already has a userId and it's different from current user
+      if (resume.userId && resume.userId !== req.user.id.toString()) {
+        return res.status(403).json({ 
+          message: "This resume belongs to another user"
+        });
+      }
+      
+      // Claim the resume by assigning the user's ID to it
+      const claimedResume = await storage.claimAnonymousResume(resumeId, req.user.id);
+      
+      res.json({ 
+        message: "Resume claimed successfully", 
+        resume: claimedResume 
+      });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "An unknown error occurred";
       res.status(500).json({ message });

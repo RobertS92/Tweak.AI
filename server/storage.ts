@@ -5,7 +5,7 @@ import {
   users, type User, type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, isNull } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -24,6 +24,8 @@ export interface IStorage {
   createResume(resume: InsertResume): Promise<Resume>;
   updateResume(id: number, resume: Partial<Resume>): Promise<Resume>;
   deleteResume(id: number): Promise<void>;
+  getAnonymousResumes(): Promise<Resume[]>;
+  claimAnonymousResume(resumeId: number, userId: number): Promise<Resume>;
 
   // Job operations
   getJob(id: number): Promise<Job | undefined>;
@@ -98,6 +100,26 @@ export class DatabaseStorage implements IStorage {
 
   async deleteResume(id: number): Promise<void> {
     await db.delete(resumes).where(eq(resumes.id, id));
+  }
+  
+  // Get anonymous resumes (where userId is null)
+  async getAnonymousResumes(): Promise<Resume[]> {
+    return db.select().from(resumes).where(isNull(resumes.userId));
+  }
+  
+  // Associate an anonymous resume with a user 
+  async claimAnonymousResume(resumeId: number, userId: number): Promise<Resume> {
+    const [updated] = await db
+      .update(resumes)
+      .set({ userId: userId.toString() })
+      .where(eq(resumes.id, resumeId))
+      .returning();
+      
+    if (!updated) {
+      throw new Error("Resume not found");
+    }
+    
+    return updated;
   }
 
   // Job operations

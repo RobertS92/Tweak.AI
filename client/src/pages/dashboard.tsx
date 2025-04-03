@@ -1,12 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useClaimResumes } from "@/hooks/use-claim-resumes";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Download, Edit, Trash2 } from "lucide-react";
+import { 
+  Plus, Download, Edit, Trash2, 
+  AlertCircle, Loader2, UserPlus 
+} from "lucide-react";
 
 interface Resume {
   id: number;
@@ -15,11 +19,23 @@ interface Resume {
   createdAt: string;
 }
 
+// Anonymous resume interface similar to the one in use-claim-resumes.tsx
+interface AnonymousResume {
+  id: number;
+  title: string;
+  atsScore: number | null;
+  content: string;
+  fileType: string;
+  enhancedContent?: string;
+  analysis?: any;
+  createdAt: string;
+}
+
 export default function Dashboard() {
   const { toast } = useToast();
   const [page, setPage] = useState(1);
 
-  const { data: resumes, isLoading } = useQuery<Resume[]>({
+  const { data: resumes = [] as Resume[], isLoading } = useQuery<Resume[]>({
     queryKey: ["/api/resumes"],
   });
 
@@ -53,6 +69,39 @@ export default function Dashboard() {
     if (score >= 70) return "text-[#f39c12]";
     return "text-[#e74c3c]";
   };
+
+  // Get anonymous resumes that can be claimed
+  const {
+    anonymousResumes = [] as AnonymousResume[],
+    isLoading: isLoadingAnonymous,
+    isProcessing,
+    claimResume,
+    claimAllAnonymousResumes
+  } = useClaimResumes();
+  
+  // Check for anonymous resumes and claim them if user prefers
+  useEffect(() => {
+    if (anonymousResumes && anonymousResumes.length > 0) {
+      toast({
+        title: `${anonymousResumes.length} anonymous ${anonymousResumes.length === 1 ? 'resume' : 'resumes'} found`,
+        description: "You have resume(s) that were created anonymously. Would you like to add them to your account?",
+        action: (
+          <Button 
+            onClick={claimAllAnonymousResumes}
+            variant="outline"
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <UserPlus className="h-4 w-4 mr-2" />
+            )}
+            {isProcessing ? "Claiming..." : "Claim All"}
+          </Button>
+        )
+      });
+    }
+  }, [anonymousResumes, toast]);
 
   if (isLoading) {
     return (
@@ -123,6 +172,73 @@ export default function Dashboard() {
             </Card>
           </div>
 
+          {/* Anonymous Resumes Section */}
+          {anonymousResumes && anonymousResumes.length > 0 && (
+            <Card className="p-6 mb-6 border-blue-200 border-2">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <AlertCircle className="h-5 w-5 text-[#3498db] mr-2" />
+                  <h2 className="text-xl font-bold text-[#2c3e50]">Anonymous Resumes</h2>
+                </div>
+                <Button
+                  onClick={claimAllAnonymousResumes}
+                  disabled={isProcessing}
+                  className="bg-[#3498db]"
+                >
+                  {isProcessing ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <UserPlus className="h-4 w-4 mr-2" />
+                  )}
+                  {isProcessing ? "Claiming..." : "Claim All Resumes"}
+                </Button>
+              </div>
+              
+              <p className="text-[#7f8c8d] mb-4">
+                These resumes were created while you were not logged in. Claim them to add them to your account.
+              </p>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-[#f5f7fa]">
+                    <tr>
+                      <th className="text-left p-4 text-[#7f8c8d] font-medium">Title</th>
+                      <th className="text-left p-4 text-[#7f8c8d] font-medium">ATS Score</th>
+                      <th className="text-left p-4 text-[#7f8c8d] font-medium">Created</th>
+                      <th className="text-right p-4 text-[#7f8c8d] font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {anonymousResumes.map((resume) => (
+                      <tr key={resume.id} className="border-t border-[#e6e9ed]">
+                        <td className="p-4 text-[#2c3e50]">{resume.title}</td>
+                        <td className="p-4">
+                          <span className={`px-3 py-1 rounded-full text-white text-sm ${getScoreColor(resume.atsScore || 0)}`}>
+                            {resume.atsScore}%
+                          </span>
+                        </td>
+                        <td className="p-4 text-[#7f8c8d]">
+                          {new Date(resume.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="p-4 text-right">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => claimResume(resume.id)}
+                            disabled={isProcessing}
+                          >
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Claim
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          )}
+          
           {/* Resumes Table */}
           <Card className="p-6">
             <h2 className="text-xl font-bold text-[#2c3e50] mb-6">Your Resumes</h2>
@@ -137,34 +253,42 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {resumes?.map((resume) => (
-                    <tr key={resume.id} className="border-t border-[#e6e9ed]">
-                      <td className="p-4 text-[#2c3e50]">{resume.title}</td>
-                      <td className="p-4">
-                        <span className={`px-3 py-1 rounded-full text-white text-sm ${getScoreColor(resume.atsScore || 0)}`}>
-                          {resume.atsScore}%
-                        </span>
-                      </td>
-                      <td className="p-4 text-[#7f8c8d]">
-                        {new Date(resume.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="p-4 text-right space-x-2">
-                        <Button variant="outline" size="icon">
-                          <Edit className="h-4 w-4 text-[#f39c12]" />
-                        </Button>
-                        <Button variant="outline" size="icon">
-                          <Download className="h-4 w-4 text-[#3498db]" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="icon"
-                          onClick={() => deleteMutation.mutate(resume.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-[#e74c3c]" />
-                        </Button>
+                  {resumes.length === 0 ? (
+                    <tr className="border-t border-[#e6e9ed]">
+                      <td colSpan={4} className="p-4 text-center text-[#7f8c8d]">
+                        No resumes found. Upload a resume to get started.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    resumes.map((resume) => (
+                      <tr key={resume.id} className="border-t border-[#e6e9ed]">
+                        <td className="p-4 text-[#2c3e50]">{resume.title}</td>
+                        <td className="p-4">
+                          <span className={`px-3 py-1 rounded-full text-white text-sm ${getScoreColor(resume.atsScore || 0)}`}>
+                            {resume.atsScore}%
+                          </span>
+                        </td>
+                        <td className="p-4 text-[#7f8c8d]">
+                          {new Date(resume.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="p-4 text-right space-x-2">
+                          <Button variant="outline" size="icon">
+                            <Edit className="h-4 w-4 text-[#f39c12]" />
+                          </Button>
+                          <Button variant="outline" size="icon">
+                            <Download className="h-4 w-4 text-[#3498db]" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="icon"
+                            onClick={() => deleteMutation.mutate(resume.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-[#e74c3c]" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
