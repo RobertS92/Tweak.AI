@@ -19,13 +19,29 @@ export default function InterviewSimulationPage() {
 
   const loadInterviewData = async () => {
     try {
+      console.log("[DEBUG] Loading interview data");
       const savedPrefs = localStorage.getItem('interviewData');
+      
       if (!savedPrefs) {
         throw new Error("No interview preferences found");
       }
-      setInterviewParams(JSON.parse(savedPrefs));
+
+      const data = JSON.parse(savedPrefs);
+      console.log("[DEBUG] Loaded interview data:", data);
+
+      // Validate required fields
+      const requiredFields = ['jobType', 'experienceLevel', 'interviewType'];
+      const missingFields = requiredFields.filter(field => !data[field]);
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      }
+
+      setInterviewParams(data);
       return true;
     } catch (err) {
+      console.error("[DEBUG] Error loading interview data:", err);
+      setError(err instanceof Error ? err.message : "Failed to load interview data");
       return false;
     }
   };
@@ -106,8 +122,26 @@ export default function InterviewSimulationPage() {
   };
 
   useEffect(() => {
-    initializeInterview();
+    const initialize = async () => {
+      const dataLoaded = await loadInterviewData();
+      if (dataLoaded) {
+        initializeInterview();
+      } else {
+        setError("Failed to load interview data. Please return to setup.");
+      }
+    };
+    initialize();
   }, []);
+
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Interview Error",
+        description: error,
+        variant: "destructive"
+      });
+    }
+  }, [error]);
 
   useEffect(() => {
     if (isLoading && progress < 90) {

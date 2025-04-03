@@ -309,14 +309,27 @@ export default function InterviewPrep() {
       }
 
       const interviewData = {
-        jobType: jobType.trim(),
-        experienceLevel,
-        interviewType,
-        difficulty,
-        duration: interviewDuration,
-        jobDescription: jobDescription || `${experienceLevel} ${jobType.trim()} position requiring ${interviewType} expertise`,
+        jobType: jobType?.trim() || '',
+        experienceLevel: experienceLevel || '',
+        interviewType: interviewType || '',
+        difficulty: difficulty || 'Standard',
+        duration: interviewDuration || 15,
+        jobDescription: jobDescription || '',
         sessionId: Date.now().toString()
       };
+
+      // Validate all required fields have values
+      const requiredFields = ['jobType', 'experienceLevel', 'interviewType'];
+      const missingFields = requiredFields.filter(field => !interviewData[field]);
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
+      }
+
+      // Set default job description if none provided
+      if (!interviewData.jobDescription) {
+        interviewData.jobDescription = `${interviewData.experienceLevel} ${interviewData.jobType} position requiring ${interviewData.interviewType} expertise`;
+      }
 
       console.log("[DEBUG] Saving interview data:", interviewData);
 
