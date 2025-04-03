@@ -433,7 +433,25 @@ export default function InterviewSimulation({
                 Play
               </button>
             </div>
-            <p className="text-gray-700">{currentQuestion}</p>
+            <p className={`text-gray-700 ${currentQuestion.includes("Thank you for your time") ? "font-semibold text-lg text-center" : ""}`}>
+              {currentQuestion}
+              
+              {currentQuestion.includes("Thank you for your time") && (
+                <div className="mt-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <p className="text-center text-blue-800 font-medium mb-4">
+                    Your interview is now complete. Click the button below to see your interview analysis!
+                  </p>
+                  <div className="flex justify-center">
+                    <button
+                      onClick={completeInterview}
+                      className="px-6 py-3 bg-[#4f8df9] text-white rounded-lg hover:bg-blue-700 font-medium"
+                    >
+                      Complete Interview & View Analysis
+                    </button>
+                  </div>
+                </div>
+              )}
+            </p>
           </div>
           
           <div className="bg-white rounded-lg p-6 shadow-sm">
@@ -446,45 +464,51 @@ export default function InterviewSimulation({
               <div className="flex items-center gap-2">
                 <button
                   onClick={toggleRecording}
+                  disabled={currentQuestion.includes("Thank you for your time")}
                   className={`flex-1 px-4 py-2 rounded-lg ${recording 
                     ? 'bg-red-500 text-white hover:bg-red-600' 
-                    : 'bg-[#4f8df9] text-white hover:bg-blue-600'}`}
+                    : 'bg-[#4f8df9] text-white hover:bg-blue-600'} ${
+                    currentQuestion.includes("Thank you for your time") ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
                   {recording ? 'Stop Recording' : 'Start Recording'}
                 </button>
                 
                 <button
                   onClick={handleSendResponse}
-                  disabled={isLoading || !localTranscript.trim()}
+                  disabled={isLoading || !localTranscript.trim() || currentQuestion.includes("Thank you for your time")}
                   className="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   {isLoading ? 'Sending...' : 'Send Response'}
                 </button>
               </div>
               
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={textInput}
-                  onChange={(e) => setTextInput(e.target.value)}
-                  placeholder="Or type your response here..."
-                  className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#4f8df9]"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSubmitText();
-                    }
-                  }}
-                />
-                
-                <button
-                  onClick={handleSubmitText}
-                  disabled={!textInput.trim()}
-                  className="bg-[#4f8df9] text-white px-4 py-2 rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  Add Text
-                </button>
-              </div>
+              {!currentQuestion.includes("Thank you for your time") && (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={textInput}
+                    onChange={(e) => setTextInput(e.target.value)}
+                    placeholder="Or type your response here..."
+                    className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#4f8df9]"
+                    disabled={currentQuestion.includes("Thank you for your time")}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSubmitText();
+                      }
+                    }}
+                  />
+                  
+                  <button
+                    onClick={handleSubmitText}
+                    disabled={!textInput.trim() || currentQuestion.includes("Thank you for your time")}
+                    className="bg-[#4f8df9] text-white px-4 py-2 rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    Add Text
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -505,19 +529,21 @@ export default function InterviewSimulation({
           <div className="bg-white rounded-lg p-6 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Controls</h2>
             <div className="space-y-3">
-              <button
-                onClick={completeInterview}
-                disabled={isLoading}
-                className="w-full bg-[#4f8df9] text-white px-4 py-2 rounded-lg hover:bg-[#3a7ad9] disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                {isLoading ? "Processing..." : "Complete & Get Feedback"}
-              </button>
+              {!currentQuestion.includes("Thank you for your time") && (
+                <button
+                  onClick={completeInterview}
+                  disabled={isLoading}
+                  className="w-full bg-[#4f8df9] text-white px-4 py-2 rounded-lg hover:bg-[#3a7ad9] disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? "Processing..." : "Complete & Get Feedback"}
+                </button>
+              )}
               
               <button
                 onClick={onStopInterview}
                 className="w-full bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
               >
-                Cancel Interview
+                {currentQuestion.includes("Thank you for your time") ? "Return to Dashboard" : "Cancel Interview"}
               </button>
             </div>
           </div>
