@@ -329,6 +329,7 @@ export default function InterviewPrep() {
 
       console.log("[DEBUG] Saving interview data:", interviewData);
 
+
       if (missingFields.length > 0) {
         throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
       }
