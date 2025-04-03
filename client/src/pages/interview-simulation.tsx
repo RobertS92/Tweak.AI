@@ -45,9 +45,9 @@ export default function InterviewSimulationPage() {
         }
 
         console.log("[DEBUG] Initializing interview simulation");
-        const { jobType, interviewType, level, jobDescription } = interviewParams; // Adjusted keys
+        const { jobType, experienceLevel, interviewType, difficulty, jobDescription } = interviewParams;
 
-        if (!interviewType || !jobType || !level || !jobDescription) {
+        if (!interviewType || !jobType || !experienceLevel || !jobDescription) {
           throw new Error("Missing required interview parameters");
         }
 

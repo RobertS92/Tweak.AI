@@ -318,6 +318,8 @@ export default function InterviewPrep() {
         jobDescription: jobDescription || `${experienceLevel} ${jobType} position requiring ${interviewType} expertise`
       };
 
+      console.log("[DEBUG] Saving interview data:", interviewData);
+
       // Store interview data in localStorage
       localStorage.setItem('interviewData', JSON.stringify(interviewData));
 
