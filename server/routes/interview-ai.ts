@@ -5,9 +5,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const router = Router();
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { aiService } from "../services/ai-service";
 
 // Store interview contexts
 const interviewSessions = new Map();
@@ -121,9 +119,7 @@ router.post("/interview/start", async (req, res) => {
     console.log("[DEBUG] Creating interview plan");
 
     // Generate initial interview context
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
+    const response = await aiService.complete([
         {
           role: "system",
           content: `You are an experienced technical interviewer. Create a natural, conversational interview opening that:
