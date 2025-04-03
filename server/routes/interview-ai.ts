@@ -7,6 +7,11 @@ dotenv.config();
 const router = Router();
 import { aiService } from "../services/ai-service";
 
+// Initialize OpenAI with API key
+const openai = new OpenAI({ 
+  apiKey: process.env.OPENAI_API_KEY 
+});
+
 // Store interview contexts
 interface InterviewSession {
   jobDescription: string;
@@ -17,6 +22,7 @@ interface InterviewSession {
   startTime: number;
   questionCount: number;
   lastInteractionTime: number;
+  feedback?: any;
 }
 
 const interviewSessions = new Map<string, InterviewSession>();
@@ -247,7 +253,10 @@ Keep the response under 60 seconds when spoken.`
       currentQuestion: responseText,
       history: [{ role: "interviewer", content: responseText }],
       analysis: null,
-      durationMinutes
+      durationMinutes,
+      startTime: Date.now(),
+      questionCount: 1,
+      lastInteractionTime: Date.now()
     });
 
     console.log("[DEBUG] Interview session created");

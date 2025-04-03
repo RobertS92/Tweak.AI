@@ -2,6 +2,41 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+// Add type definition for SpeechRecognition
+interface SpeechRecognitionEvent extends Event {
+  results: {
+    [index: number]: {
+      [index: number]: {
+        transcript: string;
+      };
+      isFinal: boolean;
+      length: number;
+    };
+    length: number;
+    resultIndex: number;
+  };
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  onstart: (event: Event) => void;
+  onend: (event: Event) => void;
+  onerror: (event: Event) => void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+}
+
+// Add type definitions for Window
+declare global {
+  interface Window {
+    SpeechRecognition?: new () => SpeechRecognition;
+    webkitSpeechRecognition?: new () => SpeechRecognition;
+  }
+}
+
 const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -229,7 +264,7 @@ export default function InterviewPrep() {
       jobType: jobType
     });
 
-    const jobDescription = `${experienceLevel} ${jobType} position requiring ${interviewType} expertise`;
+    const interviewJobDescription = `${experienceLevel} ${jobType} position requiring ${interviewType} expertise`;
     const defaultJobDesc = `${jobType} position requiring ${interviewType} expertise`;
     try {
       if (!interviewType || !experienceLevel || !jobType) {
@@ -241,20 +276,20 @@ export default function InterviewPrep() {
         type: interviewType,
         level: experienceLevel,
         jobType: jobType,
-        jobDescription: jobDescription
+        jobDescription: interviewJobDescription
       }));
 
       const params = new URLSearchParams({
         type: interviewType,
         level: experienceLevel,
         jobType: jobType,
-        jobDescription: jobDescription
+        jobDescription: interviewJobDescription
       });
 
       const analysisResponse = await fetch('/api/interview/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobDescription, durationMinutes: interviewDuration }),
+        body: JSON.stringify({ jobDescription: interviewJobDescription, durationMinutes: interviewDuration }),
       });
 
       if (!analysisResponse.ok) {
@@ -266,7 +301,7 @@ export default function InterviewPrep() {
       const response = await fetch('/api/interview/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobDescription, durationMinutes: interviewDuration }),
+        body: JSON.stringify({ jobDescription: interviewJobDescription, durationMinutes: interviewDuration }),
       });
 
       if (!response.ok) {
@@ -319,8 +354,8 @@ export default function InterviewPrep() {
       };
 
       // Validate all required fields
-      const requiredFields = ['jobType', 'experienceLevel', 'interviewType', 'jobDescription'];
-      const missingFields = requiredFields.filter(field => !interviewData[field]);
+      const requiredFormFields = ['jobType', 'experienceLevel', 'interviewType', 'jobDescription'];
+      const missingFields = requiredFormFields.filter(field => !interviewData[field]);
 
       // Set default job description if none provided
       if (!interviewData.jobDescription) {

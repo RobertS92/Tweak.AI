@@ -1,0 +1,62 @@
+:55:27 AM [express] [DEBUG] Server successfully started on port 5000
+1:55:27 AM [express] [DEBUG] Server is accessible at http://0.0.0.0:5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+1:55:29 AM [vite] Pre-transform error: /home/runner/workspace/client/src/pages/interview-prep.tsx: Identifier 'requiredFields' has already been declared. (337:12)
+
+  335 |
+  336 |       // Validate all required fields are present
+> 337 |       const requiredFields = ['jobType', 'experienceLevel', 'interviewType', 'jobDescription'];
+      |             ^
+  338 |       const missingFields = requiredFields.filter(field => !interviewData[field]);
+  339 |
+  340 |       if (missingFields.length > 0) {
+
+> rest-express@1.0.0 dev
+> tsx server/index.ts --host 0.0.0.0 --port 5000
+
+1:55:27 AM [express] [DEBUG] Starting server initialization...
+1:55:27 AM [express] [DEBUG] Initiating server startup on port 5000...
+1:55:27 AM [express] [DEBUG] Attempting to start server on port 5000...
+1:55:27 AM [express] [DEBUG] Registering routes...
+1:55:27 AM [express] [DEBUG] Setting up Vite development server...
+1:55:27 AM [express] [DEBUG] Binding to port 5000...
+1:55:27 AM [express] [DEBUG] Server successfully started on port 5000
+1:55:27 AM [express] [DEBUG] Server is accessible at http://0.0.0.0:5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+1:55:29 AM [vite] Pre-transform error: /home/runner/workspace/client/src/pages/interview-prep.tsx: Identifier 'requiredFields' has already been declared. (337:12)
+
+  335 |
+  336 |       // Validate all required fields are present
+> 337 |       const requiredFields = ['jobType', 'experienceLevel', 'interviewType', 'jobDescription'];
+      |             ^
+  338 |       const missingFields = requiredFields.filter(field => !interviewData[field]);
+  339 |
+  340 |       if (missingFields.length > 0) {
+
+> rest-express@1.0.0 dev
+> tsx server/index.ts --host 0.0.0.0 --port 5000
+
+1:55:27 AM [express] [DEBUG] Starting server initialization...
+1:55:27 AM [express] [DEBUG] Initiating server startup on port 5000...
+1:55:27 AM [express] [DEBUG] Attempting to start server on port 5000...
+1:55:27 AM [express] [DEBUG] Registering routes...
+1:55:27 AM [express] [DEBUG] Setting up Vite development server...
+1:55:27 AM [express] [DEBUG] Binding to port 5000...
+1:55:27 AM [express] [DEBUG] Server successfully started on port 5000
+1:55:27 AM [express] [DEBUG] Server is accessible at http://0.0.0.0:5000
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+1:55:29 AM [vite] Pre-transform error: /home/runner/workspace/client/src/pages/interview-prep.tsx: Identifier 'requiredFields' has already been declared. (337:12)
+
+  335 |
+  336 |       // Validate all required fields are present
+> 337 |       const requiredFields = ['jobType', 'experienceLevel', 'interviewType', 'jobDescription'];
+      |             ^
+  338 |       const missingFields = requiredFields.filter(field => !interviewData[field]);
+  339 |
+  340 |       if (missingFields.length > 0) {
