@@ -25,6 +25,42 @@ interface InterviewSimulationProps {
   };
 }
 
+// Function to process transcript text and improve quality
+const processTranscriptText = (text: string): string => {
+  if (!text) return '';
+  
+  // Step 1: Remove exact repetitions (same phrase repeated immediately)
+  let processed = text;
+  
+  // Find repetitive patterns (looking for 8+ character sequences that repeat)
+  const dupeRegex = /(.{8,}?)(?=\s\1)/gi;
+  processed = processed.replace(dupeRegex, '$1');
+  
+  // Step 2: Fix capitalization
+  processed = processed.trim();
+  if (processed.length > 0) {
+    processed = processed.charAt(0).toUpperCase() + processed.slice(1);
+  }
+  
+  // Step 3: Add periods at natural pauses if missing
+  const sentenceFragments = processed.split(/(?<=[.!?])\s+/);
+  
+  // Step 4: Ensure each fragment has proper punctuation
+  const formattedSentences = sentenceFragments.map(fragment => {
+    // Skip empty fragments
+    if (!fragment.trim()) return '';
+    
+    // If no ending punctuation, add a period
+    if (!/[.!?]$/.test(fragment.trim())) {
+      return fragment.trim() + '.';
+    }
+    return fragment.trim();
+  });
+  
+  // Step 5: Join everything back with proper spacing
+  return formattedSentences.join(' ');
+};
+
 export default function InterviewSimulation({
   currentQuestion = "",
   transcript = "",
@@ -57,8 +93,24 @@ export default function InterviewSimulation({
     
     if (SpeechRecognitionAPI) {
       recognitionRef.current = new SpeechRecognitionAPI();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
+      
+      // Configure speech recognition for optimal performance
+      recognitionRef.current.continuous = true;        // Keep listening even after pauses
+      recognitionRef.current.interimResults = true;    // Get results while speaking
+      recognitionRef.current.maxAlternatives = 1;      // Get only the most confident result
+      
+      // Set language - can be made configurable in settings
+      recognitionRef.current.lang = 'en-US';           // Use English US
+      
+      // Improve recognition accuracy by focusing on speech patterns in interviews
+      if ('grammars' in recognitionRef.current) {
+        try {
+          // Advanced settings if available in browser
+          (recognitionRef.current as any).grammars = undefined; // No specific grammar, natural speech
+        } catch (e) {
+          console.log("[DEBUG] Browser doesn't support speech grammar lists");
+        }
+      }
       
       recognitionRef.current.onresult = (event: any) => {
         let finalTranscript = '';
@@ -74,13 +126,30 @@ export default function InterviewSimulation({
           }
         }
         
-        setLocalTranscript(prevTranscript => {
-          if (finalTranscript) {
-            return prevTranscript + finalTranscript + ' ';
-          }
-          return prevTranscript;
-        });
+        // Only process if we have a final transcript
+        if (finalTranscript) {
+          console.log("[DEBUG] Raw transcript:", finalTranscript);
+          
+          // Process the transcript to improve readability
+          const processedTranscript = processTranscriptText(finalTranscript);
+          console.log("[DEBUG] Processed transcript:", processedTranscript);
+          
+          setLocalTranscript(prevTranscript => {
+            // Add proper spacing and join with previous text
+            if (prevTranscript) {
+              // If previous text ends with punctuation, add space
+              if (/[.!?]$/.test(prevTranscript.trim())) {
+                return prevTranscript + ' ' + processedTranscript;
+              }
+              // If no punctuation, add period and space
+              return prevTranscript.trim() + '. ' + processedTranscript;
+            }
+            return processedTranscript;
+          });
+        }
       };
+      
+
 
       recognitionRef.current.onerror = (event: any) => {
         console.error("[DEBUG] Speech recognition error:", event?.error || "Unknown error");
@@ -114,11 +183,22 @@ export default function InterviewSimulation({
   const handleSubmitText = async () => {
     if (!textInput.trim()) return;
     
-    setLocalTranscript(prev => prev + textInput + ' ');
-    setTextInput("");
+    // Process the text input with the same function to ensure consistency
+    const processedInput = processTranscriptText(textInput);
+    console.log("[DEBUG] Processed text input:", processedInput);
     
-    // Submit to the server (if needed)
-    // This would be implemented based on your backend API
+    setLocalTranscript(prev => {
+      if (prev) {
+        // Add proper spacing and punctuation
+        if (/[.!?]$/.test(prev.trim())) {
+          return prev + ' ' + processedInput;
+        }
+        return prev.trim() + '. ' + processedInput;
+      }
+      return processedInput;
+    });
+    
+    setTextInput("");
   };
 
   const handleSendResponse = async () => {
