@@ -397,37 +397,50 @@ export async function registerRoutes(app: Express) {
 
       console.log("[DEBUG] Found resume, starting optimization");
 
-      // Enhanced optimization using OpenAI - with improved prompt to preserve content
+      // Enhanced optimization using OpenAI - with a completely revised approach to preserve ALL content
       const response = await openai.chat.completions.create({
         model: "gpt-4",
         messages: [
           {
             role: "system",
-            content: `You are an expert ATS optimization specialist. Your job is to optimize resumes to match job descriptions while preserving the original content and structure.
-            
-Important guidelines:
-1. DO NOT shorten the resume significantly - maintain all sections and most bullet points
-2. DO NOT remove skills, experiences, or projects unless they're completely irrelevant
-3. DO add relevant keywords from the job description
-4. DO emphasize experiences that align with the job description
-5. DO improve formatting for better ATS parsing
-6. ALL changes should be aimed at better keyword matching, not shortening
+            content: `You are an expert ATS optimization specialist. Your task is to optimize resumes for job descriptions.
 
-Your response must be a valid JSON string that can be parsed. Use this exact format: 
-{"optimizedContent": "...", "changes": ["..."], "matchScore": 85, "keywordMatches": ["..."], "missingKeywords": ["..."], "formatImprovements": ["..."]}. Escape special characters properly.`
+MOST IMPORTANT RULE: DO NOT SHORTEN THE RESUME AT ALL.
+
+Follow these instructions exactly:
+1. Keep ALL sections, bullet points, skills, and experiences from the original resume
+2. Simply ADD relevant keywords from the job description by enhancing existing bullet points
+3. NEVER remove any skills, experiences, or projects - this is critical
+4. You may rephrase/enhance existing bullets but maintain all the original information
+5. The optimized content must be nearly identical in length to the original resume
+6. Focus only on KEYWORD MATCHING, not content reduction
+
+Your response must be VALID JSON only, with this strict format:
+{
+  "optimizedContent": "full text of optimized resume with no shortening",
+  "changes": ["specific change 1", "specific change 2"],
+  "matchScore": 85,
+  "keywordMatches": ["keyword1", "keyword2"],
+  "missingKeywords": ["missing1", "missing2"]
+}
+
+DO NOT include any text outside of the JSON. Make sure the JSON is properly escaped.`
           },
           {
             role: "user",
             content: `Here is the job description and resume to optimize:
-Job Description:
+
+*** JOB DESCRIPTION ***
 ${cleanJobDescription}
-Current Resume:
+
+*** CURRENT RESUME ***
 ${resume.content}
 
-Return an optimized version that matches keywords and improves ATS score while maintaining truthfulness and the FULL CONTENT of the original resume. Do not significantly shorten sections. Return ONLY valid JSON.`
+Create an optimized version that matches keywords while PRESERVING ALL ORIGINAL CONTENT AND LENGTH. The optimized content should not be shorter than the original resume. Do not remove any experience, skills or content.`
           }
         ],
-        temperature: 0.2
+        response_format: { type: "json_object" },
+        temperature: 0.1
       });
 
       if (!response.choices[0].message.content) {
@@ -437,7 +450,21 @@ Return an optimized version that matches keywords and improves ATS score while m
       console.log("[DEBUG] Received optimization response");
 
       try {
-        const optimization = JSON.parse(response.choices[0].message.content.trim());
+        // Add additional sanitization to handle potential invalid JSON characters
+        let rawResponse = response.choices[0].message.content.trim();
+        
+        // Log the raw response for debugging
+        console.log("[DEBUG] Raw optimization response (first 100 chars):", 
+          rawResponse.substring(0, 100) + "...");
+        
+        // Attempt to find and parse just the JSON portion if there are unexpected characters
+        const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          rawResponse = jsonMatch[0];
+        }
+        
+        const optimization = JSON.parse(rawResponse);
+        console.log("[DEBUG] Successfully parsed optimization JSON");
 
         if (!optimization.optimizedContent) {
           throw new Error("Missing optimized content in response");
@@ -680,37 +707,50 @@ Return an optimized version that matches keywords and improves ATS score while m
       // Clean job description
       const cleanJobDescription = jobDescription.replace(/\r\n/g, '\n').trim();
       
-      // Enhanced optimization using the same improved prompt as the tweak endpoint
+      // Enhanced optimization with the completely revised approach and response_format
       const response = await openai.chat.completions.create({
         model: "gpt-4",
         messages: [
           {
             role: "system",
-            content: `You are an expert ATS optimization specialist. Your job is to optimize resumes to match job descriptions while preserving the original content and structure.
-            
-Important guidelines:
-1. DO NOT shorten the resume significantly - maintain all sections and most bullet points
-2. DO NOT remove skills, experiences, or projects unless they're completely irrelevant
-3. DO add relevant keywords from the job description
-4. DO emphasize experiences that align with the job description
-5. DO improve formatting for better ATS parsing
-6. ALL changes should be aimed at better keyword matching, not shortening
+            content: `You are an expert ATS optimization specialist. Your task is to optimize resumes for job descriptions.
 
-Your response must be a valid JSON string that can be parsed. Use this exact format: 
-{"optimizedContent": "...", "changes": ["..."], "matchScore": 85, "keywordMatches": ["..."], "missingKeywords": ["..."], "formatImprovements": ["..."]}. Escape special characters properly.`
+MOST IMPORTANT RULE: DO NOT SHORTEN THE RESUME AT ALL.
+
+Follow these instructions exactly:
+1. Keep ALL sections, bullet points, skills, and experiences from the original resume
+2. Simply ADD relevant keywords from the job description by enhancing existing bullet points
+3. NEVER remove any skills, experiences, or projects - this is critical
+4. You may rephrase/enhance existing bullets but maintain all the original information
+5. The optimized content must be nearly identical in length to the original resume
+6. Focus only on KEYWORD MATCHING, not content reduction
+
+Your response must be VALID JSON only, with this strict format:
+{
+  "optimizedContent": "full text of optimized resume with no shortening",
+  "changes": ["specific change 1", "specific change 2"],
+  "matchScore": 85,
+  "keywordMatches": ["keyword1", "keyword2"],
+  "missingKeywords": ["missing1", "missing2"]
+}
+
+DO NOT include any text outside of the JSON. Make sure the JSON is properly escaped.`
           },
           {
             role: "user",
             content: `Here is the job description and resume to optimize:
-Job Description:
+
+*** JOB DESCRIPTION ***
 ${cleanJobDescription}
-Current Resume:
+
+*** CURRENT RESUME ***
 ${resume.content}
 
-Return an optimized version that matches keywords and improves ATS score while maintaining truthfulness and the FULL CONTENT of the original resume. Do not significantly shorten sections. Return ONLY valid JSON.`
+Create an optimized version that matches keywords while PRESERVING ALL ORIGINAL CONTENT AND LENGTH. The optimized content should not be shorter than the original resume. Do not remove any experience, skills or content.`
           }
         ],
-        temperature: 0.2
+        response_format: { type: "json_object" },
+        temperature: 0.1
       });
       
       if (!response.choices[0].message.content) {
@@ -740,7 +780,7 @@ Return an optimized version that matches keywords and improves ATS score while m
           ${resumeContent
             .split('\n\n')
             .slice(1) // Skip the name and contact info we've already included
-            .map(section => {
+            .map((section: string) => {
               const lines = section.split('\n');
               const title = lines[0];
               const content = lines.slice(1).join('<br>');
