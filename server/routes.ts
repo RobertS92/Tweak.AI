@@ -14,6 +14,8 @@ import puppeteer from 'puppeteer';
 import chromium from '@sparticuz/chromium';
 import { db } from "./db";
 import { setupAuth } from "./auth";
+import { debugAuthStatus } from "./utils/auth-debug";
+import { enhancedAuthCheck } from "./auth-fix";
 
 // Add type definitions
 declare module 'express-serve-static-core' {
@@ -231,8 +233,32 @@ export async function registerRoutes(app: Express) {
         });
       }
 
+      console.log(`[DEBUG] Starting resume analysis for ID ${resume.id}`);
+      console.log(`[DEBUG] Original content length: ${content.length}`);
+      
       // Analyze the resume using OpenAI
       const analysis = await analyzeResume(content);
+      
+      console.log(`[DEBUG] Analysis complete. Overall score: ${analysis.overallScore}`);
+      console.log(`[DEBUG] Enhanced content received, length: ${analysis.enhancedContent.length}`);
+      console.log(`[DEBUG] Number of improvements: ${analysis.improvements.length}`);
+      
+      // Sample of improvements for debugging
+      if (analysis.improvements.length > 0) {
+        console.log(`[DEBUG] Sample improvements:`, analysis.improvements.slice(0, 3));
+      }
+      
+      // Compare original and enhanced content lengths
+      const textContent = analysis.enhancedContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      const originalTextContent = content.replace(/\s+/g, ' ').trim();
+      
+      console.log(`[DEBUG] Original text length: ${originalTextContent.length}`);
+      console.log(`[DEBUG] Enhanced text length: ${textContent.length}`);
+      console.log(`[DEBUG] Length difference: ${textContent.length - originalTextContent.length}`);
+      
+      if (textContent.length < originalTextContent.length) {
+        console.log(`[WARNING] Enhanced content appears to be shorter than original!`);
+      }
 
       // Update the resume with analysis results
       const updatedResume = await storage.updateResume(resume.id, {
@@ -244,6 +270,8 @@ export async function registerRoutes(app: Express) {
           formattingFixes: analysis.formattingFixes
         }
       });
+      
+      console.log(`[DEBUG] Resume ${resume.id} successfully updated with analysis`);
 
       res.json(updatedResume);
     } catch (error: unknown) {
@@ -688,7 +716,7 @@ Create an optimized version that matches keywords while PRESERVING ALL ORIGINAL 
   }
 
   // Add PDF download endpoint for job-matched resumes
-  app.post("/api/resumes/:id/job-match-pdf", async (req, res) => {
+  app.post("/api/resumes/:id/job-match-pdf", enhancedAuthCheck, async (req, res) => {
     try {
       console.log("[DEBUG] Received job-matched PDF download request");
       const resumeId = parseInt(req.params.id);
@@ -700,14 +728,7 @@ Create an optimized version that matches keywords while PRESERVING ALL ORIGINAL 
       
       console.log(`[DEBUG] Processing job-matched resume ID: ${resumeId}`);
       
-      // Check if user is authenticated
-      if (!req.isAuthenticated()) {
-        console.log("[DEBUG] Authentication required for PDF download");
-        return res.status(401).json({ 
-          message: "You must be logged in to download a resume as PDF",
-          requiresAuth: true
-        });
-      }
+      // Authentication is now handled by enhancedAuthCheck middleware
       
       console.log("[DEBUG] User authenticated, fetching resume");
       const resume = await storage.getResume(resumeId);
@@ -880,20 +901,13 @@ Create an optimized version that matches keywords while PRESERVING ALL ORIGINAL 
   });
 
   // PDF generation endpoint for enhanced resumes
-  app.post("/api/resumes/:id/download-pdf", async (req, res) => {
+  app.post("/api/resumes/:id/download-pdf", enhancedAuthCheck, async (req, res) => {
     try {
       console.log("[DEBUG] Received PDF download request");
       const resumeId = parseInt(req.params.id);
       console.log(`[DEBUG] Processing resume ID: ${resumeId}`);
       
-      // Check if user is authenticated
-      if (!req.isAuthenticated()) {
-        console.log("[DEBUG] Authentication required for PDF download");
-        return res.status(401).json({ 
-          message: "You must be logged in to download a resume as PDF",
-          requiresAuth: true
-        });
-      }
+      // Authentication is now handled by enhancedAuthCheck middleware
       
       console.log("[DEBUG] User authenticated, fetching resume");
       const resume = await storage.getResume(resumeId);

@@ -36,13 +36,29 @@ function preprocessResume(content: string): string {
 export async function analyzeResume(content: string) {
   try {
     const processedContent = preprocessResume(content);
+    
+    // Log original content length for comparison
+    console.log("[DEBUG] Original resume length:", content.length);
+    console.log("[DEBUG] Processed resume length:", processedContent.length);
 
+    // Use updated approach similar to resume tweak feature
     const response = await openai.chat.completions.create({
       model: "gpt-4",
+      // No response_format to avoid compatibility issues
       messages: [
         {
           role: "system",
           content: `You are an expert resume analyzer and enhancer. You must return your analysis in a strict JSON format.
+
+MOST IMPORTANT RULE: DO NOT SHORTEN THE RESUME AT ALL.
+
+Follow these instructions exactly:
+1. Keep ALL sections, bullet points, skills, and experiences from the original resume
+2. Keep all of the original content INTACT - do not remove ANYTHING
+3. Only make ADDITIVE improvements that enhance without removing content
+4. The enhanced content must be equal or longer in length than the original resume
+5. Focus on ATS optimization and readability while preserving all information
+6. Detail ALL changes in the improvements list
 
 Analyze the provided resume and return a JSON object with exactly this structure:
 {
@@ -75,7 +91,7 @@ Analyze the provided resume and return a JSON object with exactly this structure
   "overallScore": <number 0-100>
 }
 
-For the enhancedContent, use this HTML structure:
+For the enhancedContent, use this HTML structure while preserving ALL original information:
 <div class="resume">
   <div class="header">
     <h1>[Full Name]</h1>
@@ -85,17 +101,17 @@ For the enhancedContent, use this HTML structure:
 
   <div class="section">
     <h2>Professional Summary</h2>
-    <p>[Enhanced summary]</p>
+    <p>[Enhanced summary that includes ALL original content]</p>
   </div>
 
   <div class="section">
     <h2>Professional Experience</h2>
-    [For each position:]
+    [For each position - preserve ALL original entries:]
     <div class="job">
       <h3>[Company Name]</h3>
       <p class="job-title">[Title] | [Dates]</p>
       <ul>
-        <li>[Enhanced achievement with metrics]</li>
+        <li>[Enhanced achievement with metrics - preserve ALL original details]</li>
       </ul>
     </div>
   </div>
@@ -106,7 +122,7 @@ For the enhancedContent, use this HTML structure:
       <h3>[Institution]</h3>
       <p>[Degree] | [Date]</p>
       <ul>
-        <li>[Details]</li>
+        <li>[Details - keep ALL original information]</li>
       </ul>
     </div>
   </div>
@@ -114,31 +130,67 @@ For the enhancedContent, use this HTML structure:
   <div class="section">
     <h2>Skills</h2>
     <ul class="skills-list">
-      <li><strong>[Category]:</strong> [Skills]</li>
+      <li><strong>[Category]:</strong> [ALL original skills plus any suggested additions]</li>
     </ul>
   </div>
-</div>`
+</div>
+
+Important: Return ONLY valid JSON in your response, nothing else. Format your entire response as a single JSON object.`
         },
         {
           role: "user",
-          content: processedContent,
+          content: `Resume Content:\n${processedContent}\n\nAnalyze this resume and provide a detailed analysis with enhancements. Remember to preserve ALL original content and ensure the enhanced version is equal or longer than the original. Return your analysis as a single JSON object.`
         },
       ],
       temperature: 0.3,
       max_tokens: 4000,
     });
 
+    console.log("[DEBUG] Received OpenAI response for resume analysis");
+
     if (!response.choices[0].message.content) {
       throw new Error("No analysis received from OpenAI");
     }
 
+    // Extract the raw response text
+    const rawResponse = response.choices[0].message.content.trim();
+    console.log("[DEBUG] Raw analysis response (first 100 chars):", 
+      rawResponse.substring(0, 100) + "...");
+
     let parsedResponse;
     try {
-      parsedResponse = JSON.parse(response.choices[0].message.content.trim());
+      // Handle potential non-JSON content by extracting the JSON portion
+      const jsonMatch = rawResponse.match(/\{[\s\S]*\}/);
+      const jsonString = jsonMatch ? jsonMatch[0] : rawResponse;
+      
+      parsedResponse = JSON.parse(jsonString);
+      console.log("[DEBUG] Successfully parsed resume analysis JSON");
     } catch (parseError) {
-      console.error("Failed to parse OpenAI response:", parseError);
-      console.error("Raw response:", response.choices[0].message.content);
+      console.error("[DEBUG] Failed to parse OpenAI response:", parseError);
+      console.error("[DEBUG] Raw response:", rawResponse);
       throw new Error("Invalid JSON response from analysis");
+    }
+
+    // Check enhanced content length compared to original
+    if (parsedResponse.enhancedContent) {
+      // Extract text content from HTML for fair comparison
+      const htmlContent = parsedResponse.enhancedContent;
+      const textContent = htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      
+      console.log("[DEBUG] Original content length:", processedContent.length);
+      console.log("[DEBUG] Enhanced content text length:", textContent.length);
+      console.log("[DEBUG] Enhanced content HTML length:", htmlContent.length);
+      
+      // If enhanced content is significantly shorter, reject it
+      if (textContent.length < processedContent.length * 0.9) {
+        console.log("[WARNING] Enhanced content is shorter than original content!");
+        console.log("[WARNING] This indicates the AI is removing content against instructions");
+        
+        if (textContent.length < processedContent.length * 0.8) {
+          console.log("[ERROR] Enhanced content is significantly shorter, rejecting analysis");
+          throw new Error("Enhanced content is too short, original content may have been lost");
+        }
+      }
     }
 
     // Validate response structure

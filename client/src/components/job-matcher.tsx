@@ -144,6 +144,7 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ jobDescription }),
+        credentials: 'include', // Add credentials to ensure auth cookies are sent
       });
       
       if (!response.ok) {

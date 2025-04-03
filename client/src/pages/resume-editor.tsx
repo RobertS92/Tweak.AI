@@ -89,6 +89,7 @@ export default function ResumeEditor() {
     try {
       const response = await fetch(`/api/resumes/${resumeId}/download-pdf`, {
         method: 'POST',
+        credentials: 'include', // Add credentials to ensure auth cookies are sent
       });
 
       if (!response.ok) {
@@ -110,10 +111,10 @@ export default function ResumeEditor() {
         title: "Download complete",
         description: "Your enhanced resume has been downloaded",
       });
-    } catch (error) {
+    } catch (error: unknown) {
       toast({
         title: "Download failed",
-        description: error.message,
+        description: error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
     } finally {
