@@ -118,8 +118,9 @@ router.post("/interview/start", async (req, res) => {
 
     console.log("[DEBUG] Creating interview plan");
 
-    // Generate initial interview context
-    const response = await aiService.complete([
+    try {
+      // Generate initial interview context
+      const response = await aiService.complete([
         {
           role: "system",
           content: `You are an experienced technical interviewer. Create a natural, conversational interview opening that:
@@ -185,6 +186,13 @@ Keep the response under 60 seconds when spoken.`
       question: response,
       audio: speechBuffer.toString('base64')
     });
+    } catch (error) {
+      console.error("[DEBUG] Interview generation error:", error);
+      res.status(500).json({
+        error: "Failed to generate interview response",
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
   } catch (error) {
     console.error("[DEBUG] Interview start error:", error);
     console.error("[DEBUG] Error details:", error instanceof Error ? error.stack : String(error));

@@ -1,10 +1,9 @@
 
 import OpenAI from "openai";
-import { fetch } from "node-fetch";
 
 export class AIService {
   private openai: OpenAI;
-  private useOpenAI = true;
+  private useGPT4 = true;
 
   constructor() {
     this.openai = new OpenAI({
@@ -12,39 +11,31 @@ export class AIService {
     });
   }
 
-  private async ollamaComplete(prompt: string): Promise<string> {
-    const response = await fetch("http://localhost:11434/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "llama2",
-        prompt: prompt,
-        stream: false
-      })
-    });
-
-    const data = await response.json();
-    return data.response;
-  }
-
   async complete(messages: any[]): Promise<string> {
     try {
-      if (this.useOpenAI) {
-        const completion = await this.openai.chat.completions.create({
-          model: "gpt-4",
-          messages,
-          temperature: 0.7,
-        });
-        return completion.choices[0].message.content || "";
-      }
-    } catch (error) {
-      console.log("[DEBUG] OpenAI error, falling back to Ollama:", error);
-      this.useOpenAI = false;
-    }
+      const model = this.useGPT4 ? "gpt-4" : "gpt-3.5-turbo";
+      const completion = await this.openai.chat.completions.create({
+        model,
+        messages,
+        temperature: 0.7,
+      });
 
-    // Fallback to Ollama
-    const prompt = messages.map(m => `${m.role}: ${m.content}`).join("\n");
-    return this.ollamaComplete(prompt);
+      if (!completion.choices[0].message.content) {
+        throw new Error("No content in response");
+      }
+
+      return completion.choices[0].message.content;
+    } catch (error) {
+      console.log("[DEBUG] OpenAI GPT-4 error, falling back to GPT-3.5:", error);
+      this.useGPT4 = false;
+      
+      // Retry with fallback model
+      if (this.useGPT4) {
+        return this.complete(messages);
+      }
+      
+      throw error;
+    }
   }
 }
 
