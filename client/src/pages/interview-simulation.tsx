@@ -40,12 +40,10 @@ export default function InterviewSimulationPage() {
   useEffect(() => {
     const initializeInterview = async () => {
       try {
-        const storedData = localStorage.getItem('interviewData');
-        if (!storedData) {
+        if (!interviewParams) {
           throw new Error("Interview parameters not loaded");
         }
 
-        const interviewParams = JSON.parse(storedData);
         console.log("[DEBUG] Initializing interview simulation");
         const { jobType, experienceLevel, interviewType, difficulty, jobDescription } = interviewParams;
 
