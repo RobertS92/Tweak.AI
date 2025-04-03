@@ -1,0 +1,150 @@
+Browserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[DEBUG] Resume parser request received
+[DEBUG] Request body: [Object: null prototype] {}
+[DEBUG] Starting resume parsing process
+[DEBUG] File info: { filename: 'Rob ML-2.pdf', mimetype: 'application/pdf', size: 86736 }
+[DEBUG] Detected file type: application/pdf
+[DEBUG] Cleaning text content, initial length: 5536
+[DEBUG] Cleaned text length: 5466
+[DEBUG] Successfully extracted content, length: 5466
+[DEBUG] Content preview: Rob Seals 
+Houston, TX | rseals13@gmail.com | 832-517-0329 | GitHub: github.com/RobertS92 
+Professional Summary 
+ML Engineer with over 5 years of experience in developing and deploying machine learnin
+[DEBUG] Starting resume parsing with OpenAI
+
+[DEBUG] Personal Information Parsing:
+[DEBUG] name: ✓ Found (Rob Seals)
+[DEBUG] email: ✓ Found (rseals13@gmail.com)
+[DEBUG] phone: ✓ Found (832-517-0329)
+[DEBUG] location: ✓ Found (Houston, TX)
+[DEBUG] website: ✓ Found (github.com/RobertS92)
+[DEBUG] linkedin: ✗ Empty 
+[DEBUG] objective: ✗ Empty 
+
+[DEBUG] Sections Parsing:
+
+[DEBUG] Section: professional-summary
+[DEBUG] Title: Professional Summary
+[DEBUG] Content: ✓ Found (508 chars)
+
+[DEBUG] Section: work-experience
+[DEBUG] Title: Work Experience
+[DEBUG] Items: 4 found
+
+[DEBUG] Item 1:
+[DEBUG]   title: ✓ AI / ML Engineer
+[DEBUG]   company: ✓ Tata Consultancy Services (TCS)
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2024-06
+[DEBUG]   endDate: ✓ 2024-10
+[DEBUG]   description: ✓ Developed NLP-based AI assistants for generative responses and intent classification, improving customer interactions and reducing handling time. Fine-tuned LLMs (GPT, Llama, Claude) to optimize context-aware dialogues and retrieval-augmented generation (RAG), enhancing system performance. Deployed models using AWS Lambda, ensuring scalability and efficient lifecycle management, including performance monitoring. Optimized MLOps pipelines, enabling automated updates, CI/CD, and continuous model tracking to ensure high-quality outcomes.
+[DEBUG]   achievements: 0 entries
+
+[DEBUG] Item 2:
+[DEBUG]   title: ✓ NLP / Conversational AI Scientist
+[DEBUG]   company: ✓ Charter Communications (Spectrum)
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2023-06
+[DEBUG]   endDate: ✓ 2024-06
+[DEBUG]   description: ✓ Fine-tuned 7 domain-specific models for NLU tasks, achieving a 95% F1 score and improving model performance across various industries. Built preprocessing pipelines, semantic search algorithms, and custom prompts for improved intent recognition and conversational experiences. Collaborated with CX teams to optimize IVR systems and real-time conversational AI strategies, enhancing user engagement. Integrated data analysis scripts to monitor model performance and identify opportunities for improvement.
+[DEBUG]   achievements: 0 entries
+
+[DEBUG] Item 3:
+[DEBUG]   title: ✓ Machine Learning Engineer
+[DEBUG]   company: ✓ Vision R&D
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2021-08
+[DEBUG]   endDate: ✓ 2023-06
+[DEBUG]   description: ✓ Developed scalable machine learning solutions for business problems, including traditional ML, computer vision, NLP, and reinforcement learning. Designed high-performance retrieval systems with Faiss and Rust, improving model inference and data access efficiency. Contributed to cloud deployment using AWS and Docker, ensuring scalable applications for real-time processing.
+[DEBUG]   achievements: 0 entries
+
+[DEBUG] Item 4:
+[DEBUG]   title: ✓ Financial Data Analyst
+[DEBUG]   company: ✓ Hudson Way Capital
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2020-10
+[DEBUG]   endDate: ✓ 2021-06
+[DEBUG]   description: ✓ Developed predictive models (e.g., logistic regression, time series forecasting) to assess company valuations, earnings potential, and market risk. Engineered features from unstructured market data (e.g., financial reports, news feeds) using tokenization and text embeddings to support investment decisions. Applied MLOps practices for model deployment and continuous integration, ensuring scalable solutions aligned with internal data governance.
+[DEBUG]   achievements: 0 entries
+
+[DEBUG] Section: education
+[DEBUG] Title: Education
+[DEBUG] Items: 4 found
+
+[DEBUG] Item 1:
+[DEBUG]   degree: ✓ MA, Data Science: Specializing Machine Learning
+[DEBUG]   institution: ✓ Southern Methodist University
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2024-12
+[DEBUG]   endDate: ✗ 
+[DEBUG]   gpa: ✗ 
+[DEBUG]   courses: 0 entries
+
+[DEBUG] Item 2:
+[DEBUG]   degree: ✓ Postgraduate Certificate: Artificial Intelligence & Machine Learning
+[DEBUG]   institution: ✓ University of Texas
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2022-01
+[DEBUG]   endDate: ✓ 2023-12
+[DEBUG]   gpa: ✗ 
+[DEBUG]   courses: 7 entries
+
+[DEBUG] Item 3:
+[DEBUG]   degree: ✓ MBA, Finance
+[DEBUG]   institution: ✓ Southern Methodist University
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2020-01
+[DEBUG]   endDate: ✓ 2021-02
+[DEBUG]   gpa: ✗ 
+[DEBUG]   courses: 0 entries
+
+[DEBUG] Item 4:
+[DEBUG]   degree: ✓ B.A., Sociology & Computer Science
+[DEBUG]   institution: ✓ Southern Methodist University
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2011-07
+[DEBUG]   endDate: ✓ 2015-12
+[DEBUG]   gpa: ✗ 
+[DEBUG]   courses: 0 entries
+
+[DEBUG] Section: skills
+[DEBUG] Title: Skills
+
+[DEBUG] Categories:
+[DEBUG] Technical Skills: 42 skills
+[DEBUG] Skills: Python, Java, JavaScript, TensorFlow, Keras, PyTorch, Scikit-learn, Huggingface, spaCy, LLM Fine-Tuning (GPT, BERT), NLU/NLG, Sentiment Analysis, Named Entity Recognition (NER), Language Modeling, Retrieval-Augmented Generation (RAG), Text Generation, Dialog Systems, Predictive Modeling, Time Series Modeling (ARIMA/LSTM), Neural Networks, Reinforcement Learning, Hyperparameter Tuning, Supervised learning, Unsupervised Learning, Classification, Regression modeling, AWS (Lambda, EC2, S3), Azure, Databricks, Docker, Kubernetes, Faiss, Model Lifecycle Management, CI/CD, Model Versioning, Deployment Pipelines, Model Monitoring, Exploratory Data Analysis (EDA), Statistical Analysis, Feature Engineering, Data Visualization, Hypothesis Testing
+[DEBUG] Soft Skills: 5 skills
+[DEBUG] Skills: Collaborative, Results-Driven, Problem Solver, Detail-Oriented, Strong Communication Skills
+
+[DEBUG] Section: projects
+[DEBUG] Title: Projects
+[DEBUG] Items: 4 found
+
+[DEBUG] Item 1:
+[DEBUG]   title: ✓ CryptoSenti: Fine-Tuned BERT for Crypto Sentiment Analysis
+[DEBUG]   description: ✓ Fine-tuned BERT models on crypto sentiment analysis, integrating data pipelines for seamless data flow and model deployment. Technologies: DeepSeek, BERT, TensorFlow, Huggingface, Python, AWS S3
+
+[DEBUG] Item 2:
+[DEBUG]   title: ✓ Reinforcement Learning Agent Expert at Monopoly
+[DEBUG]   description: ✓ Fine-tuned an RL agent with PPO for negotiation strategies and real-time decision-making. Technologies: Python, TensorFlow, Flask, React.js, Docker, Kubernetes, AWS, OpenAI Gym
+
+[DEBUG] Item 3:
+[DEBUG]   title: ✓ AutoML System for Financial Signal Data
+[DEBUG]   description: ✓ Built an AutoML pipeline to automate preprocessing, model selection, and hyperparameter tuning for financial data analysis. Technologies: Python, scikit-learn, TensorFlow, PyTorch, Optuna, AWS, Docker
+
+[DEBUG] Item 4:
+[DEBUG]   title: ✓ NLP Pipeline for Financial Data Analysis
+[DEBUG]   description: ✓ Developed an NLP pipeline to analyze financial texts, extracting entities and sentiments to support investment decisions. Technologies: Python, spaCy, NLTK, Gensim, Huggingface, Azure
+
+[DEBUG] Section: certifications
+[DEBUG] Title: Certifications
+
+[DEBUG] Parsing Statistics:
+[DEBUG] Personal Info Fields: 5/7
+[DEBUG] Total Sections: 6
+[DEBUG] Work Experience Items: 4
+[DEBUG] Education Items: 4
+[DEBUG] Total Skills: 47
