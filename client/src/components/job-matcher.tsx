@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Upload, FileText, ArrowLeftRight, Download } from "lucide-react";
+import { Upload, FileText, ArrowLeftRight, Download, Printer } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -147,6 +147,15 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
         credentials: 'include', // Add credentials to ensure auth cookies are sent
       });
       
+      if (response.status === 401) {
+        toast({
+          title: "Authentication Required",
+          description: "You must be logged in to download resumes",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to generate PDF');
@@ -177,6 +186,70 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
         variant: "destructive"
       });
     }
+  };
+  
+  // Separate print functionality from download
+  const printOptimizedResume = () => {
+    if (!enhancedContent) {
+      toast({
+        title: "No Optimized Content",
+        description: "Please optimize your resume first",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Create a new window with only the resume content
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({
+        title: "Print Failed",
+        description: "Unable to open print window. Please check your browser settings.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Generate a clean HTML document with only the resume
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Optimized Resume</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 2em;
+          }
+          h1, h2, h3 {
+            color: #222;
+          }
+          @media print {
+            body {
+              margin: 0;
+              padding: 2cm;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div id="resume-content">
+          ${enhancedContent}
+        </div>
+        <script>
+          // Auto print when content is loaded
+          window.onload = function() {
+            window.print();
+            // Don't close the window automatically so user can cancel print
+          }
+        </script>
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
   };
 
   return (
@@ -237,15 +310,26 @@ export default function JobMatcher({ resumeId }: JobMatcherProps) {
                   Toggle Version
                 </Button>
                 {enhancedContent && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => downloadOptimizedPDF()}
-                    className="flex items-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    Download PDF
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => downloadOptimizedPDF()}
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download PDF
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => printOptimizedResume()}
+                      className="flex items-center gap-2"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Print
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
