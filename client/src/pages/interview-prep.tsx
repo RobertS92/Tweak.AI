@@ -339,12 +339,6 @@ export default function InterviewPrep() {
         throw new Error("Failed to save interview data");
       }
 
-      // Verify data was stored
-      const storedData = localStorage.getItem('interviewData');
-      if (!storedData) {
-        throw new Error("Failed to save interview data");
-      }
-
       // Navigate to interview simulation
       window.location.href = '/interview-simulation';
     } catch (error) {
