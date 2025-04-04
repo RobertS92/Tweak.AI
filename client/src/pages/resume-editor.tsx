@@ -23,7 +23,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Download, ArrowLeft, Eye, Upload, Lock } from "lucide-react";
+import { Download, ArrowLeft, Eye, Upload, Lock, Save } from "lucide-react";
 import { Link } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -300,6 +300,69 @@ export default function ResumeEditor() {
       setIsPrinting(false);
     }
   };
+  
+  // New function to save the resume to the user's dashboard
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const saveToDashboard = async () => {
+    // Check if user is logged in
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please login or create an account to save this resume to your dashboard",
+        variant: "default",
+      });
+      navigate("/auth");
+      return;
+    }
+    
+    if (!resumeId) return;
+    
+    try {
+      setIsSaving(true);
+      
+      // Use the claim API to associate the resume with the user if it's anonymous
+      const response = await fetch(`/api/resumes/claim/${resumeId}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        // If unauthorized, redirect to auth page
+        if (response.status === 401) {
+          toast({
+            title: "Login Required",
+            description: "Your session has expired. Please login again to save.",
+            variant: "default",
+          });
+          navigate("/auth");
+          return;
+        }
+        throw new Error('Failed to save resume to dashboard');
+      }
+      
+      const data = await response.json();
+      
+      toast({
+        title: "Resume Saved",
+        description: "Your resume has been saved to your dashboard",
+      });
+      
+      // Optionally navigate to dashboard
+      navigate("/dashboard");
+    } catch (error: unknown) {
+      toast({
+        title: "Save Failed",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -432,6 +495,15 @@ export default function ResumeEditor() {
                 Upload Another Resume
               </Button>
             </Link>
+            <Button
+              onClick={saveToDashboard}
+              disabled={isSaving}
+              variant="outline"
+              className="bg-blue-100 hover:bg-blue-200 border-blue-300"
+            >
+              <Save className="mr-2 h-4 w-4" />
+              {isSaving ? 'Saving...' : 'Save to Dashboard'}
+            </Button>
             <Button
               onClick={handleDownload}
               disabled={isPrinting}
@@ -591,12 +663,24 @@ export default function ResumeEditor() {
               </Tabs>
             </div>
 
-            <div className="absolute bottom-4 right-4">
+            <div className="absolute bottom-4 right-4 flex gap-2">
               {user ? (
-                <Button onClick={() => window.print()} size="sm">
-                  <Download className="w-4 h-4 mr-2" />
-                  Download Enhanced Resume
-                </Button>
+                <>
+                  <Button 
+                    onClick={saveToDashboard} 
+                    disabled={isSaving} 
+                    size="sm"
+                    variant="outline"
+                    className="bg-blue-100 hover:bg-blue-200 border-blue-300"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {isSaving ? 'Saving...' : 'Save to Dashboard'}
+                  </Button>
+                  <Button onClick={() => window.print()} size="sm">
+                    <Download className="w-4 h-4 mr-2" />
+                    Download Enhanced Resume
+                  </Button>
+                </>
               ) : (
                 <Button onClick={() => {
                   setShowEnhanced(false);

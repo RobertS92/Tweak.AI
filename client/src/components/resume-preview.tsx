@@ -1,21 +1,29 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Plus } from "lucide-react";
+import { FileText, Download, Plus, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
 
 interface ResumePreviewProps {
   content: string;
   analysis?: {
     enhancedContent?: string;
   };
+  resumeId?: number;
+  title?: string;
 }
 
-export default function ResumePreview({ content, analysis }: ResumePreviewProps) {
+export default function ResumePreview({ content, analysis, resumeId, title }: ResumePreviewProps) {
   const [showContent, setShowContent] = React.useState(false);
   const [isDownloading, setIsDownloading] = React.useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
   const { toast } = useToast();
   const [section, setSection] = React.useState(''); // Hypothetical section state
+  const { user } = useAuth();
+  const [, navigate] = useLocation();
 
   const cleanResumeContent = (htmlContent: string) => {
     if (!htmlContent) return '';
@@ -47,6 +55,7 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ content: cleanContent }),
+        credentials: 'include', // Add credentials to ensure auth cookies are sent
       });
 
       if (!response.ok) {
@@ -85,6 +94,61 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
       setSection(prevSection => prevSection + contentToAdd); 
     }
   };
+  
+  // Save to dashboard function
+  const saveToDashboard = async () => {
+    if (!resumeId || !analysis?.enhancedContent) {
+      toast({
+        title: "Error",
+        description: "No resume content available to save",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please login or create an account to save resumes to your dashboard",
+        variant: "default",
+      });
+      navigate("/auth");
+      return;
+    }
+    
+    try {
+      setIsSaving(true);
+      
+      // First check if the user already has this resume
+      const response = await fetch(`/api/resumes/claim/${resumeId}`, {
+        method: "POST",
+        credentials: "include",
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to save resume to dashboard");
+      }
+      
+      const savedResume = await response.json();
+      
+      toast({
+        title: "Success",
+        description: "Resume saved to your dashboard",
+      });
+      
+      // Optionally navigate to dashboard
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Failed to save resume:", error);
+      toast({
+        title: "Save Failed",
+        description: error instanceof Error ? error.message : "Failed to save resume to dashboard",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -98,27 +162,39 @@ export default function ResumePreview({ content, analysis }: ResumePreviewProps)
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setShowContent(!showContent)}
-              className="flex-1 py-3 flex items-center justify-center gap-2"
-            >
-              <FileText className="w-5 h-5" />
-              {showContent ? "Hide Resume" : "View Enhanced Resume"}
-            </Button>
-            <Button
-              onClick={downloadEnhancedResume}
-              disabled={isDownloading || !analysis?.enhancedContent}
-              className="py-3 flex items-center justify-center gap-2"
-            >
-              <Download className="w-5 h-5" />
-              {isDownloading ? "Downloading..." : "Download PDF"}
-            </Button>
-            <div className="flex justify-between items-center mt-2">
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowContent(!showContent)}
+                className="flex-1 py-3 flex items-center justify-center gap-2"
+              >
+                <FileText className="w-5 h-5" />
+                {showContent ? "Hide Resume" : "View Enhanced Resume"}
+              </Button>
+              <Button
+                onClick={downloadEnhancedResume}
+                disabled={isDownloading || !analysis?.enhancedContent}
+                className="py-3 flex items-center justify-center gap-2"
+              >
+                <Download className="w-5 h-5" />
+                {isDownloading ? "Downloading..." : "Download PDF"}
+              </Button>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                onClick={saveToDashboard}
+                disabled={isSaving || !analysis?.enhancedContent || !resumeId}
+                className="flex-1 py-3 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700"
+              >
+                <Save className="w-5 h-5" />
+                {isSaving ? "Saving..." : "Save to Dashboard"}
+              </Button>
+              
               <Button
                 onClick={() => onAddToSection(analysis?.enhancedContent)}
                 disabled={!analysis?.enhancedContent}
-                className="py-3 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 w-full"
+                className="flex-1 py-3 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
               >
                 <Plus className="w-5 h-5" />
                 Add to Section

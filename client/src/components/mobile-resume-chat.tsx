@@ -5,10 +5,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Upload, Download, Loader2 } from "lucide-react";
+import { Send, Upload, Download, Loader2, Save } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
+import ResumePreview from "@/components/resume-preview";
 
 interface Message {
   type: 'user' | 'ai';
@@ -247,6 +249,8 @@ export default function MobileResumeChat() {
     }
   };
 
+  const [, navigate] = useLocation();
+
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] p-4">
       <Card className="flex-1 flex flex-col">
@@ -315,10 +319,34 @@ export default function MobileResumeChat() {
             </div>
 
             {generatedResume && (
-              <div 
-                className="mt-4 border rounded-lg p-4"
-                dangerouslySetInnerHTML={{ __html: generatedResume.content }} 
-              />
+              <div className="mt-4 space-y-4">
+                {/* Use the ResumePreview component for consistency with desktop experience */}
+                <ResumePreview 
+                  content={generatedResume.content}
+                  analysis={{ enhancedContent: generatedResume.content }}
+                  resumeId={generatedResume.id}
+                  title={generatedResume.title}
+                />
+                
+                {/* Button to save to dashboard */}
+                {!user && (
+                  <div className="flex justify-center mt-4">
+                    <Button
+                      onClick={() => navigate('/auth')}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      Sign Up to Save Resume
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Simple preview */}
+                <div 
+                  className="border rounded-lg p-4 bg-white"
+                  dangerouslySetInnerHTML={{ __html: generatedResume.content }} 
+                />
+              </div>
             )}
           </div>
         </CardContent>
