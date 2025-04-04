@@ -134,21 +134,75 @@ router.post("/resume-ai-assistant", async (req, res) => {
       sectionId: incomingSectionId,
       sectionContent,
       userQuery,
+      question,
+      section,
+      context
     } = req.body || {};
 
-    sectionId = incomingSectionId || "unknown";
+    // Support both new and old API formats
+    sectionId = section || incomingSectionId || "unknown";
+    const userQuestion = question || userQuery || "";
 
     console.log("[DEBUG] AI Assistant request details:", {
       sectionId,
-      contentLength: sectionContent?.length,
-      userQuery,
+      contentLength: sectionContent?.length || context?.length,
+      userQuestion
     });
+    
+    // If using the new resume builder format, handle it differently
+    if (userQuestion && sectionId && context) {
+      console.log("[DEBUG] Processing with new resume builder format");
+      
+      // Create system prompt that's conversational and provides specific resume writing advice
+      const systemPrompt = `You are an expert resume assistant helping a user build their resume. You provide specific, actionable advice for creating an impressive resume.
 
+Current context: The user is working on the "${sectionId.replace(/-/g, ' ')}" section of their resume.
+
+${context}
+
+Please respond conversationally as a helpful assistant. Be concise but thorough in your advice. Provide specific examples and suggestions when appropriate. 
+
+If the user is asking you to write content for them, create professional and ATS-friendly content that would help them stand out to recruiters.
+
+Remember that your advice should be tailored to their specific situation and the section they're working on.`;
+
+      console.log("[DEBUG] Sending request to OpenAI for resume builder");
+      
+      const completion = await openai.chat.completions.create({
+        // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt
+          },
+          {
+            role: "user",
+            content: userQuestion
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1500,
+      });
+      
+      const aiResponse = completion.choices[0]?.message?.content || "";
+      console.log("[DEBUG] AI Response received:", {
+        length: aiResponse.length,
+        sample: aiResponse.substring(0, 100) + "..."
+      });
+      
+      return res.json({
+        answer: aiResponse
+      });
+    }
+    
+    // Original code for the old resume format follows
+    
     // Check if section content is empty
     const isEmptySection = !sectionContent || sectionContent.trim().length === 0;
 
     // Return fallback message for empty sections unless user explicitly asks to generate content
-    if (isEmptySection && (!userQuery || userQuery === "Please analyze this section and suggest improvements.")) {
+    if (isEmptySection && (!userQuestion || userQuestion === "Please analyze this section and suggest improvements.")) {
       console.log("[DEBUG] Returning fallback message for empty section:", sectionId);
       return res.json({
         revision: getFallbackMessage(sectionId),
@@ -158,17 +212,17 @@ router.post("/resume-ai-assistant", async (req, res) => {
     }
 
     // Determine if this is likely a content creation request based on user query
-    const isContentCreationQuery = userQuery && (
-      userQuery.toLowerCase().includes("create") ||
-      userQuery.toLowerCase().includes("write") ||
-      userQuery.toLowerCase().includes("generate") ||
-      userQuery.toLowerCase().includes("help me with") ||
-      userQuery.toLowerCase().includes("i am a") ||
-      userQuery.toLowerCase().includes("i have been") ||
-      userQuery.toLowerCase().includes("my experience") ||
-      userQuery.toLowerCase().includes("my background") ||
+    const isContentCreationQuery = userQuestion && (
+      userQuestion.toLowerCase().includes("create") ||
+      userQuestion.toLowerCase().includes("write") ||
+      userQuestion.toLowerCase().includes("generate") ||
+      userQuestion.toLowerCase().includes("help me with") ||
+      userQuestion.toLowerCase().includes("i am a") ||
+      userQuestion.toLowerCase().includes("i have been") ||
+      userQuestion.toLowerCase().includes("my experience") ||
+      userQuestion.toLowerCase().includes("my background") ||
       // If user is responding to our prompt to tell us about themselves
-      (isEmptySection && userQuery.length > 30)
+      (isEmptySection && userQuestion.length > 30)
     );
 
     // Choose the appropriate system prompt based on whether this is a 
@@ -240,7 +294,7 @@ Revised Version:
     }
 
     // Only proceed with OpenAI processing
-    console.log("[DEBUG] Processing with userQuery:", userQuery);
+    console.log("[DEBUG] Processing with userQuery:", userQuestion);
     console.log("[DEBUG] Is content creation request:", isContentCreationQuery);
 
     const messages = [
@@ -250,8 +304,8 @@ Revised Version:
       },
       {
         role: "user",
-        content: userQuery 
-          ? `I'm working on the "${sectionId.replace(/-/g, ' ')}" section of my resume. ${isEmptySection ? "I haven't written anything yet." : "Here's the current content:\n\n" + sectionContent}\n\n${userQuery}`
+        content: userQuestion 
+          ? `I'm working on the "${sectionId.replace(/-/g, ' ')}" section of my resume. ${isEmptySection ? "I haven't written anything yet." : "Here's the current content:\n\n" + sectionContent}\n\n${userQuestion}`
           : `Please analyze this ${sectionId.replace(/-/g, ' ')} section and suggest improvements:\n\n${sectionContent}`
       }
     ];
@@ -280,7 +334,7 @@ Revised Version:
       aiResponse;
 
     // Handle content creation from user text input
-    if (!sectionContent && userQuery && userQuery.length > 30) {
+    if (!sectionContent && userQuestion && userQuestion.length > 30) {
       const systemPrompt = `Create professional resume content for the ${sectionId.replace(/-/g, ' ')} section based on the user's input. Format appropriately for:
 - Professional Summary: Clear 3-4 sentence overview
 - Work Experience: Position, company, dates, and bullet points
@@ -306,7 +360,7 @@ Return your analysis with specific suggestions.`;
         revisedText = aiResponse;
       }
       // For content creation with professional summary, return the AI response directly
-      else if (isContentCreationQuery && sectionId === 'professional-summary' && userQuery.toLowerCase().includes('write a professional summary')) {
+      else if (isContentCreationQuery && sectionId === 'professional-summary' && userQuestion.toLowerCase().includes('write a professional summary')) {
         revisedText = aiResponse;
       } else if (markerIndex !== -1) {
         revisedText = revisedText.substring(markerIndex + marker.length).trim();

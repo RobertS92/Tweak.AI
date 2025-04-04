@@ -172,6 +172,9 @@ async function extractTextFromImage(buffer: Buffer): Promise<string> {
 }
 
 export async function registerRoutes(app: Express) {
+  // Import and use the resume AI assistant routes
+  const resumeAiAssistantRouter = (await import('./routes/resume-ai-assistant')).default;
+  app.use('/api/resume-ai-assistant', resumeAiAssistantRouter);
   // Configure express middleware BEFORE routes
   app.use(express.json({ limit: '50mb', strict: false }));
   app.use(express.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
@@ -904,6 +907,142 @@ Create an optimized version that matches keywords while PRESERVING ALL ORIGINAL 
   }
 
   // Add PDF download endpoint for job-matched resumes
+  // Resume Builder routes
+  // Save a resume created with the resume builder
+  app.post("/api/resumes/save-builder", enhancedAuthCheck, async (req, res) => {
+    try {
+      console.log("[DEBUG] Resume builder save request received");
+      const { resumeData, title, atsScore } = req.body;
+      
+      if (!resumeData || !title) {
+        return res.status(400).json({ 
+          message: "Missing required fields",
+          details: "Resume data and title are required"
+        });
+      }
+      
+      // Generate HTML content from the resume data
+      const content = generatePDFTemplate(resumeData);
+      
+      // Create the resume in storage
+      let resume;
+      if (req.isAuthenticated() && req.user) {
+        resume = await storage.createResume({
+          userId: req.user.id.toString(),
+          title,
+          content,
+          fileType: "html"
+        });
+        
+        // Update with atsScore in a separate call
+        resume = await storage.updateResume(resume.id, {
+          atsScore: atsScore || 65
+        });
+      } else {
+        // Create an anonymous resume
+        resume = await storage.createResume({
+          title,
+          content,
+          fileType: "html"
+        });
+        
+        // Update with atsScore in a separate call
+        resume = await storage.updateResume(resume.id, {
+          atsScore: atsScore || 65
+        });
+      }
+      
+      console.log(`[DEBUG] Resume builder saved successfully with ID: ${resume.id}`);
+      
+      res.json({
+        id: resume.id,
+        title: resume.title,
+        message: "Resume saved successfully"
+      });
+    } catch (error: unknown) {
+      console.error("[ERROR] Resume builder save error:", error);
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ message });
+    }
+  });
+  
+  // Generate PDF from resume builder data
+  app.post("/api/resumes/generate-pdf", async (req, res) => {
+    try {
+      console.log("[DEBUG] Resume PDF generation request received");
+      const { resumeData, title } = req.body;
+      
+      if (!resumeData) {
+        return res.status(400).json({ 
+          message: "Missing resume data",
+          details: "Resume data is required"
+        });
+      }
+      
+      // Generate HTML content from the resume data
+      const htmlContent = generatePDFTemplate(resumeData);
+      
+      // Generate PDF using puppeteer
+      console.log("[DEBUG] Generating PDF with Puppeteer");
+      
+      // Set up puppeteer with appropriate configuration
+      const browser = await puppeteer.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: true,
+      });
+      
+      const page = await browser.newPage();
+      
+      // Apply styles and content
+      const fullHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>${title || "Resume"}</title>
+          <style>
+            ${generateStyles()}
+          </style>
+        </head>
+        <body>
+          <div class="resume">
+            ${htmlContent}
+          </div>
+        </body>
+        </html>
+      `;
+      
+      await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
+      
+      // Generate PDF
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '0.5cm',
+          right: '0.5cm',
+          bottom: '0.5cm',
+          left: '0.5cm'
+        }
+      });
+      
+      await browser.close();
+      console.log("[DEBUG] PDF generated successfully");
+      
+      // Set appropriate headers and send PDF
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${(title || 'resume').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error: unknown) {
+      console.error("[ERROR] PDF generation error:", error);
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ message });
+    }
+  });
+
   app.post("/api/resumes/:id/job-match-pdf", enhancedAuthCheck, async (req, res) => {
     try {
       console.log("[DEBUG] Received job-matched PDF download request");
