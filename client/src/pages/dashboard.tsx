@@ -4,12 +4,14 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useClaimResumes } from "@/hooks/use-claim-resumes";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { 
   Plus, Download, Edit, Trash2, 
-  AlertCircle, Loader2, UserPlus 
+  AlertCircle, Loader2, UserPlus,
+  Crown, 
 } from "lucide-react";
 
 interface Resume {
@@ -17,6 +19,7 @@ interface Resume {
   title: string;
   atsScore: number | null;
   createdAt: string;
+  updatedAt?: string;
 }
 
 // Anonymous resume interface similar to the one in use-claim-resumes.tsx
@@ -31,10 +34,49 @@ interface AnonymousResume {
   createdAt: string;
 }
 
+// Plan information
+interface UserPlan {
+  name: string;
+  maxResumes: number;
+  isPro: boolean;
+}
+
 export default function Dashboard() {
   const { toast } = useToast();
   const [page, setPage] = useState(1);
+  const { user } = useAuth();
+  
+  // Determine user's plan - Check if the user has a premium subscription
+  const [userPlan, setUserPlan] = useState<UserPlan>({
+    name: "Base Plan",
+    maxResumes: 20,
+    isPro: false
+  });
 
+  // Update the plan whenever user data changes
+  useEffect(() => {
+    // Check for premium status from user data 
+    // This uses a type-safe approach that doesn't require the isPremium property to exist yet
+    // We'll need to update the users schema when implementing subscription functionality
+    const userData = user as any;
+    const userHasPremiumPlan = !!(userData && userData.isPremium === true);
+    
+    if (userHasPremiumPlan) {
+      setUserPlan({
+        name: "Professional Plan",
+        maxResumes: 300,
+        isPro: true
+      });
+    } else {
+      setUserPlan({
+        name: "Base Plan",
+        maxResumes: 20,
+        isPro: false
+      });
+    }
+  }, [user]);
+
+  // Fetch user's resume data
   const { data: resumes = [] as Resume[], isLoading } = useQuery<Resume[]>({
     queryKey: ["/api/resumes"],
   });
@@ -114,10 +156,38 @@ export default function Dashboard() {
   }
 
   const avgScore = calculateAverageScore(resumes);
+  const storagePercentage = Math.round(((resumes?.length || 0) / userPlan.maxResumes) * 100);
+  const isStorageNearCapacity = storagePercentage >= 80;
+  const isStorageFull = storagePercentage >= 100;
 
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
       <div className="flex">
+        
+      {/* Storage Warning Banner */}
+      {isStorageNearCapacity && (
+        <div className={`fixed top-2 right-2 left-2 z-50 p-4 rounded-lg shadow-lg ${
+          isStorageFull ? "bg-red-100 border border-red-400" : "bg-yellow-100 border border-yellow-400"
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <AlertCircle className={`h-5 w-5 mr-2 ${isStorageFull ? "text-red-500" : "text-yellow-500"}`} />
+              <p className={`font-medium ${isStorageFull ? "text-red-800" : "text-yellow-800"}`}>
+                {isStorageFull 
+                  ? "Your storage is full! Delete some resumes or upgrade to the Professional Plan." 
+                  : "Your storage is almost full. Consider upgrading to the Professional Plan for more space."}
+              </p>
+            </div>
+            <Button 
+              variant="outline" 
+              className={`ml-4 ${isStorageFull ? "border-red-400 text-red-700" : "border-yellow-400 text-yellow-700"}`}
+            >
+              <Crown className="h-4 w-4 mr-2" />
+              Upgrade Now
+            </Button>
+          </div>
+        </div>
+      )}
 
         {/* Main Content */}
         <div className="flex-1 p-6">
@@ -160,13 +230,25 @@ export default function Dashboard() {
             <Card className="p-6">
               <h3 className="text-[#7f8c8d] mb-4">Storage Used</h3>
               <div className="text-3xl font-bold text-[#2c3e50] mb-4">
-                {resumes?.length || 0}/300
+                {resumes?.length || 0}/{userPlan.maxResumes}
               </div>
-              <Progress value={(resumes?.length || 0) / 3} className="h-2" />
+              <Progress 
+                value={(resumes?.length || 0) / userPlan.maxResumes * 100} 
+                className="h-2" 
+              />
               <div className="flex justify-between mt-2">
-                <span className="text-[#3498db]">Professional Plan</span>
+                <span className="text-[#3498db] flex items-center">
+                  {userPlan.isPro ? (
+                    <>
+                      <Crown className="h-4 w-4 mr-1 text-yellow-500" />
+                      Professional Plan
+                    </>
+                  ) : (
+                    "Base Plan"
+                  )}
+                </span>
                 <span className="text-[#7f8c8d]">
-                  {Math.round(((resumes?.length || 0) / 300) * 100)}% Used
+                  {Math.round(((resumes?.length || 0) / userPlan.maxResumes) * 100)}% Used
                 </span>
               </div>
             </Card>
