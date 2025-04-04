@@ -23,7 +23,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Download, ArrowLeft, Eye, Upload } from "lucide-react";
+import { Download, ArrowLeft, Eye, Upload, Lock } from "lucide-react";
 import { Link } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -200,17 +200,7 @@ export default function ResumeEditor() {
   const handleFile = (file: File | undefined) => {
     if (!file) return;
     
-    // Check if user is logged in
-    if (!user) {
-      toast({
-        title: "Login required",
-        description: "Please login or register to upload your resume",
-        variant: "destructive",
-      });
-      navigate("/auth");
-      return;
-    }
-    
+    // We now allow non-authenticated users to upload (they just can't download)
     uploadMutation.mutate(file);
   };
   
@@ -252,6 +242,18 @@ export default function ResumeEditor() {
   });
 
   const handleDownload = async () => {
+    // Check if user is logged in
+    if (!user) {
+      // Prompt to create account or login
+      toast({
+        title: "Login Required",
+        description: "Please login or create an account with a 3-day free trial to download your enhanced resume",
+        variant: "default",
+      });
+      navigate("/auth");
+      return;
+    }
+    
     setIsPrinting(true);
     try {
       const response = await fetch(`/api/resumes/${resumeId}/download-pdf`, {
@@ -260,6 +262,16 @@ export default function ResumeEditor() {
       });
 
       if (!response.ok) {
+        // If unauthorized, redirect to auth page
+        if (response.status === 401) {
+          toast({
+            title: "Login Required",
+            description: "Your session has expired. Please login again to download.",
+            variant: "default",
+          });
+          navigate("/auth");
+          return;
+        }
         throw new Error('Failed to generate PDF');
       }
 
@@ -580,10 +592,25 @@ export default function ResumeEditor() {
             </div>
 
             <div className="absolute bottom-4 right-4">
-              <Button onClick={() => window.print()} size="sm">
-                <Download className="w-4 h-4 mr-2" />
-                Download Enhanced Resume
-              </Button>
+              {user ? (
+                <Button onClick={() => window.print()} size="sm">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Enhanced Resume
+                </Button>
+              ) : (
+                <Button onClick={() => {
+                  setShowEnhanced(false);
+                  toast({
+                    title: "Login Required",
+                    description: "Please login or create an account with a 3-day free trial to download your enhanced resume",
+                    variant: "default",
+                  });
+                  navigate("/auth");
+                }} size="sm">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Create Account to Download
+                </Button>
+              )}
             </div>
           </DialogContent>
         </Dialog>
