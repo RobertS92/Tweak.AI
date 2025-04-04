@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Send, Upload, Download, Loader2, Save } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import ResumePreview from "@/components/resume-preview";
@@ -58,26 +58,10 @@ export default function MobileResumeChat() {
     if (!user) return; // Do nothing if not logged in
     
     try {
-      const response = await fetch(`/api/resumes/claim/${resumeId}`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      console.log(`Attempting to claim resume ID ${resumeId} for user ID ${user.id}`);
       
-      if (!response.ok) {
-        // If the request failed but not because of auth, show toast error
-        if (response.status !== 401) {
-          const data = await response.json();
-          toast({
-            title: "Failed to Save Resume",
-            description: data.message || "Couldn't associate the resume with your account",
-            variant: "destructive"
-          });
-        }
-        return;
-      }
+      // Use apiRequest instead of fetch to ensure consistent cookie handling
+      const response = await apiRequest("POST", `/api/resumes/claim/${resumeId}`);
       
       const data = await response.json();
       
@@ -94,9 +78,17 @@ export default function MobileResumeChat() {
           title: "Resume Saved",
           description: "Your resume has been saved to your account"
         });
+        
+        // Invalidate the resumes query to refresh the dashboard if user navigates there
+        queryClient.invalidateQueries({ queryKey: ["/api/resumes"] });
       }
     } catch (error) {
       console.error("Error claiming resume:", error);
+      toast({
+        title: "Failed to Save Resume",
+        description: error instanceof Error ? error.message : "Couldn't associate the resume with your account",
+        variant: "destructive"
+      });
     }
   };
 
@@ -148,6 +140,8 @@ export default function MobileResumeChat() {
       const formData = new FormData();
       formData.append("resume", file);
 
+      // We need to use fetch directly for FormData uploads
+      // but ensure credentials are properly included
       const response = await fetch("/api/resumes", {
         method: "POST",
         body: formData,
@@ -155,7 +149,8 @@ export default function MobileResumeChat() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to upload resume");
+        const errorData = await response.text();
+        throw new Error(errorData || "Failed to upload resume");
       }
 
       const data = await response.json();
@@ -171,6 +166,11 @@ export default function MobileResumeChat() {
         { type: 'user', content: `Uploaded resume: ${file.name}` },
         { type: 'ai', content: "I've received your resume. Would you like me to enhance it or create a new version based on it? You can also download it, but you'll need to log in first." }
       ]);
+      
+      // Invalidate the resumes query to refresh the dashboard if user navigates there
+      if (user) {
+        queryClient.invalidateQueries({ queryKey: ["/api/resumes"] });
+      }
     } catch (error) {
       console.error("Upload error:", error);
       toast({
@@ -190,13 +190,8 @@ export default function MobileResumeChat() {
 
     if (generatedResume && userMessage.toLowerCase().includes('download')) {
       try {
-        // First, try to get the authenticated download URL
-        const response = await fetch(`/api/resumes/${generatedResume.id}/download`, {
-          credentials: 'include'
-        });
-        
-        if (response.status === 401) {
-          // User is not authenticated
+        // Check if user is authenticated first
+        if (!user) {
           setMessages(prev => [...prev, {
             type: 'ai',
             content: "You need to log in or create an account to download your resume. This ensures your data is saved and secure. Would you like to create an account now?"
@@ -204,13 +199,12 @@ export default function MobileResumeChat() {
           return;
         }
         
-        if (!response.ok) {
-          throw new Error("Failed to download resume");
-        }
-        
-        // If authentication passed, we can download
+        // Use apiRequest for consistent credential handling
+        console.log(`Attempting to download resume ID ${generatedResume.id}`);
+        const response = await apiRequest("GET", `/api/resumes/${generatedResume.id}/download`);
         const data = await response.json();
         
+        // Create and trigger download
         const blob = new Blob([data.content], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -227,6 +221,16 @@ export default function MobileResumeChat() {
         }]);
       } catch (error) {
         console.error("Download error:", error);
+        
+        // Check if it's an authentication error
+        if (error instanceof Error && error.message.includes('401')) {
+          setMessages(prev => [...prev, {
+            type: 'ai',
+            content: "You need to log in or create an account to download your resume. This ensures your data is saved and secure. Would you like to create an account now?"
+          }]);
+          return;
+        }
+        
         toast({
           title: "Download Failed",
           description: error instanceof Error ? error.message : "Failed to download resume",
@@ -235,7 +239,7 @@ export default function MobileResumeChat() {
         
         setMessages(prev => [...prev, {
           type: 'ai',
-          content: "Sorry, I encountered an error while trying to download your resume. Please try again or log in if you haven't already."
+          content: "Sorry, I encountered an error while trying to download your resume. Please try again."
         }]);
       }
       return;

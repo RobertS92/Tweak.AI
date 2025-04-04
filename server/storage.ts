@@ -132,6 +132,7 @@ export class DatabaseStorage implements IStorage {
       console.log(`[DEBUG] Resume current state: userId=${resume.userId}, title=${resume.title}`);
       
       // Update the resume to assign it to the user
+      // Since userId is stored as text in the schema, we must convert the userId to string
       const [updated] = await db
         .update(resumes)
         .set({ userId: userId.toString() })

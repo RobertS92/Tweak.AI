@@ -530,34 +530,49 @@ export async function registerRoutes(app: Express) {
     try {
       // Check if user is authenticated
       if (!req.isAuthenticated()) {
+        console.log("[DEBUG] Claim resume attempt by unauthenticated user");
         return res.status(401).json({ 
           message: "You must be logged in to claim a resume",
           requiresAuth: true
         });
       }
       
+      // Log the authentication details
+      console.log(`[DEBUG] User authenticated with ID: ${req.user.id}, username: ${req.user.username}`);
+      
       const resumeId = parseInt(req.params.id);
+      console.log(`[DEBUG] Attempting to claim resume ID: ${resumeId}`);
+      
       const resume = await storage.getResume(resumeId);
       
       if (!resume) {
+        console.log(`[DEBUG] Resume ID ${resumeId} not found`);
         return res.status(404).json({ message: "Resume not found" });
       }
       
+      console.log(`[DEBUG] Resume found: ID=${resume.id}, title=${resume.title}, userId=${resume.userId || 'null'}`);
+      
       // If resume already has a userId and it's different from current user
       if (resume.userId && resume.userId !== req.user.id.toString()) {
+        console.log(`[DEBUG] Resume ${resumeId} already owned by user ${resume.userId}, current user is ${req.user.id}`);
         return res.status(403).json({ 
           message: "This resume belongs to another user"
         });
       }
       
+      console.log(`[DEBUG] Resume ${resumeId} is claimable, proceeding to claim for user ${req.user.id}`);
+      
       // Claim the resume by assigning the user's ID to it
       const claimedResume = await storage.claimAnonymousResume(resumeId, req.user.id);
+      
+      console.log(`[DEBUG] Resume claimed successfully, new userId=${claimedResume.userId}`);
       
       res.json({ 
         message: "Resume claimed successfully", 
         resume: claimedResume 
       });
     } catch (error: unknown) {
+      console.error("[ERROR] Error claiming resume:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
       res.status(500).json({ message });
     }
