@@ -1,7 +1,8 @@
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 import ResumePreview from "@/components/resume-preview";
 import JobMatcher from "@/components/job-matcher";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import { Link } from "wouter";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+// Local interface to match the API response
 interface Resume {
   id: number;
   title: string;
@@ -59,14 +61,130 @@ interface Resume {
 export default function ResumeEditor() {
   const { id } = useParams();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [, navigate] = useLocation();
   const resumeId = id ? parseInt(id) : undefined;
   const [showEnhanced, setShowEnhanced] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploading, setUploading] = useState(false);
 
   const { data: resume, isLoading } = useQuery<Resume>({
     queryKey: [`/api/resumes/${resumeId}`],
     enabled: !!resumeId,
   });
+  
+  // Handle file upload
+  const uploadMutation = useMutation<Resume, Error, File>({
+    mutationFn: async (file: File) => {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append("resume", file);
+
+      return new Promise<Resume>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/api/resumes");
+        
+        // Include credentials in the request
+        xhr.withCredentials = true;
+
+        // Track upload progress
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const progress = (event.loaded / event.total) * 100;
+            setUploadProgress(Math.round(progress));
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const result = JSON.parse(xhr.responseText) as Resume;
+            resolve(result);
+          } else if (xhr.status === 401) {
+            // Handle unauthorized specifically
+            reject(new Error("You must be logged in to upload. Please log in and try again."));
+          } else {
+            try {
+              const errorResponse = JSON.parse(xhr.responseText);
+              reject(new Error(errorResponse.message || xhr.statusText || "Upload failed"));
+            } catch {
+              reject(new Error(xhr.statusText || "Upload failed"));
+            }
+          }
+        };
+
+        xhr.onerror = () => {
+          reject(new Error("Network error occurred"));
+        };
+
+        xhr.send(formData);
+      });
+    },
+    onSuccess: (data: Resume) => {
+      setUploading(false);
+      toast({
+        title: "Resume uploaded successfully",
+        description: "Your resume has been analyzed and scored.",
+      });
+      navigate(`/editor/${data.id}`);
+    },
+    onError: (error: Error) => {
+      setUploading(false);
+      toast({
+        title: "Upload failed",
+        description: error.message || "An error occurred during upload",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    handleFile(file);
+  };
+  
+  const handleButtonClick = () => {
+    document.getElementById("resume-file-input")?.click();
+  };
+  
+  const handleFile = (file: File | undefined) => {
+    if (!file) return;
+    
+    // Check if user is logged in
+    if (!user) {
+      toast({
+        title: "Login required",
+        description: "Please login or register to upload your resume",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+    
+    uploadMutation.mutate(file);
+  };
+  
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+  
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  };
+  
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    const file = e.dataTransfer.files?.[0];
+    handleFile(file);
+  };
 
   const updateMutation = useMutation({
     mutationFn: async (content: string) => {
@@ -132,6 +250,83 @@ export default function ResumeEditor() {
     );
   }
 
+  // If no resume ID, show the upload section
+  if (!resumeId) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto p-4 max-w-4xl">
+          <h1 className="text-3xl font-bold text-center mb-8">Upload Your Resume</h1>
+          
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold">Resume Upload</CardTitle>
+              <CardDescription>
+                Upload your resume to get AI-powered analysis and optimization
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div 
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                  dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <input
+                  id="resume-file-input"
+                  type="file"
+                  accept=".pdf,.doc,.docx,.txt"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                
+                {!uploading ? (
+                  <>
+                    <div className="mb-4">
+                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                    </div>
+                    <p className="mb-2 text-sm text-gray-500">
+                      <span className="font-medium">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500 mb-4">
+                      PDF, Word or TXT (Max 10MB)
+                    </p>
+                    <Button onClick={handleButtonClick}>
+                      Select File
+                    </Button>
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-sm font-medium">
+                      Uploading and analyzing your resume...
+                    </p>
+                    <Progress value={uploadProgress} className="w-full h-2" />
+                    <p className="text-xs text-gray-500">
+                      {uploadProgress}% complete
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <div className="text-center mt-8">
+            <p className="text-gray-500 mb-4">
+              Already have an account? View your existing resumes
+            </p>
+            <Link href="/dashboard">
+              <Button variant="outline">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Go to Dashboard
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!resume) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -172,7 +367,7 @@ export default function ResumeEditor() {
             </Button>
           </Link>
           <div className="flex gap-2">
-            <Link href="/upload">
+            <Link href="/editor">
               <Button variant="outline">
                 <Upload className="mr-2 h-4 w-4" />
                 Upload Another Resume

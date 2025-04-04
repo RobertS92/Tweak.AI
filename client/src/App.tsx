@@ -25,7 +25,7 @@ function Router() {
       <main className="flex-1 pb-16 md:pb-0"> {/* Add padding bottom for mobile nav */}
         <Switch>
           <Route path="/" component={Home} />
-          <ProtectedRoute path="/editor" component={ResumeEditor} />
+          <Route path="/editor" component={ResumeEditor} />
           <ProtectedRoute path="/editor/:id" component={ResumeEditor} />
           <ProtectedRoute path="/dashboard" component={Dashboard} />
           <ProtectedRoute path="/upload" component={ResumeUpload} />

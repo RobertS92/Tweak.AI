@@ -283,10 +283,12 @@ export default function Home() {
         </div>
 
         <div className="flex justify-center gap-4">
-          <Link href="/dashboard">
-            <Button className="bg-[#1e2a3b] text-white px-8">View Dashboard</Button>
+          <Link href="/editor">
+            <Button className="bg-[#1e2a3b] text-white px-8">Upload Resume</Button>
           </Link>
-          <Button variant="outline" className="px-8">Learn More</Button>
+          <Link href="/dashboard">
+            <Button variant="outline" className="px-8">View Dashboard</Button>
+          </Link>
         </div>
       </div>
       <div className="text-center py-4 text-sm text-[#7f8c8d] border-t">

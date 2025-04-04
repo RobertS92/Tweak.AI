@@ -14,7 +14,7 @@ export default function MobileNavigation({ className = "" }) {
           <FileText className="h-5 w-5" />
           <span className="text-xs mt-1">Build</span>
         </Link>
-        <Link href="/" className="flex flex-col items-center p-2 text-white hover:text-[#4f8df9] transition-colors">
+        <Link href="/editor" className="flex flex-col items-center p-2 text-white hover:text-[#4f8df9] transition-colors">
           <ArrowRightLeft className="h-5 w-5" />
           <span className="text-xs mt-1">Tweak</span>
         </Link>
