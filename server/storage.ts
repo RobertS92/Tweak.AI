@@ -104,7 +104,13 @@ export class DatabaseStorage implements IStorage {
   
   // Get anonymous resumes (where userId is null)
   async getAnonymousResumes(): Promise<Resume[]> {
-    return db.select().from(resumes).where(isNull(resumes.userId));
+    try {
+      return await db.select().from(resumes).where(isNull(resumes.userId));
+    } catch (error) {
+      console.error("Error fetching anonymous resumes:", error);
+      // Return empty array instead of throwing to avoid breaking the frontend
+      return [];
+    }
   }
   
   // Associate an anonymous resume with a user 

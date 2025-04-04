@@ -181,6 +181,147 @@ export async function registerRoutes(app: Express) {
   setupAuth(app);
 
   // Resume routes
+  // Add the resume generation endpoint for mobile chat interface
+  app.post("/api/resumes/generate", async (req, res) => {
+    try {
+      console.log("[DEBUG] Resume generation request received");
+      const { content } = req.body;
+      
+      if (!content || typeof content !== 'string' || content.length < 10) {
+        return res.status(400).json({ 
+          message: "Invalid content format", 
+          details: "Resume content must be provided as text with sufficient information" 
+        });
+      }
+      
+      // Generate a structured resume from chat content using OpenAI
+      const response = await openai.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: `You are a professional resume builder. Generate a well-structured resume from the information provided by the user.
+            Output in JSON format with the following structure:
+            {
+              "personalInfo": {
+                "name": "Name",
+                "email": "email@example.com",
+                "phone": "123-456-7890",
+                "location": "City, State"
+              },
+              "sections": [
+                {
+                  "id": "professional-summary",
+                  "title": "Professional Summary",
+                  "content": "Professional summary text..."
+                },
+                {
+                  "id": "work-experience",
+                  "title": "Work Experience",
+                  "items": [
+                    {
+                      "title": "Job Title",
+                      "subtitle": "Company Name",
+                      "date": "Start Date - End Date",
+                      "description": "Job responsibilities and achievements"
+                    }
+                  ]
+                },
+                {
+                  "id": "education",
+                  "title": "Education",
+                  "items": [
+                    {
+                      "title": "Degree",
+                      "subtitle": "Institution",
+                      "date": "Start Date - End Date"
+                    }
+                  ]
+                },
+                {
+                  "id": "skills",
+                  "title": "Skills",
+                  "categories": [
+                    {
+                      "name": "Technical Skills",
+                      "skills": ["Skill 1", "Skill 2"]
+                    },
+                    {
+                      "name": "Soft Skills",
+                      "skills": ["Skill 1", "Skill 2"]
+                    }
+                  ]
+                }
+              ]
+            }
+            If any section is missing from the user input, make reasonable inferences or add placeholders.
+            Always create a complete resume structure, even if some fields are minimal.`
+          },
+          {
+            role: "user",
+            content: content
+          }
+        ],
+        temperature: 0.7
+      });
+      
+      if (!response.choices[0].message.content) {
+        throw new Error("No response from resume generation service");
+      }
+      
+      try {
+        // Parse the JSON response
+        const resumeData = JSON.parse(response.choices[0].message.content.trim());
+        
+        // Convert JSON structure to simplified HTML for storage and display
+        const resumeContent = generatePDFTemplate(resumeData);
+        
+        // Determine a sensible title based on name or content
+        const title = resumeData.personalInfo?.name 
+          ? `${resumeData.personalInfo.name.split(' ')[0]}'s Resume` 
+          : "Generated Resume";
+        
+        // Create resume record
+        let newResume;
+        if (req.isAuthenticated()) {
+          // If user is logged in, associate resume with their account
+          newResume = await storage.createResume({
+            userId: req.user.id.toString(),
+            title,
+            content: resumeContent,
+            fileType: "html",
+            atsScore: 75, // Default score for generated resumes
+            analysis: { generatedFromChat: true }
+          });
+        } else {
+          // Otherwise create an anonymous resume
+          newResume = await storage.createResume({
+            title,
+            content: resumeContent,
+            fileType: "html",
+            atsScore: 75,
+            analysis: { generatedFromChat: true }
+          });
+        }
+        
+        res.status(201).json({
+          id: newResume.id,
+          title: newResume.title,
+          content: resumeContent
+        });
+      } catch (parseError) {
+        console.error("[ERROR] Failed to parse resume data:", parseError);
+        throw new Error("Failed to process resume structure");
+      }
+    } catch (error: unknown) {
+      console.error("[ERROR] Resume generation error:", error);
+      res.status(500).json({
+        message: "Failed to generate resume",
+        details: error instanceof Error ? error.message : "Unknown error occurred"
+      });
+    }
+  });
+
   app.post("/api/resumes", upload.single("resume"), async (req, res) => {
     try {
       const file = req.file;
@@ -344,9 +485,19 @@ export async function registerRoutes(app: Express) {
   // Endpoint to get all anonymous resumes (available for claiming)
   app.get("/api/resumes/anonymous", async (req, res) => {
     try {
+      // Only allow authenticated users to view anonymous resumes
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "You must be logged in to view anonymous resumes" });
+      }
+      
       const anonymousResumes = await storage.getAnonymousResumes();
+      
+      // Log for debugging
+      console.log(`[DEBUG] Retrieved ${anonymousResumes.length} anonymous resumes`);
+      
       res.json(anonymousResumes);
     } catch (error: unknown) {
+      console.error("Error fetching anonymous resumes:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred";
       res.status(500).json({ message });
     }
