@@ -5,9 +5,10 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import ResumePreview from "@/components/resume-preview";
 import JobMatcher from "@/components/job-matcher";
+import ResumeProcessingAnimation from "@/components/resume-processing-animation";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -69,6 +70,54 @@ export default function ResumeEditor() {
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [processingStep, setProcessingStep] = useState(0);
+  const [processCompleted, setProcessCompleted] = useState(false);
+  
+  // Simulate processing steps when uploading
+  useEffect(() => {
+    let timers: NodeJS.Timeout[] = [];
+    
+    if (uploading) {
+      // Reset animation state
+      setProcessingStep(0);
+      setProcessCompleted(false);
+      
+      // Step 1: Upload (already tracked by uploadProgress)
+      
+      // Step 2: Parsing
+      timers.push(setTimeout(() => {
+        if (uploadProgress >= 100) {
+          setProcessingStep(1);
+        }
+      }, 1000));
+      
+      // Step 3: Analysis
+      timers.push(setTimeout(() => {
+        if (uploadProgress >= 100) {
+          setProcessingStep(2);
+        }
+      }, 3000));
+      
+      // Step 4: Enhancing
+      timers.push(setTimeout(() => {
+        if (uploadProgress >= 100) {
+          setProcessingStep(3);
+        }
+      }, 5000));
+      
+      // Complete
+      timers.push(setTimeout(() => {
+        if (uploadProgress >= 100) {
+          setProcessCompleted(true);
+        }
+      }, 7000));
+    }
+    
+    return () => {
+      // Clean up timers
+      timers.forEach(clearTimeout);
+    };
+  }, [uploading, uploadProgress]);
 
   const { data: resume, isLoading } = useQuery<Resume>({
     queryKey: [`/api/resumes/${resumeId}`],
@@ -298,13 +347,11 @@ export default function ResumeEditor() {
                   </>
                 ) : (
                   <div className="space-y-4">
-                    <p className="text-sm font-medium">
-                      Uploading and analyzing your resume...
-                    </p>
-                    <Progress value={uploadProgress} className="w-full h-2" />
-                    <p className="text-xs text-gray-500">
-                      {uploadProgress}% complete
-                    </p>
+                    <ResumeProcessingAnimation 
+                      currentStep={processingStep}
+                      processCompleted={processCompleted}
+                      overallProgress={uploadProgress}
+                    />
                   </div>
                 )}
               </div>

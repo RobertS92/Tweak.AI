@@ -60,8 +60,8 @@ export default function NavigationBar({ className }: { className?: string }) {
             <span className="font-bold text-white">Tweak AI</span>
           </Link>
           <div className="flex items-center gap-6">
-            <Link href="/" 
-              className={`text-sm ${isActive('/') ? 'text-[#4f8df9]' : 'text-white hover:text-[#4f8df9]'} transition-colors`}>
+            <Link href="/dashboard" 
+              className={`text-sm ${isActive('/dashboard') ? 'text-[#4f8df9]' : 'text-white hover:text-[#4f8df9]'} transition-colors`}>
               Dashboard
             </Link>
             <Link href="/builder" 
