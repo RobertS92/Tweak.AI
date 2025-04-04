@@ -105,6 +105,8 @@ export class DatabaseStorage implements IStorage {
   // Get anonymous resumes (where userId is null)
   async getAnonymousResumes(): Promise<Resume[]> {
     try {
+      // Just fetch all resumes that don't have a userId assigned
+      // The SQL equivalent is "WHERE user_id IS NULL"
       return await db.select().from(resumes).where(isNull(resumes.userId));
     } catch (error) {
       console.error("Error fetching anonymous resumes:", error);
@@ -115,17 +117,38 @@ export class DatabaseStorage implements IStorage {
   
   // Associate an anonymous resume with a user 
   async claimAnonymousResume(resumeId: number, userId: number): Promise<Resume> {
-    const [updated] = await db
-      .update(resumes)
-      .set({ userId: userId.toString() })
-      .where(eq(resumes.id, resumeId))
-      .returning();
+    try {
+      console.log(`[DEBUG] Claiming resume ID ${resumeId} for user ID ${userId}`);
       
-    if (!updated) {
-      throw new Error("Resume not found");
+      // First check if the resume exists
+      const resume = await this.getResume(resumeId);
+      
+      if (!resume) {
+        console.error(`[ERROR] Failed to claim resume - resume ID ${resumeId} not found`);
+        throw new Error("Resume not found");
+      }
+      
+      // Log the current state of the resume
+      console.log(`[DEBUG] Resume current state: userId=${resume.userId}, title=${resume.title}`);
+      
+      // Update the resume to assign it to the user
+      const [updated] = await db
+        .update(resumes)
+        .set({ userId: userId.toString() })
+        .where(eq(resumes.id, resumeId))
+        .returning();
+        
+      if (!updated) {
+        console.error(`[ERROR] Update operation returned no rows for resume ID ${resumeId}`);
+        throw new Error("Failed to update resume ownership");
+      }
+      
+      console.log(`[DEBUG] Resume claimed successfully: ID=${updated.id}, new userId=${updated.userId}`);
+      return updated;
+    } catch (error) {
+      console.error(`[ERROR] Error claiming resume:`, error);
+      throw error;
     }
-    
-    return updated;
   }
 
   // Job operations

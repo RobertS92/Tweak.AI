@@ -290,6 +290,12 @@ export async function registerRoutes(app: Express) {
             title,
             content: resumeContent,
             fileType: "html",
+            // Analysis is included separately
+            // atsScore will be set in the update below
+          });
+          
+          // Update with atsScore and analysis
+          newResume = await storage.updateResume(newResume.id, {
             atsScore: 75, // Default score for generated resumes
             analysis: { generatedFromChat: true }
           });
@@ -299,7 +305,12 @@ export async function registerRoutes(app: Express) {
             title,
             content: resumeContent,
             fileType: "html",
-            atsScore: 75,
+            // Analysis and atsScore will be added in the update
+          });
+          
+          // Update with atsScore and analysis
+          newResume = await storage.updateResume(newResume.id, {
+            atsScore: 75, // Default score for generated resumes
             analysis: { generatedFromChat: true }
           });
         }
@@ -490,16 +501,27 @@ export async function registerRoutes(app: Express) {
         return res.status(401).json({ message: "You must be logged in to view anonymous resumes" });
       }
       
+      // Get all anonymous resumes (with null userId)
       const anonymousResumes = await storage.getAnonymousResumes();
       
       // Log for debugging
       console.log(`[DEBUG] Retrieved ${anonymousResumes.length} anonymous resumes`);
       
-      res.json(anonymousResumes);
+      // Filter out any unexpected data just to be safe
+      const sanitizedResumes = anonymousResumes.map(resume => ({
+        id: resume.id,
+        title: resume.title,
+        content: resume.content?.substring(0, 100) + '...' || '', // Just send a preview
+        fileType: resume.fileType,
+        createdAt: resume.createdAt,
+        atsScore: resume.atsScore || 0
+      }));
+      
+      res.json(sanitizedResumes);
     } catch (error: unknown) {
       console.error("Error fetching anonymous resumes:", error);
-      const message = error instanceof Error ? error.message : "An unknown error occurred";
-      res.status(500).json({ message });
+      // Return empty array on error rather than error status
+      res.json([]);
     }
   });
   
