@@ -68,8 +68,8 @@ export default function NavigationBar({ className }: { className?: string }) {
               className={`text-sm ${isActive('/builder') ? 'text-[#4f8df9]' : 'text-white hover:text-[#4f8df9]'} transition-colors`}>
               Resume Builder
             </Link>
-            <Link href="/job-matching" 
-              className={`text-sm ${isActive('/job-matching') ? 'text-[#4f8df9]' : 'text-white hover:text-[#4f8df9]'} transition-colors`}>
+            <Link href="/" 
+              className={`text-sm ${isActive('/') && !isActive('/dashboard') ? 'text-[#4f8df9]' : 'text-white hover:text-[#4f8df9]'} transition-colors`}>
               Resume Tweaking
             </Link>
             <Link href="/interview-prep" 
