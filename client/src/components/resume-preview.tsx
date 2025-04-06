@@ -112,7 +112,11 @@ export default function ResumePreview({ content, analysis, resumeId, title }: Re
         description: "Please login or create an account to save resumes to your dashboard",
         variant: "default",
       });
-      navigate("/auth");
+      
+      // Show a confirmation dialog instead of automatically navigating
+      if (confirm("You need to be logged in to save resumes. Would you like to go to the login page?")) {
+        navigate("/auth");
+      }
       return;
     }
     
@@ -136,8 +140,7 @@ export default function ResumePreview({ content, analysis, resumeId, title }: Re
         description: "Resume saved to your dashboard",
       });
       
-      // Optionally navigate to dashboard
-      navigate("/dashboard");
+      // Don't navigate to dashboard, stay on current page
     } catch (error) {
       console.error("Failed to save resume:", error);
       toast({

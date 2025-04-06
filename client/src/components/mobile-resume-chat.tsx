@@ -194,10 +194,11 @@ export default function MobileResumeChat() {
 
       const data = await response.json();
       
-      // Store the uploaded resume data 
+      // Store the uploaded resume data - intentionally store original content
+      // so we can preserve it until enhancement is requested
       setGeneratedResume({
         id: data.id,
-        content: data.enhancedContent || data.content,
+        content: data.content, // Always use original content on upload
         title: data.title || file.name
       });
       
@@ -369,6 +370,7 @@ export default function MobileResumeChat() {
                   analysis={{ enhancedContent: generatedResume.content }}
                   resumeId={generatedResume.id}
                   title={generatedResume.title}
+                  onAddToSection={() => {}} // Empty handler to disable add to section button
                 />
                 
                 {/* Button to save to dashboard or download */}

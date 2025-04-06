@@ -9,13 +9,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { apiRequest } from "@/lib/queryClient";
 
 interface ResumeUploadDialogProps {
   open?: boolean;
   onClose?: () => void;
   onResumeSelected?: (resumeId: number) => Promise<void>;
-  onFileUploaded?: (file: File) => Promise<void>;
+  onFileUploaded?: (file: File) => void | Promise<void>;
 }
 
 export default function ResumeUploadDialog({ 
@@ -33,6 +32,7 @@ export default function ResumeUploadDialog({
   // Handle both controlled and uncontrolled dialog state
   const isControlled = externalOpen !== undefined;
   const isOpen = isControlled ? externalOpen : open;
+  
   const setIsOpen = (value: boolean) => {
     if (isControlled && onClose && !value) {
       onClose();
@@ -54,36 +54,41 @@ export default function ResumeUploadDialog({
     setIsUploading(true);
     
     try {
-      if (onFileUploaded) {
-        await onFileUploaded(file);
-      } else {
-        // Create a FormData object
-        const formData = new FormData();
-        formData.append('resume', file);
+      // Create a FormData object
+      const formData = new FormData();
+      formData.append('resume', file);
 
-        // Upload the file to the server
-        const response = await fetch('/api/resumes', {
-          method: 'POST',
-          body: formData,
-          credentials: 'include',
-        });
+      // Upload the file to the server
+      const response = await fetch('/api/resumes', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
 
-        if (!response.ok) {
-          throw new Error('Failed to upload resume');
-        }
-
-        // Get the response data
-        const resume = await response.json();
-
-        // Navigate to the resume editor page
-        navigate(`/editor/${resume.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to upload resume');
       }
+
+      // Get the response data
+      const resumeResponse = await response.json();
       
       setIsOpen(false);
       toast({
         title: "Resume Uploaded",
         description: "Processing your resume...",
       });
+
+      // If a file upload callback is provided, use that
+      if (onFileUploaded && typeof onFileUploaded === 'function') {
+        try {
+          await onFileUploaded(file);
+        } catch (error) {
+          console.error("Error in file upload callback:", error);
+        }
+      } else {
+        // Otherwise navigate to the resume editor page
+        navigate(`/editor/${resumeResponse.id}`);
+      }
     } catch (error) {
       toast({
         title: "Upload Failed",

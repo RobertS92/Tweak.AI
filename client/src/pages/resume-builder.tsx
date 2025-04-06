@@ -365,7 +365,11 @@ export default function ResumeBuilder() {
         description: "Please log in to save your resume.",
         variant: "destructive"
       });
-      navigate("/auth");
+      
+      // Show a confirmation dialog instead of automatically navigating
+      if (confirm("You need to be logged in to save resumes. Would you like to go to the login page?")) {
+        navigate("/auth");
+      }
       return;
     }
     
@@ -1517,6 +1521,112 @@ export default function ResumeBuilder() {
         <ResumeUploadDialog
           open={showUploadDialog}
           onClose={() => setShowUploadDialog(false)}
+          onFileUploaded={async (file) => {
+            try {
+              // Create a FormData object
+              const formData = new FormData();
+              formData.append('resume', file);
+
+              // Upload the file to the server
+              const response = await fetch('/api/resumes', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include',
+              });
+
+              if (!response.ok) {
+                throw new Error('Failed to upload resume');
+              }
+
+              // Get the response data
+              const resumeData = await response.json();
+              
+              // Parse the resume content and populate form fields
+              if (resumeData.sections) {
+                // Extract data from the parsed resume
+                const data = resumeData.sections;
+                
+                // Populate personal info if available
+                if (resumeData.personalInfo) {
+                  setPersonalInfo({
+                    name: resumeData.personalInfo.name || '',
+                    email: resumeData.personalInfo.email || '',
+                    phone: resumeData.personalInfo.phone || '',
+                    location: resumeData.personalInfo.location || '',
+                    linkedin: resumeData.personalInfo.linkedin || '',
+                    portfolio: resumeData.personalInfo.portfolio || '',
+                    github: resumeData.personalInfo.github || ''
+                  });
+                }
+                
+                type SectionWithId = { id: string, [key: string]: any };
+                // Populate professional summary
+                const summarySection = data.find((s: SectionWithId) => s.id === 'professional-summary');
+                if (summarySection?.content) {
+                  setProfessionalSummary(summarySection.content);
+                }
+                
+                // Populate work experience
+                const experienceSection = data.find((s: SectionWithId) => s.id === 'work-experience');
+                if (experienceSection?.items && experienceSection.items.length > 0) {
+                  setWorkExperience(experienceSection.items.map((item: any) => ({
+                    title: item.title || '',
+                    subtitle: item.subtitle || '',
+                    date: item.date || '',
+                    description: item.description || '',
+                    bullets: item.bullets || ['']
+                  })));
+                }
+                
+                // Populate education
+                const educationSection = data.find((s: SectionWithId) => s.id === 'education');
+                if (educationSection?.items && educationSection.items.length > 0) {
+                  setEducation(educationSection.items.map((item: any) => ({
+                    title: item.title || '',
+                    subtitle: item.subtitle || '',
+                    date: item.date || '',
+                    description: item.description || '',
+                    bullets: item.bullets || []
+                  })));
+                }
+                
+                // Populate skills
+                const skillsSection = data.find((s: SectionWithId) => s.id === 'skills');
+                if (skillsSection?.categories && skillsSection.categories.length > 0) {
+                  setSkills(skillsSection.categories.map((cat: any) => ({
+                    name: cat.name || 'Technical Skills',
+                    skills: cat.skills && cat.skills.length > 0 ? cat.skills : ['']
+                  })));
+                }
+                
+                // Populate projects
+                const projectsSection = data.find((s: SectionWithId) => s.id === 'projects');
+                if (projectsSection?.items && projectsSection.items.length > 0) {
+                  setProjects(projectsSection.items.map((item: any) => ({
+                    title: item.title || '',
+                    subtitle: item.subtitle || '',
+                    date: item.date || '',
+                    description: item.description || '',
+                    bullets: item.bullets || ['']
+                  })));
+                }
+              }
+              
+              toast({
+                title: "Resume Uploaded",
+                description: "Resume content has been loaded into the builder",
+              });
+              
+              // Close the dialog
+              setShowUploadDialog(false);
+            } catch (error) {
+              toast({
+                title: "Upload Failed",
+                description: error instanceof Error ? error.message : "Failed to upload resume",
+                variant: "destructive",
+              });
+            }
+          }}
         />
       )}
       
