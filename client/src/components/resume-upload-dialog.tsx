@@ -14,7 +14,7 @@ interface ResumeUploadDialogProps {
   open?: boolean;
   onClose?: () => void;
   onResumeSelected?: (resumeId: number) => Promise<void>;
-  onFileUploaded?: (file: File) => void | Promise<void>;
+  onFileUploaded?: (file: File, resumeData?: any) => void | Promise<void>;
 }
 
 export default function ResumeUploadDialog({ 
@@ -81,8 +81,8 @@ export default function ResumeUploadDialog({
       // Process the file upload callback - use resumeResponse with resume data
       if (onFileUploaded && typeof onFileUploaded === 'function') {
         try {
-          // Pass the file to the callback
-          await onFileUploaded(file);
+          // Pass the file AND resume data to the callback
+          await onFileUploaded(file, resumeResponse);
         } catch (error) {
           console.error("Error in file upload callback:", error);
         }

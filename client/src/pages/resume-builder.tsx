@@ -1783,25 +1783,13 @@ export default function ResumeBuilder() {
         <ResumeUploadDialog
           open={showUploadDialog}
           onClose={() => setShowUploadDialog(false)}
-          onFileUploaded={async (file) => {
+          onFileUploaded={async (file, resumeData) => {
             try {
-              // Create a FormData object
-              const formData = new FormData();
-              formData.append('resume', file);
-
-              // Upload the file to the server
-              const response = await fetch('/api/resumes', {
-                method: 'POST',
-                body: formData,
-                credentials: 'include',
-              });
-
-              if (!response.ok) {
-                throw new Error('Failed to upload resume');
+              // The resume has already been uploaded in the dialog component
+              // and the parsed data is passed to us in resumeData
+              if (!resumeData) {
+                throw new Error('No resume data received');
               }
-
-              // Get the response data
-              const resumeData = await response.json();
               
               // Parse the resume content and populate form fields
               if (resumeData.sections) {
