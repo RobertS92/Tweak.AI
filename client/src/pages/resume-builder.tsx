@@ -39,6 +39,8 @@ interface ResumeSection {
 interface Message {
   type: 'user' | 'ai';
   content: string;
+  suggestion?: string; // Optional suggestion text that can be appended to the field
+  sectionId?: string; // Section the suggestion applies to
 }
 
 export default function ResumeBuilder() {
@@ -248,7 +250,28 @@ export default function ResumeBuilder() {
       
       // Add AI response to messages
       if (data.answer) {
-        const aiMessage: Message = { type: 'ai', content: data.answer };
+        // Extract possible suggestions
+        const suggestionRegex = /To improve your (professional summary|work experience|education|skills|projects).*(?:\n|.)+?try this:(?:\n|.)+?(["'].*["']|\{.*\}|\[.*\])/i;
+        const match = data.answer.match(suggestionRegex);
+        
+        let aiMessage: Message = { 
+          type: 'ai', 
+          content: data.answer,
+          sectionId: activeSection 
+        };
+        
+        // If we found a suggestion, add it to the message
+        if (match && match[2]) {
+          // Clean up the suggested text
+          let suggestion = match[2].trim();
+          // Remove outer quotes if they exist
+          if ((suggestion.startsWith('"') && suggestion.endsWith('"')) || 
+              (suggestion.startsWith("'") && suggestion.endsWith("'"))) {
+            suggestion = suggestion.substring(1, suggestion.length - 1);
+          }
+          aiMessage.suggestion = suggestion;
+        }
+        
         setMessages(prev => [...prev, aiMessage]);
       } else {
         throw new Error("No response received from AI assistant");
@@ -474,6 +497,59 @@ export default function ResumeBuilder() {
   const handleSuggestionClick = (suggestion: string) => {
     setAssistantQuestion(suggestion);
     handleAskAssistant();
+  };
+  
+  // Handle tweak click - appends AI suggestion to the appropriate field
+  const handleTweakClick = (suggestion: string, sectionId: string) => {
+    if (!suggestion) return;
+    
+    switch (sectionId) {
+      case "professional-summary":
+        // Add suggestion to professional summary
+        setProfessionalSummary(prev => {
+          // If there's already content, add a line break
+          return prev.trim() ? `${prev}\n\n${suggestion}` : suggestion;
+        });
+        break;
+        
+      case "work-experience":
+        // For work experience, append to the first item's description
+        if (workExperience.length > 0) {
+          const updatedExperience = [...workExperience];
+          updatedExperience[0].description = updatedExperience[0].description
+            ? `${updatedExperience[0].description}\n\n${suggestion}`
+            : suggestion;
+          setWorkExperience(updatedExperience);
+        }
+        break;
+        
+      case "education":
+        // For education, append to the first item's description
+        if (education.length > 0) {
+          const updatedEducation = [...education];
+          updatedEducation[0].description = updatedEducation[0].description
+            ? `${updatedEducation[0].description}\n\n${suggestion}`
+            : suggestion;
+          setEducation(updatedEducation);
+        }
+        break;
+        
+      case "projects":
+        // For projects, append to the first item's description
+        if (projects.length > 0) {
+          const updatedProjects = [...projects];
+          updatedProjects[0].description = updatedProjects[0].description
+            ? `${updatedProjects[0].description}\n\n${suggestion}`
+            : suggestion;
+          setProjects(updatedProjects);
+        }
+        break;
+    }
+    
+    toast({
+      title: "AI Suggestion Applied",
+      description: `The suggestion has been added to your ${sectionId.replace(/-/g, ' ')} section.`,
+    });
   };
 
   // Export resume as PDF
@@ -1724,7 +1800,17 @@ export default function ResumeBuilder() {
                       : "bg-white border self-start"
                   )}
                 >
-                  {message.content}
+                  <div className="mb-2">{message.content}</div>
+                  
+                  {/* Show Tweak button if this is an AI message with a suggestion */}
+                  {message.type === 'ai' && message.suggestion && message.sectionId && (
+                    <button
+                      className="mt-2 px-3 py-1 bg-[#4f8df9] text-white text-xs rounded-full flex items-center gap-1 hover:bg-[#3a7ad8]"
+                      onClick={() => handleTweakClick(message.suggestion!, message.sectionId!)}
+                    >
+                      <span>✨</span> Tweak My Resume
+                    </button>
+                  )}
                 </div>
               ))
             )}

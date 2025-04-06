@@ -1,0 +1,259 @@
+[DEBUG]   startDate: ✓ 2024-12
+[DEBUG]   endDate: ✓ 2026-12
+[DEBUG]   gpa: ✗ 
+[DEBUG]   courses: 0 entries
+
+[DEBUG] Item 2:
+[DEBUG]   degree: ✓ Postgraduate Certificate: Artificial Intelligence & Machine Learning
+[DEBUG]   institution: ✓ University of Texas
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2022-01
+[DEBUG]   endDate: ✓ 2023-12
+[DEBUG]   gpa: ✗ 
+[DEBUG]   courses: 7 entries
+
+[DEBUG] Item 3:
+[DEBUG]   degree: ✓ MBA, Finance
+[DEBUG]   institution: ✓ Southern Methodist University
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2020-01
+[DEBUG]   endDate: ✓ 2021-02
+[DEBUG]   gpa: ✗ 
+[DEBUG]   courses: 0 entries
+
+[DEBUG] Item 4:
+[DEBUG]   degree: ✓ B.A., Sociology & Computer Science
+[DEBUG]   institution: ✓ Southern Methodist University
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2011-07
+[DEBUG]   endDate: ✓ 2015-12
+[DEBUG]   gpa: ✗ 
+[DEBUG]   courses: 0 entries
+
+[DEBUG] Section: skills
+[DEBUG] Title: Skills
+
+[DEBUG] Categories:
+[DEBUG] Technical Skills: 76 skills
+[DEBUG] Skills: Python, Java, JavaScript, TensorFlow, Keras, PyTorch, Scikit-learn, Huggingface, JAX, Intent recognition, NLU Modeling, Classification, Semantic similarity, Regression, LSTM, Time Series Forecasting, Neural Networks, Reinforcement Learning, Hyperparameter Tuning, Computer Vision, Bayesian Optimization, Grid Search, Optuna, ONNX, TensorRT, Knowledge Distillation, Model Pruning, GANs, Diffusion Models, Agentic AI, knowledge distillation, pruning, ONNX, TensorRT, Collaborative Filtering, Content-Based Filtering, Real-Time Personalization, Ranking Algorithms, spaCy, NLTK, Huggingface, LLM Fine-Tuning (GPT, BERT), Sentiment Analysis, Named Entity Recognition (NER), Language Modeling, NLU, Generative AI, Conversational AI, Chatbot, Trend Prediction, Risk Management, Algorithmic Implementation, Backtesting, Anomalies Detection, Standard, LoRA, Peft, PPO, GRPO, AWS (Lambda, EC2, S3), Azure, Databricks, Docker, Kubernetes, Faiss, Model Lifecycle Management, CI/CD, Model Versioning, Deployment Pipelines, Real-Time Systems, Model Monitoring, Exploratory Data Analysis (EDA), Statistical Analysis, Feature Engineering, Data Visualization, Hypothesis Testing
+[DEBUG] Soft Skills: 6 skills
+[DEBUG] Skills: Collaborative, Results-Driven, Analytical Thinker, Problem Solver, Detail-Oriented, Strong Communication Skills
+
+[DEBUG] Section: projects
+[DEBUG] Title: Projects
+[DEBUG] Items: 6 found
+
+[DEBUG] Item 1:
+[DEBUG]   title: ✓ Star Wars GPT Transformer
+[DEBUG]   description: ✓ Built a GPT-based transformer model from scratch, trained on the Star Wars episode books to generate personalized narratives and dialogue. Developed and fine-tuned the model for text generation, enhancing its ability to produce coherent and context-aware content based on user inputs. Implemented custom tokenization and transformer layers using PyTorch, optimizing the model for real-time text generation. Technologies: PyTorch, TensorFlow, Huggingface, Python
+[DEBUG]   technologies: 4 entries
+
+[DEBUG] Item 2:
+[DEBUG]   title: ✓ CryptoSenti: Fine-Tuned BERT for Crypto Sentiment Analysis - Real time
+[DEBUG]   description: ✓ Fine-tuned BERT models for crypto sentiment analysis, generating actionable signals for real-time trading strategies. Added a sentence streamer and deduplication using semantic similarity to score sentiment on crypto tweets, headlines, post to create a real-time sentiment analysis system for financial news or social media data using GPU acceleration 200ML per sentence. Focused on improving the real-time recommendation systems by incorporating sentiment-driven insights, enhancing prediction accuracy in volatile markets. Technologies: TensorFlow, Huggingface, Python
+[DEBUG]   technologies: 3 entries
+
+[DEBUG] Item 3:
+[DEBUG]   title: ✓ Real-Time Multi-Object Tracking from Security Camera Feeds
+[DEBUG]   description: ✓ Developed a real-time object detection and multi-object tracking system that ingests live RTSP streams from security cameras. Leveraged YOLOv5 for detection and integrated Kalman Filter + Hungarian Algorithm for robust data association, ensuring stable tracking IDs across frames in varied lighting and viewing conditions. Enabled continuous monitoring and potential alerting for security purposes. Technologies: Python, PyTorch, YOLOv5, OpenCV, Kalman Filter, Hungarian Algorithm, Docker, AWS
+[DEBUG]   technologies: 8 entries
+
+[DEBUG] Item 4:
+[DEBUG]   title: ✓ AutoML System for Financial Signal Data
+[DEBUG]   description: ✓ Built an AutoML pipeline for stock and financial data, automating preprocessing, model selection, and hyperparameter tuning to enhance prediction accuracy. Technologies: Python, scikit-learn, TensorFlow, PyTorch, Optuna, Flask, Docker, Kubernetes, AWS (S3, EC2), Git
+[DEBUG]   technologies: 10 entries
+
+[DEBUG] Item 5:
+[DEBUG]   title: ✓ NLP Pipeline for Financial Data Analysis
+[DEBUG]   description: ✓ Developed an NLP pipeline to extract key insights from financial news and market sentiment, informing trading strategies and improving portfolio decisions. Leveraged real-time data streams and sentiment analysis models to adapt to market shifts and provide actionable insights. Technologies: Python, spaCy, NLTK, Gensim, Huggingface
+[DEBUG]   technologies: 5 entries
+
+[DEBUG] Item 6:
+[DEBUG]   title: ✓ Monopoly Agent Using Deep Reinforcement Learning
+[DEBUG]   description: ✓ Developed a deep reinforcement learning (DRL) agent fine-tuned with Group Reward GROP to master gameplay and negotiation strategies in the board game Monopoly. The model utilized Proximal Policy Optimization (PPO) for decision-making and was trained to optimize long-term rewards in competitive scenarios. Technologies: Python, TensorFlow, Stable-Baselines3, GROP, Proximal Policy Optimization (PPO), Docker, AWS
+[DEBUG]   technologies: 7 entries
+
+[DEBUG] Section: certifications
+[DEBUG] Title: Certifications
+
+[DEBUG] Parsing Statistics:
+[DEBUG] Personal Info Fields: 5/7
+[DEBUG] Total Sections: 6
+[DEBUG] Work Experience Items: 4
+[DEBUG] Education Items: 4
+[DEBUG] Total Skills: 82
+11:32:34 PM [express] POST /api/resume-parser 200 in 77136ms :: {"personalInfo":{"name":"Rob Seals","…
+[DEBUG] Starting resume analysis for ID 186
+[DEBUG] Original content length: 8613
+[DEBUG] Original resume length: 8613
+[DEBUG] Processed resume length: 8613
+[DEBUG] Successfully parsed resume analysis
+[DEBUG] Getting enhanced content in a separate call
+[DEBUG] Original content length: 8437
+[DEBUG] Enhanced content text length: 8414
+[DEBUG] Enhanced content HTML length: 10007
+[DEBUG] Analysis complete. Overall score: 88
+[DEBUG] Enhanced content received, length: 10007
+[DEBUG] Number of improvements: 2
+[DEBUG] Sample improvements: [
+  'Include more industry-specific keywords to improve ATS score and keyword density.',
+  "Make the 'Core Skills' section more concise by grouping related skills together."
+]
+[DEBUG] Original text length: 8437
+[DEBUG] Enhanced text length: 8414
+[DEBUG] Length difference: -23
+[WARNING] Enhanced content appears to be shorter than original!
+[DEBUG] Resume 186 successfully updated with analysis
+11:34:12 PM [express] POST /api/resumes 200 in 97605ms :: {"id":186,"userId":null,"title":" Robert Se…
+11:36:56 PM [express] GET /api/resumes 401 in 1ms :: {"message":"You must be logged in to view resume…
+[DEBUG] Resume parser request received
+[DEBUG] Request body: [Object: null prototype] {}
+[DEBUG] Starting resume parsing process
+[DEBUG] File info: {
+  filename: ' Robert Seals MLD.pdf',
+  mimetype: 'application/pdf',
+  size: 123230
+}
+[DEBUG] Detected file type: application/pdf
+[DEBUG] Cleaning text content, initial length: 8620
+[DEBUG] Cleaned text length: 8522
+[DEBUG] Successfully extracted content, length: 8522
+[DEBUG] Content preview: Rob Seals 
+Houston, TX | rseals13@gmail.com | 832-517-0329 | GitHub: github.com/RobertS92 
+Professional Summary 
+AI/ML Developer with over 5 years of experience in developing, deploying, and scaling m
+[DEBUG] Starting resume parsing with OpenAI
+
+[DEBUG] Personal Information Parsing:
+[DEBUG] name: ✓ Found (Rob Seals)
+[DEBUG] email: ✓ Found (rseals13@gmail.com)
+[DEBUG] phone: ✓ Found (832-517-0329)
+[DEBUG] location: ✓ Found (Houston, TX)
+[DEBUG] website: ✓ Found (github.com/RobertS92)
+[DEBUG] linkedin: ✗ Empty 
+[DEBUG] objective: ✗ Empty 
+
+[DEBUG] Sections Parsing:
+
+[DEBUG] Section: professional-summary
+[DEBUG] Title: Professional Summary
+[DEBUG] Content: ✓ Found (545 chars)
+
+[DEBUG] Section: work-experience
+[DEBUG] Title: Work Experience
+[DEBUG] Items: 4 found
+
+[DEBUG] Item 1:
+[DEBUG]   title: ✓ AI / ML Engineer
+[DEBUG]   company: ✓ Tata Consultancy Services (TCS)
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2024-06
+[DEBUG]   endDate: ✓ 2024-10
+[DEBUG]   description: ✓ Developed an NLP-based AI assistant for a large retail client, improving customer engagement through generative responses and intent classification. Fine-tuned LLMs (GPT, Llama, Claude) to enhance context-aware dialogues and retrieval-augmented generation (RAG) for better user experiences. Integrated speech recognition and optimized MLOps pipelines, ensuring efficient deployment and lifecycle management using AWS Lambda. Collaborated with data scientists and product teams to integrate real-time recommendations into user-facing platforms, optimizing personalization. Improved model performance through continuous monitoring, A/B testing, and hyperparameter tuning, contributing to a significant increase in recommendation relevance.
+[DEBUG]   achievements: 0 entries
+
+[DEBUG] Item 2:
+[DEBUG]   title: ✓ NLP / Conversational AI Scientist
+[DEBUG]   company: ✓ Charter Communications (Spectrum)
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2023-06
+[DEBUG]   endDate: ✓ 2024-06
+[DEBUG]   description: ✓ Fine-tuned 7 domain-specific models for NLU tasks, achieving a 95% F1 score across various industries. Designed and implemented custom text data preprocessing pipelines for intent recognition, sentiment analysis, entity recognition, and text classification. Sourced, Processed, Analyzed text data to discover insights and patterns to build training corpus for modeling. Evaluated text data to analyze model performance and business insights to enhance customer experience. Optimized, distilled, Quantized models to improve inference, training efficiency, and latency. Developed custom semantic search algorithms and prompt engineering strategies, improving the intent recognition of conversational AI systems. Deployed real-time systems using cloud technologies (AWS, Azure) for trading models, improving adaptive decision-making.
+[DEBUG]   achievements: 0 entries
+
+[DEBUG] Item 3:
+[DEBUG]   title: ✓ Machine Learning Engineer
+[DEBUG]   company: ✓ Vision R&D
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2021-08
+[DEBUG]   endDate: ✓ 2023-06
+[DEBUG]   description: ✓ Built and deployed real-time predictive models for various business solutions. Built traditional ML, LLM, NLP, Computer Vision, Chatbot based solutions. Implemented personalized experiences using collaborative filtering and content-based filtering techniques. Implemented scalable ML infrastructure on AWS and Azure, optimizing system performance and ensuring high availability in production environments.
+[DEBUG]   achievements: 0 entries
+
+[DEBUG] Item 4:
+[DEBUG]   title: ✓ Financial Data Analyst
+[DEBUG]   company: ✓ Hudson Way Capital
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2020-10
+[DEBUG]   endDate: ✓ 2021-06
+[DEBUG]   description: ✓ Developed and optimized predictive models using machine learning algorithms for financial decision-making and market trend forecasting. Engineered real-time data pipelines for accurate, timely financial analysis, integrating data from multiple sources into predictive models. Worked with cross-functional teams to assess risk and improve trading strategies using machine learning techniques.
+[DEBUG]   achievements: 0 entries
+
+[DEBUG] Section: education
+[DEBUG] Title: Education
+[DEBUG] Items: 4 found
+
+[DEBUG] Item 1:
+[DEBUG]   degree: ✓ MA, Data Science: Specialized in AIML
+[DEBUG]   institution: ✓ Southern Methodist University
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2024-12
+[DEBUG]   endDate: ✓ 2026-12
+[DEBUG]   gpa: ✗ 
+[DEBUG]   courses: 0 entries
+
+[DEBUG] Item 2:
+[DEBUG]   degree: ✓ Postgraduate Certificate: Artificial Intelligence & Machine Learning
+[DEBUG]   institution: ✓ University of Texas
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2022-01
+[DEBUG]   endDate: ✓ 2023-12
+[DEBUG]   gpa: ✗ 
+[DEBUG]   courses: 7 entries
+
+[DEBUG] Item 3:
+[DEBUG]   degree: ✓ MBA, Finance
+[DEBUG]   institution: ✓ Southern Methodist University
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2020-01
+[DEBUG]   endDate: ✓ 2021-02
+[DEBUG]   gpa: ✗ 
+[DEBUG]   courses: 0 entries
+
+[DEBUG] Item 4:
+[DEBUG]   degree: ✓ B.A., Sociology & Computer Science
+[DEBUG]   institution: ✓ Southern Methodist University
+[DEBUG]   location: ✗ 
+[DEBUG]   startDate: ✓ 2011-07
+[DEBUG]   endDate: ✓ 2015-12
+[DEBUG]   gpa: ✗ 
+[DEBUG]   courses: 0 entries
+
+[DEBUG] Section: skills
+[DEBUG] Title: Skills
+
+[DEBUG] Categories:
+[DEBUG] Technical Skills: 76 skills
+[DEBUG] Skills: Python, Java, JavaScript, TensorFlow, Keras, PyTorch, Scikit-learn, Huggingface, JAX, Intent recognition, NLU Modeling, Classification, Semantic similarity, Regression, LSTM, Time Series Forecasting, Neural Networks, Reinforcement Learning, Hyperparameter Tuning, Computer Vision, Bayesian Optimization, Grid Search, Optuna, ONNX, TensorRT, Knowledge Distillation, Model Pruning, GANs, Diffusion Models, Agentic AI, knowledge distillation, pruning, ONNX, TensorRT, Collaborative Filtering, Content-Based Filtering, Real-Time Personalization, Ranking Algorithms, spaCy, NLTK, Huggingface, LLM Fine-Tuning (GPT, BERT), Sentiment Analysis, Named Entity Recognition (NER), Language Modeling, NLU, Generative AI, Conversational AI, Chatbot, Trend Prediction, Risk Management, Algorithmic Implementation, Backtesting, Anomalies Detection, Standard, LoRA, Peft, PPO, GRPO, AWS (Lambda, EC2, S3), Azure, Databricks, Docker, Kubernetes, Faiss, Model Lifecycle Management, CI/CD, Model Versioning, Deployment Pipelines, Real-Time Systems, Model Monitoring, Exploratory Data Analysis (EDA), Statistical Analysis, Feature Engineering, Data Visualization, Hypothesis Testing
+[DEBUG] Soft Skills: 6 skills
+[DEBUG] Skills: Collaborative, Results-Driven, Analytical Thinker, Problem Solver, Detail-Oriented, Strong Communication Skills
+
+[DEBUG] Parsing Statistics:
+[DEBUG] Personal Info Fields: 5/7
+[DEBUG] Total Sections: 4
+[DEBUG] Work Experience Items: 4
+[DEBUG] Education Items: 4
+[DEBUG] Total Skills: 82
+11:37:58 PM [express] POST /api/resume-parser 200 in 58639ms :: {"personalInfo":{"name":"Rob Seals","…
+[DEBUG] Starting resume analysis for ID 187
+[DEBUG] Original content length: 8613
+[DEBUG] Original resume length: 8613
+[DEBUG] Processed resume length: 8613
+[DEBUG] Successfully parsed resume analysis
+[DEBUG] Getting enhanced content in a separate call
+[DEBUG] Original content length: 8437
+[DEBUG] Enhanced content text length: 8459
+[DEBUG] Enhanced content HTML length: 10052
+[DEBUG] Analysis complete. Overall score: 88
+[DEBUG] Enhanced content received, length: 10052
+[DEBUG] Number of improvements: 3
+[DEBUG] Sample improvements: [
+  'Make job descriptions more specific about the results achieved.',
+  'Include more specific industry terms to improve keyword density.',
+  "Make the resume more concise in some areas, particularly the 'Core Skills' section."
+]
+[DEBUG] Original text length: 8437
+[DEBUG] Enhanced text length: 8459
+[DEBUG] Length difference: 22
+[DEBUG] Resume 187 successfully updated with analysis
+11:39:27 PM [express] POST /api/resumes 200 in 89376ms :: {"id":187,"userId":null,"title":" Robert Se…

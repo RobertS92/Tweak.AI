@@ -164,6 +164,11 @@ Please respond conversationally as a helpful assistant. Be concise but thorough 
 
 If the user is asking you to write content for them, create professional and ATS-friendly content that would help them stand out to recruiters.
 
+IMPORTANT FORMAT: When suggesting improvements to specific content, use this format:
+"To improve your ${sectionId.replace(/-/g, ' ')}, I suggest the following changes. Here's an example of how it could look better, try this: '[your suggested text]'"
+
+This specific format allows the application to detect your suggestion and offer a "Tweak" button to the user.
+
 Remember that your advice should be tailored to their specific situation and the section they're working on.`;
 
       console.log("[DEBUG] Sending request to OpenAI for resume builder");
