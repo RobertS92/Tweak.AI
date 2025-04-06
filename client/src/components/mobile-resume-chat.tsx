@@ -223,10 +223,10 @@ export default function MobileResumeChat() {
       });
       
       // Construct a message with more detail from the parsed resume
-      let skills = [];
-      const skillsSection = parsedResumeData.sections.find(s => s.id === 'skills');
+      let skills: string[] = [];
+      const skillsSection = parsedResumeData.sections.find((s: {id: string}) => s.id === 'skills');
       if (skillsSection?.categories) {
-        skills = skillsSection.categories.flatMap(cat => cat.skills);
+        skills = skillsSection.categories.flatMap((cat: {name: string, skills: string[]}) => cat.skills);
       }
       
       const skillsMessage = skills.length > 0 
@@ -401,7 +401,6 @@ export default function MobileResumeChat() {
                   analysis={{ enhancedContent: generatedResume.content }}
                   resumeId={generatedResume.id}
                   title={generatedResume.title}
-                  onAddToSection={() => {}} // Empty handler to disable add to section button
                 />
                 
                 {/* Button to save to dashboard or download */}

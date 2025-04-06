@@ -76,11 +76,12 @@ export default function ResumeUploadDialog({
       console.log("Parsed resume data:", parsedResumeData);
 
       // Now upload the file to save it using the regular resume endpoint
-      formData.set('resume', file); // Change field name to match what the API expects
+      const uploadFormData = new FormData(); // Create a new FormData to avoid field name conflicts
+      uploadFormData.append('resume', file); // Use 'resume' field name for the upload endpoint
       
       const uploadResponse = await fetch('/api/resumes', {
         method: 'POST',
-        body: formData,
+        body: uploadFormData,
         credentials: 'include',
       });
 
