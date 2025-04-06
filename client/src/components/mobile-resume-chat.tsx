@@ -95,40 +95,79 @@ export default function MobileResumeChat() {
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+  
+  // Scroll chat to bottom whenever messages change or content is generated
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, generatedResume]);
 
   const generateResumeMutation = useMutation({
     mutationFn: async (content: string) => {
-      const response = await apiRequest("POST", "/api/resumes/generate", {
-        content
-      });
-
-      const data = await response.json();
-      return data;
+      // If we already have a resume and just want to enhance it
+      const isEnhancementRequest = generatedResume && 
+        (content.toLowerCase().includes('enhance') || 
+         content.toLowerCase().includes('improve') || 
+         content.toLowerCase().includes('optimize'));
+      
+      if (isEnhancementRequest && generatedResume) {
+        // Use the enhancement endpoint instead
+        console.log("Enhancing existing resume content");
+        const response = await apiRequest("POST", "/api/resumes/enhance", {
+          resumeId: generatedResume.id,
+          sectionId: "all", // Enhance the entire resume
+          content: content,
+          preserve: true // Critical flag to ensure content preservation
+        });
+        return await response.json();
+      } else {
+        // Generate a new resume from scratch
+        console.log("Generating new resume from text input");
+        const response = await apiRequest("POST", "/api/resumes/generate", {
+          content
+        });
+        return await response.json();
+      }
     },
     onSuccess: (data) => {
       // Store the resume ID and content in the state
       setGeneratedResume({
         id: data.id,
-        content: data.content,
+        content: data.enhancedContent || data.content,
         title: data.title || 'generated-resume'
+      });
+      
+      const isEnhancement = !!data.enhancedContent;
+      
+      setMessages(prev => [...prev, {
+        type: 'ai',
+        content: isEnhancement
+          ? "I've enhanced your resume while preserving all your original content! Check out the improvements below. You can download it or ask me to make further adjustments."
+          : "I've generated your resume! You can now download it or continue chatting with me to make adjustments."
+      }]);
+      
+      toast({
+        title: isEnhancement ? "Resume Enhanced" : "Resume Generated",
+        description: isEnhancement 
+          ? "Your resume has been optimized while preserving all original content!"
+          : "Your resume has been created successfully!",
+      });
+      
+      // Invalidate the resumes query to refresh the dashboard if user navigates there
+      if (user) {
+        queryClient.invalidateQueries({ queryKey: ["/api/resumes"] });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Operation Failed",
+        description: error.message || "Failed to process your resume. Please try again.",
+        variant: "destructive"
       });
       
       setMessages(prev => [...prev, {
         type: 'ai',
-        content: "I've generated your resume! You can now download it or continue chatting with me to make adjustments."
+        content: "I'm sorry, I encountered an error while processing your resume. Can you try again with different wording or upload a different file?"
       }]);
-      
-      toast({
-        title: "Resume Generated",
-        description: "Your resume has been created successfully!",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Generation Failed",
-        description: error.message || "Failed to generate resume. Please try again.",
-        variant: "destructive"
-      });
     }
   });
 
@@ -332,9 +371,9 @@ export default function MobileResumeChat() {
                   title={generatedResume.title}
                 />
                 
-                {/* Button to save to dashboard */}
-                {!user && (
-                  <div className="flex justify-center mt-4">
+                {/* Button to save to dashboard or download */}
+                <div className="flex justify-center mt-4 gap-2">
+                  {!user ? (
                     <Button
                       onClick={() => navigate('/auth')}
                       className="bg-blue-600 hover:bg-blue-700"
@@ -342,14 +381,45 @@ export default function MobileResumeChat() {
                       <Save className="mr-2 h-4 w-4" />
                       Sign Up to Save Resume
                     </Button>
-                  </div>
-                )}
-                
-                {/* Simple preview */}
-                <div 
-                  className="border rounded-lg p-4 bg-white"
-                  dangerouslySetInnerHTML={{ __html: generatedResume.content }} 
-                />
+                  ) : (
+                    <Button
+                      onClick={async () => {
+                        try {
+                          // Use apiRequest for consistent credential handling
+                          console.log(`Attempting to download resume ID ${generatedResume.id}`);
+                          const response = await apiRequest("GET", `/api/resumes/${generatedResume.id}/download`);
+                          const data = await response.json();
+                          
+                          // Create and trigger download
+                          const blob = new Blob([data.content], { type: 'text/html' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `${data.title || 'resume'}_${new Date().toISOString().split('T')[0]}.html`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                          
+                          toast({
+                            title: "Download Started",
+                            description: "Your resume is being downloaded",
+                          });
+                        } catch (error) {
+                          console.error("Download error:", error);
+                          toast({
+                            title: "Download Failed",
+                            description: error instanceof Error ? error.message : "Failed to download resume",
+                            variant: "destructive"
+                          });
+                        }
+                      }}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Download Resume
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </div>
