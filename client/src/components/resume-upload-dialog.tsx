@@ -58,7 +58,7 @@ export default function ResumeUploadDialog({
       const formData = new FormData();
       formData.append('resume', file);
 
-      // Upload the file to the server
+      // Upload the file to the server - use custom fetch to ensure consistent headers
       const response = await fetch('/api/resumes', {
         method: 'POST',
         body: formData,

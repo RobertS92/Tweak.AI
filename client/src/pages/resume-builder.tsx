@@ -1610,6 +1610,22 @@ export default function ResumeBuilder() {
                     bullets: item.bullets || ['']
                   })));
                 }
+
+                // Also check for any certifications and add them to projects section
+                const certificationsSection = data.find((s: SectionWithId) => s.id === 'certifications');
+                if (certificationsSection?.items && certificationsSection.items.length > 0) {
+                  // Add certifications to projects array (since they're combined in the UI)
+                  setProjects(prev => [
+                    ...prev,
+                    ...certificationsSection.items.map((item: any) => ({
+                      title: item.title || '',
+                      subtitle: item.subtitle || '',
+                      date: item.date || '',
+                      description: item.description || 'Certification',
+                      bullets: item.bullets || ['']
+                    }))
+                  ]);
+                }
               }
               
               toast({
