@@ -176,14 +176,34 @@ export default function MobileResumeChat() {
     if (!file) return;
 
     try {
-      const formData = new FormData();
-      formData.append("resume", file);
+      // First parse the resume to get structured data
+      const parseFormData = new FormData();
+      parseFormData.append("file", file);
+      
+      console.log("Parsing resume for structured data in mobile chat");
+      const parserResponse = await fetch('/api/resume-parser', {
+        method: 'POST',
+        body: parseFormData,
+        credentials: 'include',
+      });
+
+      if (!parserResponse.ok) {
+        throw new Error('Failed to parse resume');
+      }
+
+      // Get the parsed resume data
+      const parsedResumeData = await parserResponse.json();
+      console.log("Parsed resume data:", parsedResumeData);
+
+      // Now upload the file to save it
+      const uploadFormData = new FormData();
+      uploadFormData.append("resume", file);
 
       // We need to use fetch directly for FormData uploads
       // but ensure credentials are properly included
       const response = await fetch("/api/resumes", {
         method: "POST",
-        body: formData,
+        body: uploadFormData,
         credentials: 'include' // Include cookies for auth if available
       });
 
@@ -202,9 +222,20 @@ export default function MobileResumeChat() {
         title: data.title || file.name
       });
       
+      // Construct a message with more detail from the parsed resume
+      let skills = [];
+      const skillsSection = parsedResumeData.sections.find(s => s.id === 'skills');
+      if (skillsSection?.categories) {
+        skills = skillsSection.categories.flatMap(cat => cat.skills);
+      }
+      
+      const skillsMessage = skills.length > 0 
+        ? `\n\nI notice you have skills in: ${skills.slice(0, 5).join(', ')}${skills.length > 5 ? ' and more' : ''}.` 
+        : '';
+        
       setMessages(prev => [...prev, 
         { type: 'user', content: `Uploaded resume: ${file.name}` },
-        { type: 'ai', content: "I've received your resume. Would you like me to enhance it or create a new version based on it? You can also download it, but you'll need to log in first." }
+        { type: 'ai', content: `I've received your resume for ${parsedResumeData.personalInfo.name || 'you'}.${skillsMessage} Would you like me to enhance it or create a new version based on it? You can also download it, but you'll need to log in first.` }
       ]);
       
       // Invalidate the resumes query to refresh the dashboard if user navigates there

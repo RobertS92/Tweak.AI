@@ -56,33 +56,60 @@ export default function ResumeUploadDialog({
     try {
       // Create a FormData object
       const formData = new FormData();
-      formData.append('resume', file);
+      formData.append('file', file);
 
-      // Upload the file to the server - use custom fetch to ensure consistent headers
-      const response = await fetch('/api/resumes', {
+      // First send the file to resume parser to get structured data
+      console.log("Parsing resume into structured data");
+      
+      const parserResponse = await fetch('/api/resume-parser', {
         method: 'POST',
         body: formData,
         credentials: 'include',
       });
 
-      if (!response.ok) {
+      if (!parserResponse.ok) {
+        throw new Error('Failed to parse resume');
+      }
+
+      // Get the parsed resume data
+      const parsedResumeData = await parserResponse.json();
+      console.log("Parsed resume data:", parsedResumeData);
+
+      // Now upload the file to save it using the regular resume endpoint
+      formData.set('resume', file); // Change field name to match what the API expects
+      
+      const uploadResponse = await fetch('/api/resumes', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!uploadResponse.ok) {
         throw new Error('Failed to upload resume');
       }
 
       // Get the response data
-      const resumeResponse = await response.json();
+      const resumeResponse = await uploadResponse.json();
+      
+      // Combine the data - we need both the storage info from resumeResponse
+      // and the parsed structure from parsedResumeData
+      const combinedData = {
+        ...resumeResponse,
+        personalInfo: parsedResumeData.personalInfo,
+        sections: parsedResumeData.sections
+      };
       
       setIsOpen(false);
       toast({
         title: "Resume Uploaded",
-        description: "Processing your resume...",
+        description: "Resume successfully parsed and uploaded",
       });
 
-      // Process the file upload callback - use resumeResponse with resume data
+      // Process the file upload callback - use combined data
       if (onFileUploaded && typeof onFileUploaded === 'function') {
         try {
-          // Pass the file AND resume data to the callback
-          await onFileUploaded(file, resumeResponse);
+          // Pass the file AND combined data to the callback
+          await onFileUploaded(file, combinedData);
         } catch (error) {
           console.error("Error in file upload callback:", error);
         }
@@ -94,6 +121,7 @@ export default function ResumeUploadDialog({
         }
       }
     } catch (error) {
+      console.error("Upload/parse error:", error);
       toast({
         title: "Upload Failed",
         description: error instanceof Error ? error.message : "Failed to upload resume",

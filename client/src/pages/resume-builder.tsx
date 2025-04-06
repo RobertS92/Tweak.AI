@@ -1791,6 +1791,11 @@ export default function ResumeBuilder() {
                 throw new Error('No resume data received');
               }
               
+              // Debug logs to see the structure of the resume data
+              console.log('Resume data received:', resumeData);
+              console.log('Resume personal info:', resumeData.personalInfo);
+              console.log('Resume sections:', resumeData.sections);
+              
               // Parse the resume content and populate form fields
               if (resumeData.sections) {
                 // Extract data from the parsed resume
