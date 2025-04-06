@@ -271,6 +271,204 @@ export default function ResumeBuilder() {
       setAssistantQuestion("");
     }
   };
+  
+  // Handle AI enhancement of a specific section
+  const handleEnhanceSection = async (sectionId: string) => {
+    setIsProcessingAiRequest(true);
+    
+    try {
+      let sectionContent = "";
+      let sectionData = null;
+      
+      // Get the content of the section to enhance
+      switch (sectionId) {
+        case "professional-summary":
+          sectionContent = professionalSummary;
+          break;
+        case "work-experience":
+          sectionData = workExperience;
+          sectionContent = JSON.stringify(workExperience);
+          break;
+        case "education":
+          sectionData = education;
+          sectionContent = JSON.stringify(education);
+          break;
+        case "skills":
+          sectionData = skills;
+          sectionContent = JSON.stringify(skills);
+          break;
+        case "projects":
+          sectionData = projects;
+          sectionContent = JSON.stringify(projects);
+          break;
+        default:
+          throw new Error("Unsupported section for AI enhancement");
+      }
+      
+      // Add a message showing that enhancement is in progress
+      const userMessage: Message = { 
+        type: 'user', 
+        content: `Please enhance my ${sections.find(s => s.id === sectionId)?.title.toLowerCase() || sectionId} section` 
+      };
+      setMessages(prev => [...prev, userMessage]);
+      
+      // Call AI enhancement API
+      const response = await apiRequest("POST", "/api/resume-ai-assistant", { 
+        question: `Please improve and completely rewrite this ${sectionId.replace(/-/g, ' ')} section to be more professional, ATS-friendly, and impressive to recruiters. Make sure to include all the important details while making it more concise and impactful.`,
+        section: sectionId,
+        context: `The user wants to enhance their ${sectionId.replace(/-/g, ' ')} section with the current content: ${sectionContent}`
+      });
+      
+      const data = await response.json();
+      
+      if (!data.answer) {
+        throw new Error("No response received from AI assistant");
+      }
+      
+      // Add AI response to messages
+      const aiMessage: Message = { 
+        type: 'ai', 
+        content: `I've enhanced your ${sections.find(s => s.id === sectionId)?.title.toLowerCase() || sectionId} section! Here's the improved version:` 
+      };
+      setMessages(prev => [...prev, aiMessage]);
+      
+      // Process and update the section with AI-enhanced content
+      try {
+        switch (sectionId) {
+          case "professional-summary":
+            // Process professional summary (plain text)
+            // Extract content between triple backticks if present
+            const summaryMatch = data.answer.match(/```(?:html)?([\s\S]*?)```/);
+            const enhancedSummary = summaryMatch ? summaryMatch[1].trim() : data.answer;
+            setProfessionalSummary(enhancedSummary);
+            break;
+            
+          case "work-experience":
+          case "education":
+          case "projects":
+            // For structured sections, try to extract JSON
+            const jsonMatch = data.answer.match(/```(?:json)?([\s\S]*?)```/);
+            if (jsonMatch) {
+              try {
+                const jsonContent = jsonMatch[1].trim();
+                const parsedItems = JSON.parse(jsonContent);
+                
+                // Update the appropriate section
+                if (sectionId === "work-experience") {
+                  // Ensure the parsed data has the right format
+                  const formattedItems = Array.isArray(parsedItems) 
+                    ? parsedItems.map((item: any) => ({
+                        title: item.title || "",
+                        subtitle: item.subtitle || "",
+                        date: item.date || "",
+                        description: item.description || "",
+                        bullets: Array.isArray(item.bullets) ? item.bullets : []
+                      }))
+                    : workExperience;
+                  setWorkExperience(formattedItems);
+                } else if (sectionId === "education") {
+                  const formattedItems = Array.isArray(parsedItems) 
+                    ? parsedItems.map((item: any) => ({
+                        title: item.title || "",
+                        subtitle: item.subtitle || "",
+                        date: item.date || "",
+                        description: item.description || "",
+                        bullets: Array.isArray(item.bullets) ? item.bullets : []
+                      }))
+                    : education;
+                  setEducation(formattedItems);
+                } else if (sectionId === "projects") {
+                  const formattedItems = Array.isArray(parsedItems) 
+                    ? parsedItems.map((item: any) => ({
+                        title: item.title || "",
+                        subtitle: item.subtitle || "",
+                        date: item.date || "",
+                        description: item.description || "",
+                        bullets: Array.isArray(item.bullets) ? item.bullets : [""]
+                      }))
+                    : projects;
+                  setProjects(formattedItems);
+                }
+              } catch (parseError) {
+                console.error("Failed to parse AI enhanced content:", parseError);
+                // Add error message
+                const errorMessage: Message = { 
+                  type: 'ai', 
+                  content: "I've provided suggestions for improvement, but couldn't automatically update your section. Please review my advice and make changes manually." 
+                };
+                setMessages(prev => [...prev, errorMessage]);
+              }
+            } else {
+              // If no valid JSON found, inform the user
+              const infoMessage: Message = { 
+                type: 'ai', 
+                content: "I've provided suggestions for improving your section above. Please review and apply these changes manually." 
+              };
+              setMessages(prev => [...prev, infoMessage]);
+            }
+            break;
+            
+          case "skills":
+            // For skills section, try to extract skills data
+            const skillsJsonMatch = data.answer.match(/```(?:json)?([\s\S]*?)```/);
+            if (skillsJsonMatch) {
+              try {
+                const jsonContent = skillsJsonMatch[1].trim();
+                const parsedSkills = JSON.parse(jsonContent);
+                
+                // Update skills
+                if (Array.isArray(parsedSkills)) {
+                  const formattedSkills = parsedSkills.map((category: any) => ({
+                    name: category.name || "Technical Skills",
+                    skills: Array.isArray(category.skills) ? category.skills : [""]
+                  }));
+                  setSkills(formattedSkills);
+                }
+              } catch (parseError) {
+                console.error("Failed to parse AI enhanced skills:", parseError);
+                // Add error message
+                const errorMessage: Message = { 
+                  type: 'ai', 
+                  content: "I've provided suggestions for improving your skills section, but couldn't automatically update it. Please review my advice and make changes manually." 
+                };
+                setMessages(prev => [...prev, errorMessage]);
+              }
+            }
+            break;
+        }
+        
+        toast({
+          title: "Section Enhanced",
+          description: `Your ${sections.find(s => s.id === sectionId)?.title || sectionId} section has been improved by AI.`,
+        });
+        
+      } catch (processingError) {
+        console.error("Error processing AI response:", processingError);
+        toast({
+          title: "Processing Error",
+          description: "Failed to process AI enhancement. Try again or update manually.",
+          variant: "destructive"
+        });
+      }
+      
+    } catch (error) {
+      console.error("Enhancement error:", error);
+      toast({
+        title: "Enhancement Failed",
+        description: "Failed to enhance section with AI. Please try again.",
+        variant: "destructive"
+      });
+      
+      // Add error message
+      const errorMessage: Message = { 
+        type: 'ai', 
+        content: "I'm having trouble enhancing this section. Please try again later or ask for specific improvements instead." 
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsProcessingAiRequest(false);
+    }
+  };
 
   // Handle suggestion click
   const handleSuggestionClick = (suggestion: string) => {
@@ -554,7 +752,19 @@ export default function ResumeBuilder() {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="font-semibold text-[#2c3e50]">Professional Summary</label>
+              <div className="flex justify-between items-center">
+                <label className="font-semibold text-[#2c3e50]">Professional Summary</label>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex items-center gap-1 text-xs"
+                  onClick={() => handleEnhanceSection("professional-summary")}
+                  disabled={isProcessingAiRequest || !professionalSummary.trim()}
+                >
+                  <span className="text-[#4f8df9]">✨</span>
+                  Enhance with AI
+                </Button>
+              </div>
               <Textarea 
                 placeholder="e.g., Detail-oriented software developer with 5+ years of experience in full-stack development. Proven track record of delivering high-quality applications on time and within budget..."
                 className="w-full px-4 py-3 rounded-md border min-h-[200px]"
@@ -570,7 +780,7 @@ export default function ResumeBuilder() {
           <>
             <h2 className="text-2xl font-bold text-[#2c3e50] mb-2">Work Experience</h2>
             <p className="text-[#7f8c8d] mb-6">{currentSection?.description}</p>
-            <div className="bg-[#f0f7ff] border border-[#4f8df9] rounded-lg p-4 mb-8">
+            <div className="bg-[#f0f7ff] border border-[#4f8df9] rounded-lg p-4 mb-6">
               <div className="flex gap-3">
                 <span className="text-xl">💡</span>
                 <div>
@@ -580,6 +790,19 @@ export default function ResumeBuilder() {
                   </p>
                 </div>
               </div>
+            </div>
+            
+            <div className="flex justify-end mb-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1 text-xs"
+                onClick={() => handleEnhanceSection("work-experience")}
+                disabled={isProcessingAiRequest || workExperience.every(job => !job.title.trim())}
+              >
+                <span className="text-[#4f8df9]">✨</span>
+                Enhance All Work Experiences with AI
+              </Button>
             </div>
             
             {workExperience.map((job, index) => (
@@ -726,7 +949,7 @@ export default function ResumeBuilder() {
           <>
             <h2 className="text-2xl font-bold text-[#2c3e50] mb-2">Education</h2>
             <p className="text-[#7f8c8d] mb-6">{currentSection?.description}</p>
-            <div className="bg-[#f0f7ff] border border-[#4f8df9] rounded-lg p-4 mb-8">
+            <div className="bg-[#f0f7ff] border border-[#4f8df9] rounded-lg p-4 mb-6">
               <div className="flex gap-3">
                 <span className="text-xl">💡</span>
                 <div>
@@ -736,6 +959,19 @@ export default function ResumeBuilder() {
                   </p>
                 </div>
               </div>
+            </div>
+            
+            <div className="flex justify-end mb-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1 text-xs"
+                onClick={() => handleEnhanceSection("education")}
+                disabled={isProcessingAiRequest || education.every(edu => !edu.title.trim())}
+              >
+                <span className="text-[#4f8df9]">✨</span>
+                Enhance Education with AI
+              </Button>
             </div>
             
             {education.map((edu, index) => (
@@ -836,7 +1072,7 @@ export default function ResumeBuilder() {
           <>
             <h2 className="text-2xl font-bold text-[#2c3e50] mb-2">Skills</h2>
             <p className="text-[#7f8c8d] mb-6">{currentSection?.description}</p>
-            <div className="bg-[#f0f7ff] border border-[#4f8df9] rounded-lg p-4 mb-8">
+            <div className="bg-[#f0f7ff] border border-[#4f8df9] rounded-lg p-4 mb-6">
               <div className="flex gap-3">
                 <span className="text-xl">💡</span>
                 <div>
@@ -846,6 +1082,19 @@ export default function ResumeBuilder() {
                   </p>
                 </div>
               </div>
+            </div>
+            
+            <div className="flex justify-end mb-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1 text-xs"
+                onClick={() => handleEnhanceSection("skills")}
+                disabled={isProcessingAiRequest || skills.every(category => category.skills.every(skill => !skill.trim()))}
+              >
+                <span className="text-[#4f8df9]">✨</span>
+                Enhance Skills with AI
+              </Button>
             </div>
             
             {skills.map((category, categoryIndex) => (
@@ -950,7 +1199,7 @@ export default function ResumeBuilder() {
           <>
             <h2 className="text-2xl font-bold text-[#2c3e50] mb-2">Projects & Certifications</h2>
             <p className="text-[#7f8c8d] mb-6">{currentSection?.description}</p>
-            <div className="bg-[#f0f7ff] border border-[#4f8df9] rounded-lg p-4 mb-8">
+            <div className="bg-[#f0f7ff] border border-[#4f8df9] rounded-lg p-4 mb-6">
               <div className="flex gap-3">
                 <span className="text-xl">💡</span>
                 <div>
@@ -960,6 +1209,19 @@ export default function ResumeBuilder() {
                   </p>
                 </div>
               </div>
+            </div>
+            
+            <div className="flex justify-end mb-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1 text-xs"
+                onClick={() => handleEnhanceSection("projects")}
+                disabled={isProcessingAiRequest || projects.every(project => !project.title.trim())}
+              >
+                <span className="text-[#4f8df9]">✨</span>
+                Enhance Projects with AI
+              </Button>
             </div>
             
             {projects.map((project, index) => (

@@ -78,16 +78,20 @@ export default function ResumeUploadDialog({
         description: "Processing your resume...",
       });
 
-      // If a file upload callback is provided, use that
+      // Process the file upload callback - use resumeResponse with resume data
       if (onFileUploaded && typeof onFileUploaded === 'function') {
         try {
+          // Pass the file to the callback
           await onFileUploaded(file);
         } catch (error) {
           console.error("Error in file upload callback:", error);
         }
       } else {
-        // Otherwise navigate to the resume editor page
-        navigate(`/editor/${resumeResponse.id}`);
+        // Only navigate if we're not on the builder page already
+        const currentPath = window.location.pathname;
+        if (currentPath !== '/builder') {
+          navigate(`/builder`);
+        }
       }
     } catch (error) {
       toast({
