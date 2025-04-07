@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { 
   Plus, Download, Edit, Trash2, 
   AlertCircle, Loader2, UserPlus,
-  Crown, Upload, FileText
+  Crown, FileText
 } from "lucide-react";
 
 interface Resume {
@@ -43,6 +43,7 @@ interface UserPlan {
 }
 
 export default function Dashboard() {
+  // Hooks
   const { toast } = useToast();
   const [page, setPage] = useState(1);
   const { user } = useAuth();
@@ -88,6 +89,40 @@ export default function Dashboard() {
     queryKey: ["/api/resumes"],
   });
 
+  // Get anonymous resumes that can be claimed
+  const {
+    anonymousResumes = [] as AnonymousResume[],
+    isLoading: isLoadingAnonymous,
+    isProcessing,
+    claimResume,
+    claimAllAnonymousResumes
+  } = useClaimResumes();
+  
+  // Check for anonymous resumes and claim them if user prefers
+  useEffect(() => {
+    if (anonymousResumes && anonymousResumes.length > 0) {
+      toast({
+        title: `${anonymousResumes.length} anonymous ${anonymousResumes.length === 1 ? 'resume' : 'resumes'} found`,
+        description: "You have resume(s) that were created anonymously. Would you like to add them to your account?",
+        action: (
+          <Button 
+            onClick={claimAllAnonymousResumes}
+            variant="outline"
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <UserPlus className="h-4 w-4 mr-2" />
+            )}
+            {isProcessing ? "Claiming..." : "Claim All"}
+          </Button>
+        )
+      });
+    }
+  }, [anonymousResumes, toast, claimAllAnonymousResumes, isProcessing]);
+
+  // Delete resume mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       return apiRequest("DELETE", `/api/resumes/${id}`);
@@ -155,72 +190,6 @@ export default function Dashboard() {
     },
   });
 
-  const calculateAverageScore = (resumes: Resume[] | undefined) => {
-    if (!resumes || resumes.length === 0) return 0;
-    const total = resumes.reduce((acc, r) => acc + (r.atsScore || 0), 0);
-    return Math.round(total / resumes.length);
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return "bg-[#2ecc71]";
-    if (score >= 70) return "bg-[#f39c12]";
-    return "bg-[#e74c3c]";
-  };
-
-  const getScoreTextColor = (score: number) => {
-    if (score >= 80) return "text-[#2ecc71]";
-    if (score >= 70) return "text-[#f39c12]";
-    return "text-[#e74c3c]";
-  };
-
-  // Get anonymous resumes that can be claimed
-  const {
-    anonymousResumes = [] as AnonymousResume[],
-    isLoading: isLoadingAnonymous,
-    isProcessing,
-    claimResume,
-    claimAllAnonymousResumes
-  } = useClaimResumes();
-  
-  // Check for anonymous resumes and claim them if user prefers
-  useEffect(() => {
-    if (anonymousResumes && anonymousResumes.length > 0) {
-      toast({
-        title: `${anonymousResumes.length} anonymous ${anonymousResumes.length === 1 ? 'resume' : 'resumes'} found`,
-        description: "You have resume(s) that were created anonymously. Would you like to add them to your account?",
-        action: (
-          <Button 
-            onClick={claimAllAnonymousResumes}
-            variant="outline"
-            disabled={isProcessing}
-          >
-            {isProcessing ? (
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            ) : (
-              <UserPlus className="h-4 w-4 mr-2" />
-            )}
-            {isProcessing ? "Claiming..." : "Claim All"}
-          </Button>
-        )
-      });
-    }
-  }, [anonymousResumes, toast]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#f5f7fa] flex items-center justify-center">
-        <div className="animate-pulse text-lg text-muted-foreground">
-          Loading dashboard...
-        </div>
-      </div>
-    );
-  }
-
-  const avgScore = calculateAverageScore(resumes);
-  const storagePercentage = Math.round(((resumes?.length || 0) / userPlan.maxResumes) * 100);
-  const isStorageNearCapacity = storagePercentage >= 80;
-  const isStorageFull = storagePercentage >= 100;
-
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -257,85 +226,121 @@ export default function Dashboard() {
     }
   };
 
+  // Helper functions
+  const calculateAverageScore = (resumes: Resume[] | undefined) => {
+    if (!resumes || resumes.length === 0) return 0;
+    const total = resumes.reduce((acc, r) => acc + (r.atsScore || 0), 0);
+    return Math.round(total / resumes.length);
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score >= 80) return "bg-[#2ecc71]";
+    if (score >= 70) return "bg-[#f39c12]";
+    return "bg-[#e74c3c]";
+  };
+
+  const getScoreTextColor = (score: number) => {
+    if (score >= 80) return "text-[#2ecc71]";
+    if (score >= 70) return "text-[#f39c12]";
+    return "text-[#e74c3c]";
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#f5f7fa] flex items-center justify-center">
+        <div className="animate-pulse text-lg text-muted-foreground">
+          Loading dashboard...
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate metrics
+  const avgScore = calculateAverageScore(resumes);
+  const storagePercentage = Math.round(((resumes?.length || 0) / userPlan.maxResumes) * 100);
+  const isStorageNearCapacity = storagePercentage >= 80;
+  const isStorageFull = storagePercentage >= 100;
+
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
       <div className="flex">
         
-      {/* Upload Dialog */}
-      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Upload Resume</DialogTitle>
-            <DialogDescription>
-              Upload your resume to analyze and optimize it for ATS systems
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div
-            className={`mt-4 border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
-            }`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.doc,.docx,.txt"
-              onChange={handleFileChange}
-              className="hidden"
-              disabled={isUploading}
-            />
+        {/* Upload Dialog */}
+        <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Upload Resume</DialogTitle>
+              <DialogDescription>
+                Upload your resume to analyze and optimize it for ATS systems
+              </DialogDescription>
+            </DialogHeader>
             
-            {isUploading ? (
-              <div className="space-y-4">
-                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-                <p className="text-gray-700">Uploading: {uploadProgress}%</p>
-                <Progress value={uploadProgress} className="h-2 w-full" />
-              </div>
-            ) : (
-              <>
-                <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <p className="mb-2 text-sm text-gray-700">
-                  <span className="font-medium">Click to upload</span> or drag and drop
-                </p>
-                <p className="text-xs text-gray-500 mb-4">
-                  PDF, DOC, DOCX, or TXT files
-                </p>
-                <Button onClick={handleButtonClick} disabled={isUploading}>
-                  {isUploading ? "Uploading..." : "Select File"}
-                </Button>
-              </>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-        
-      {/* Storage Warning Banner */}
-      {isStorageNearCapacity && (
-        <div className={`fixed top-2 right-2 left-2 z-50 p-4 rounded-lg shadow-lg ${
-          isStorageFull ? "bg-red-100 border border-red-400" : "bg-yellow-100 border border-yellow-400"
-        }`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <AlertCircle className={`h-5 w-5 mr-2 ${isStorageFull ? "text-red-500" : "text-yellow-500"}`} />
-              <p className={`font-medium ${isStorageFull ? "text-red-800" : "text-yellow-800"}`}>
-                {isStorageFull 
-                  ? "Your storage is full! Delete some resumes or upgrade to the Professional Plan." 
-                  : "Your storage is almost full. Consider upgrading to the Professional Plan for more space."}
-              </p>
-            </div>
-            <Button 
-              variant="outline" 
-              className={`ml-4 ${isStorageFull ? "border-red-400 text-red-700" : "border-yellow-400 text-yellow-700"}`}
+            <div
+              className={`mt-4 border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
             >
-              <Crown className="h-4 w-4 mr-2" />
-              Upgrade Now
-            </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,.txt"
+                onChange={handleFileChange}
+                className="hidden"
+                disabled={isUploading}
+              />
+              
+              {isUploading ? (
+                <div className="space-y-4">
+                  <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p className="text-gray-700">Uploading: {uploadProgress}%</p>
+                  <Progress value={uploadProgress} className="h-2 w-full" />
+                </div>
+              ) : (
+                <>
+                  <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <p className="mb-2 text-sm text-gray-700">
+                    <span className="font-medium">Click to upload</span> or drag and drop
+                  </p>
+                  <p className="text-xs text-gray-500 mb-4">
+                    PDF, DOC, DOCX, or TXT files
+                  </p>
+                  <Button onClick={handleButtonClick} disabled={isUploading}>
+                    {isUploading ? "Uploading..." : "Select File"}
+                  </Button>
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Storage Warning Banner */}
+        {isStorageNearCapacity && (
+          <div className={`fixed top-2 right-2 left-2 z-50 p-4 rounded-lg shadow-lg ${
+            isStorageFull ? "bg-red-100 border border-red-400" : "bg-yellow-100 border border-yellow-400"
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <AlertCircle className={`h-5 w-5 mr-2 ${isStorageFull ? "text-red-500" : "text-yellow-500"}`} />
+                <p className={`font-medium ${isStorageFull ? "text-red-800" : "text-yellow-800"}`}>
+                  {isStorageFull 
+                    ? "Your storage is full! Delete some resumes or upgrade to the Professional Plan." 
+                    : "Your storage is almost full. Consider upgrading to the Professional Plan for more space."}
+                </p>
+              </div>
+              <Button 
+                variant="outline" 
+                className={`ml-4 ${isStorageFull ? "border-red-400 text-red-700" : "border-yellow-400 text-yellow-700"}`}
+              >
+                <Crown className="h-4 w-4 mr-2" />
+                Upgrade Now
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
         {/* Main Content */}
         <div className="flex-1 p-6">
