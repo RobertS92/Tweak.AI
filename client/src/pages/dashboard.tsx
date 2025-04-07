@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { useState, useEffect, useRef } from "react";
+import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -8,10 +8,11 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { 
   Plus, Download, Edit, Trash2, 
   AlertCircle, Loader2, UserPlus,
-  Crown, 
+  Crown, Upload, FileText
 } from "lucide-react";
 
 interface Resume {
@@ -45,6 +46,12 @@ export default function Dashboard() {
   const { toast } = useToast();
   const [page, setPage] = useState(1);
   const { user } = useAuth();
+  const [, navigate] = useLocation();
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Determine user's plan - Check if the user has a premium subscription
   const [userPlan, setUserPlan] = useState<UserPlan>({
@@ -91,6 +98,60 @@ export default function Dashboard() {
         title: "Resume deleted",
         description: "The resume has been removed from your dashboard",
       });
+    },
+  });
+  
+  // Handle resume upload
+  const uploadMutation = useMutation({
+    mutationFn: async (file: File) => {
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append("resume", file);
+      
+      // Create XMLHttpRequest to track upload progress
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const progress = (event.loaded / event.total) * 100;
+            setUploadProgress(Math.round(progress));
+          }
+        };
+        
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText));
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.statusText}`));
+          }
+        };
+        
+        xhr.onerror = () => {
+          reject(new Error("Upload failed due to network error"));
+        };
+        
+        xhr.open("POST", "/api/resumes");
+        xhr.send(formData);
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/resumes"] });
+      toast({
+        title: "Resume uploaded",
+        description: "Your resume has been uploaded and analyzed",
+      });
+      setShowUploadDialog(false);
+      setIsUploading(false);
+      setUploadProgress(0);
+    },
+    onError: (error) => {
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+      setIsUploading(false);
     },
   });
 
@@ -160,9 +221,96 @@ export default function Dashboard() {
   const isStorageNearCapacity = storagePercentage >= 80;
   const isStorageFull = storagePercentage >= 100;
 
+  // Handle file selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      uploadMutation.mutate(file);
+    }
+  };
+  
+  // Handle file selection via button click
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+  
+  // Handle drag events
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+  
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  };
+  
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      uploadMutation.mutate(e.dataTransfer.files[0]);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
       <div className="flex">
+        
+      {/* Upload Dialog */}
+      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Upload Resume</DialogTitle>
+            <DialogDescription>
+              Upload your resume to analyze and optimize it for ATS systems
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div
+            className={`mt-4 border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+              dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,.txt"
+              onChange={handleFileChange}
+              className="hidden"
+              disabled={isUploading}
+            />
+            
+            {isUploading ? (
+              <div className="space-y-4">
+                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p className="text-gray-700">Uploading: {uploadProgress}%</p>
+                <Progress value={uploadProgress} className="h-2 w-full" />
+              </div>
+            ) : (
+              <>
+                <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                <p className="mb-2 text-sm text-gray-700">
+                  <span className="font-medium">Click to upload</span> or drag and drop
+                </p>
+                <p className="text-xs text-gray-500 mb-4">
+                  PDF, DOC, DOCX, or TXT files
+                </p>
+                <Button onClick={handleButtonClick} disabled={isUploading}>
+                  {isUploading ? "Uploading..." : "Select File"}
+                </Button>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
         
       {/* Storage Warning Banner */}
       {isStorageNearCapacity && (
@@ -197,11 +345,9 @@ export default function Dashboard() {
               <h1 className="text-2xl font-bold text-[#2c3e50]">Resume Dashboard</h1>
               <p className="text-[#7f8c8d]">Manage and optimize your resumes</p>
             </div>
-            <Link href="/editor">
-              <Button className="bg-[#4f8df9]">
-                <Plus className="mr-2 h-4 w-4" /> Upload Resume
-              </Button>
-            </Link>
+            <Button className="bg-[#4f8df9]" onClick={() => setShowUploadDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Upload Resume
+            </Button>
           </div>
 
           {/* Stats Cards */}
