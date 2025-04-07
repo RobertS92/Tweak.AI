@@ -48,38 +48,65 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
+        console.log(`[DEBUG] Login attempt for username: ${username}`);
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        
+        if (!user) {
+          console.log(`[DEBUG] User ${username} not found`);
+          return done(null, false);
+        }
+        
+        const passwordMatches = await comparePasswords(password, user.password);
+        console.log(`[DEBUG] Password validation for ${username}: ${passwordMatches ? 'Success' : 'Failed'}`);
+        
+        if (!passwordMatches) {
           return done(null, false);
         } else {
+          console.log(`[DEBUG] User ${username} authenticated successfully with ID: ${user.id}`);
           return done(null, user);
         }
       } catch (err) {
+        console.error(`[ERROR] Authentication error:`, err);
         return done(err);
       }
     }),
   );
 
-  passport.serializeUser((user, done) => done(null, user.id));
+  passport.serializeUser((user, done) => {
+    console.log(`[DEBUG] Serializing user with ID: ${user.id}`);
+    done(null, user.id);
+  });
+  
   passport.deserializeUser(async (id: number, done) => {
     try {
+      console.log(`[DEBUG] Deserializing user ID: ${id}`);
       const user = await storage.getUser(id);
+      if (user) {
+        console.log(`[DEBUG] User ID ${id} deserialized successfully`);
+      } else {
+        console.log(`[DEBUG] User ID ${id} not found during deserialization`);
+      }
       done(null, user);
     } catch (err) {
+      console.error(`[ERROR] Deserialization error for ID ${id}:`, err);
       done(err);
     }
   });
 
   app.post("/api/register", async (req, res, next) => {
     try {
+      console.log(`[DEBUG] Register attempt for username: ${req.body.username}`);
+      
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
+        console.log(`[DEBUG] Registration failed - username ${req.body.username} already exists`);
         return res.status(400).json({ error: "Username already exists" });
       }
 
       // Set trial end date to 3 days from now
       const trialEndDate = new Date();
       trialEndDate.setDate(trialEndDate.getDate() + 3); // 3-day free trial
+      console.log(`[DEBUG] Setting trial end date to: ${trialEndDate.toISOString()}`);
 
       const user = await storage.createUser({
         ...req.body,
@@ -87,9 +114,22 @@ export function setupAuth(app: Express) {
         trialEndDate: trialEndDate,
         planType: "base" // Start with base plan during trial
       });
+      
+      console.log(`[DEBUG] User created with ID: ${user.id}, username: ${user.username}`);
+      
+      // Verify session setup before login
+      console.log(`[DEBUG] Session before login:`, req.session.id ? 'Session exists' : 'No session yet');
 
       req.login(user, (err) => {
-        if (err) return next(err);
+        if (err) {
+          console.error(`[ERROR] Login after registration failed:`, err);
+          return next(err);
+        }
+        
+        console.log(`[DEBUG] User ${user.username} (ID: ${user.id}) logged in after registration`);
+        console.log(`[DEBUG] Session after login:`, req.session.id);
+        console.log(`[DEBUG] Authentication status:`, req.isAuthenticated());
+        
         // Return user without password
         const { password, ...userWithoutPassword } = user;
         
@@ -103,17 +143,38 @@ export function setupAuth(app: Express) {
         res.status(201).json(responseUser);
       });
     } catch (err) {
+      console.error(`[ERROR] Registration error:`, err);
       next(err);
     }
   });
 
   app.post("/api/login", (req, res, next) => {
+    console.log(`[DEBUG] Login endpoint called for username: ${req.body.username}`);
+    console.log(`[DEBUG] Session before auth:`, req.session.id || 'No session ID');
+    
     passport.authenticate("local", (err: any, user: Express.User, info: any) => {
-      if (err) return next(err);
-      if (!user) return res.status(401).json({ error: "Invalid credentials" });
+      if (err) {
+        console.error(`[ERROR] Authentication error:`, err);
+        return next(err);
+      }
+      
+      if (!user) {
+        console.log(`[DEBUG] Authentication failed for ${req.body.username}`);
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      console.log(`[DEBUG] Authentication successful for ${req.body.username}, proceeding with login`);
       
       req.login(user, (loginErr: any) => {
-        if (loginErr) return next(loginErr);
+        if (loginErr) {
+          console.error(`[ERROR] Login error:`, loginErr);
+          return next(loginErr);
+        }
+        
+        console.log(`[DEBUG] Login successful for user ID: ${user.id}`);
+        console.log(`[DEBUG] Session after login:`, req.session.id);
+        console.log(`[DEBUG] Authentication status:`, req.isAuthenticated());
+        
         // Return user without password
         const { password, ...userWithoutPassword } = user;
         
@@ -126,6 +187,7 @@ export function setupAuth(app: Express) {
           
           // Calculate days remaining in trial
           const daysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          console.log(`[DEBUG] Trial days remaining for ${user.username}: ${daysRemaining}`);
           
           // Add trial info to response
           // Cast to any to avoid TypeScript errors with additional properties
@@ -148,7 +210,15 @@ export function setupAuth(app: Express) {
   });
 
   app.get("/api/user", (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Not authenticated" });
+    console.log(`[DEBUG] GET /api/user - Authentication status:`, req.isAuthenticated());
+    console.log(`[DEBUG] Session info:`, req.session ? `Session ID: ${req.session.id}` : 'No session');
+    
+    if (!req.isAuthenticated()) {
+      console.log(`[DEBUG] User not authenticated on /api/user endpoint`);
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    console.log(`[DEBUG] User authenticated - ID: ${req.user.id}, username: ${req.user.username}`);
     
     // Return user without password
     const { password, ...userWithoutPassword } = req.user;
@@ -162,6 +232,7 @@ export function setupAuth(app: Express) {
       
       // Calculate days remaining in trial
       const daysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      console.log(`[DEBUG] Trial days remaining for ${req.user.username}: ${daysRemaining}`);
       
       // Add trial info to response
       // Cast to any to avoid TypeScript errors with additional properties
@@ -171,6 +242,7 @@ export function setupAuth(app: Express) {
       responseUser = userData;
     }
     
+    console.log(`[DEBUG] Responding to /api/user with data for user ID: ${req.user.id}`);
     res.json(responseUser);
   });
 }

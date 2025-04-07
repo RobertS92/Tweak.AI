@@ -13,7 +13,7 @@ import * as path from 'path';
 import OpenAI from "openai";
 import puppeteer from 'puppeteer';
 import chromium from '@sparticuz/chromium';
-import { db } from "./db";
+import { db, pool } from "./db";
 import { setupAuth } from "./auth";
 import { debugAuthStatus } from "./utils/auth-debug";
 import { enhancedAuthCheck } from "./auth-fix";
@@ -339,6 +339,13 @@ export async function registerRoutes(app: Express) {
 
   app.post("/api/resumes", upload.single("resume"), async (req, res) => {
     try {
+      console.log("[DEBUG] Resume upload request received");
+      console.log("[DEBUG] Authentication status:", req.isAuthenticated() ? "Authenticated" : "Not authenticated");
+      if (req.isAuthenticated()) {
+        console.log("[DEBUG] User ID:", req.user.id);
+        console.log("[DEBUG] User name:", req.user.username);
+      }
+      
       const file = req.file;
       if (!file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -464,11 +471,16 @@ export async function registerRoutes(app: Express) {
   app.get("/api/resumes", async (req, res) => {
     try {
       // Check if user is authenticated
+      console.log("[DEBUG] GET /api/resumes - Auth status:", req.isAuthenticated());
+      console.log("[DEBUG] Session info:", req.session);
+      
       if (!req.isAuthenticated()) {
         return res.status(401).json({ message: "You must be logged in to view resumes" });
       }
       
+      console.log("[DEBUG] User ID for resume fetch:", req.user.id);
       const resumes = await storage.getUserResumes(req.user.id);
+      console.log("[DEBUG] Found resumes:", resumes.length);
       res.json(resumes);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "An unknown error occurred";
@@ -484,78 +496,66 @@ export async function registerRoutes(app: Express) {
         return res.status(401).json({ message: "You must be logged in to view anonymous resumes" });
       }
       
-      // Get all anonymous resumes (with null userId)
-      const anonymousResumes = await storage.getAnonymousResumes();
+      console.log(`[DEBUG] Fetching anonymous resumes for user ID: ${req.user.id}`);
       
-      // Log for debugging
-      console.log(`[DEBUG] Retrieved ${anonymousResumes.length} anonymous resumes`);
-      
-      // Filter out any unexpected data just to be safe
-      const sanitizedResumes = anonymousResumes.map(resume => ({
-        id: resume.id,
-        title: resume.title,
-        content: resume.content?.substring(0, 100) + '...' || '', // Just send a preview
-        fileType: resume.fileType,
-        createdAt: resume.createdAt,
-        atsScore: resume.atsScore || 0
-      }));
-      
-      res.json(sanitizedResumes);
+      try {
+        // Use direct SQL query to avoid any ORM issues with NaN values
+        const result = await db.execute(`
+          SELECT 
+            id, 
+            title, 
+            SUBSTRING(content, 1, 100) || '...' as content, 
+            file_type as "fileType", 
+            0 as "atsScore", 
+            created_at as "createdAt" 
+          FROM resumes 
+          WHERE user_id IS NULL
+        `);
+        
+        console.log(`[DEBUG] Raw SQL found ${result.rows.length} anonymous resumes`);
+        
+        const sanitizedResumes = result.rows.map((row: any) => ({
+          id: row.id,
+          title: row.title || 'Untitled Resume',
+          content: row.content || '',
+          fileType: row.fileType || 'text/plain',
+          createdAt: row.createdAt,
+          atsScore: isNaN(Number(row.atsScore)) ? 0 : Number(row.atsScore)
+        }));
+        
+        console.log(`[DEBUG] Returning ${sanitizedResumes.length} sanitized anonymous resumes`);
+        return res.json(sanitizedResumes);
+      } catch (dbError) {
+        console.error("[ERROR] Database error fetching anonymous resumes:", dbError);
+        // Try a fallback approach if direct SQL fails
+        const anonymousResumes = await storage.getAnonymousResumes();
+        console.log(`[DEBUG] Fallback: Retrieved ${anonymousResumes.length} anonymous resumes`);
+        
+        // Filter out any potentially problematic resumes
+        const safeResumes = anonymousResumes.filter(resume => 
+          resume && resume.id && typeof resume.id === 'number'
+        );
+        
+        // Further sanitize the data
+        const sanitizedResumes = safeResumes.map(resume => ({
+          id: resume.id,
+          title: resume.title || 'Untitled Resume',
+          content: resume.content ? (resume.content.substring(0, 100) + '...') : '',
+          fileType: resume.fileType || 'text/plain',
+          createdAt: resume.createdAt,
+          atsScore: 0 // Explicitly set to 0 to avoid any issues
+        }));
+        
+        console.log(`[DEBUG] Fallback returning ${sanitizedResumes.length} sanitized resumes`);
+        return res.json(sanitizedResumes);
+      }
     } catch (error: unknown) {
-      console.error("Error fetching anonymous resumes:", error);
-      // Return empty array on error rather than error status
-      res.json([]);
+      console.error("[ERROR] Critical error in anonymous resume endpoint:", error);
+      // Return empty array on error rather than error status to prevent frontend issues
+      return res.json([]);
     }
   });
   
-  // Dashboard stats API for user storage information
-  app.get("/api/dashboard/stats", async (req, res) => {
-    try {
-      // Must be authenticated
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "You must be logged in to view dashboard statistics" });
-      }
-
-      // Get user's resume count
-      const userResumes = await storage.getUserResumes(req.user.id);
-      
-      // Calculate storage info based on plan type
-      // This could come from a user_plans table in a real implementation
-      const planType = req.user.planType || "base"; // Default to base if not specified
-      
-      // Plan limits based on business requirements
-      const storageLimits = {
-        base: 20, // 20 resume limit for base tier
-        professional: 300, // 300 resume limit for professional tier
-        enterprise: 1000 // 1000 resume limit for enterprise tier
-      };
-      
-      // Get the appropriate limit based on plan
-      const storageLimit = storageLimits[planType as keyof typeof storageLimits] || storageLimits.base;
-      
-      // Calculate percentage used
-      const resumeCount = userResumes.length;
-      const storagePercentage = Math.round((resumeCount / storageLimit) * 100);
-      
-      // Return the stats
-      res.json({
-        resumeCount,
-        storageInfo: {
-          used: resumeCount,
-          limit: storageLimit,
-          percentage: storagePercentage
-        },
-        planType,
-        // Add subscription info if needed
-        isPremium: planType !== "base"
-      });
-    } catch (error: unknown) {
-      console.error("Error getting dashboard stats:", error);
-      const message = error instanceof Error ? error.message : "An unknown error occurred";
-      res.status(500).json({ message });
-    }
-  });
-
   // API endpoint for dashboard statistics
   app.get("/api/dashboard/stats", async (req, res) => {
     try {

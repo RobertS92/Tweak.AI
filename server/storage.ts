@@ -76,11 +76,35 @@ export class DatabaseStorage implements IStorage {
 
   async getUserResumes(userId: number): Promise<Resume[]> {
     // Convert userId to string to match schema
-    return db.select().from(resumes).where(eq(resumes.userId, userId.toString()));
+    console.log(`[DEBUG] Getting resumes for user ID: ${userId}`);
+    const userIdString = userId.toString();
+    console.log(`[DEBUG] User ID as string: ${userIdString}`);
+    
+    const results = await db.select().from(resumes).where(eq(resumes.userId, userIdString));
+    console.log(`[DEBUG] Found ${results.length} resumes for user ID ${userId}`);
+    
+    // Log the first few resume IDs for debugging
+    if (results.length > 0) {
+      const resumeIds = results.slice(0, 3).map(r => r.id).join(', ');
+      console.log(`[DEBUG] Resume IDs (sample): ${resumeIds}${results.length > 3 ? '...' : ''}`);
+    }
+    
+    return results;
   }
 
   async createResume(resume: InsertResume): Promise<Resume> {
-    const [newResume] = await db.insert(resumes).values(resume).returning();
+    console.log(`[DEBUG] Creating new resume with title: ${resume.title}`);
+    console.log(`[DEBUG] User ID for new resume: ${resume.userId || 'null (anonymous)'}`);
+    
+    // If no userId is provided, explicitly set it to null to ensure consistency
+    const resumeData = { ...resume };
+    if (!resumeData.userId) {
+      console.log(`[DEBUG] Setting null userId for anonymous resume`);
+    }
+    
+    const [newResume] = await db.insert(resumes).values(resumeData).returning();
+    console.log(`[DEBUG] Resume created with ID: ${newResume.id}`);
+    
     return newResume;
   }
 
@@ -105,13 +129,47 @@ export class DatabaseStorage implements IStorage {
   // Get anonymous resumes (where userId is null)
   async getAnonymousResumes(): Promise<Resume[]> {
     try {
-      // Just fetch all resumes that don't have a userId assigned
-      // The SQL equivalent is "WHERE user_id IS NULL"
-      return await db.select().from(resumes).where(isNull(resumes.userId));
+      console.log(`[DEBUG] Fetching anonymous resumes (with null userId)`);
+      
+      // Use a raw SQL query to safely filter out NaN values and set them to 0
+      const query = `
+        SELECT 
+          id, 
+          user_id as "userId", 
+          title, 
+          SUBSTRING(content, 1, 100) || '...' as content, 
+          file_type as "fileType", 
+          0 as "atsScore",
+          created_at as "createdAt"
+        FROM resumes 
+        WHERE user_id IS NULL
+      `;
+      
+      const results = await db.execute(query);
+      console.log(`[DEBUG] Found ${results.rows.length} anonymous resumes via raw SQL`);
+      
+      // Further sanitize the results to be extra safe
+      const sanitizedResults = results.rows.map((row: any) => {
+        return {
+          id: row.id,
+          userId: null,
+          title: row.title || 'Untitled Resume',
+          content: row.content || '',
+          fileType: row.fileType || 'text/plain',
+          atsScore: typeof row.atsScore === 'number' ? row.atsScore : 0,
+          enhancedContent: null,
+          analysis: {},
+          createdAt: row.createdAt
+        };
+      });
+      
+      console.log(`[DEBUG] Returning ${sanitizedResults.length} sanitized anonymous resumes`);
+      return sanitizedResults as Resume[];
     } catch (error) {
-      console.error("Error fetching anonymous resumes:", error);
+      console.error("[ERROR] Error fetching anonymous resumes:", error);
+      console.error("[ERROR] Error details:", error instanceof Error ? error.message : "Unknown error");
       // Return empty array instead of throwing to avoid breaking the frontend
-      return [];
+      return [] as Resume[];
     }
   }
   
@@ -129,7 +187,21 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Log the current state of the resume
-      console.log(`[DEBUG] Resume current state: userId=${resume.userId}, title=${resume.title}`);
+      console.log(`[DEBUG] Resume current state: userId=${resume.userId || 'null'}, title=${resume.title || 'Untitled'}`);
+      
+      // Check if this resume is actually claimable (no userId or owned by this user)
+      if (resume.userId && resume.userId !== userId.toString()) {
+        console.error(`[ERROR] Cannot claim resume - already owned by user ${resume.userId}`);
+        throw new Error("This resume is already claimed by another user");
+      }
+      
+      // If the resume already belongs to this user, just return it
+      if (resume.userId === userId.toString()) {
+        console.log(`[DEBUG] Resume already owned by user ${userId}, no update needed`);
+        return resume;
+      }
+      
+      console.log(`[DEBUG] Proceeding to claim resume ${resumeId} for user ${userId}`);
       
       // Update the resume to assign it to the user
       // Since userId is stored as text in the schema, we must convert the userId to string
