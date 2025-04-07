@@ -8,13 +8,19 @@ import { User, InsertUser } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+// Extended user type to include trial information
+interface ExtendedUser extends User {
+  trialDaysRemaining?: number;
+  isInTrial?: boolean;
+}
+
 type AuthContextType = {
-  user: User | null;
+  user: ExtendedUser | null;
   isLoading: boolean;
   error: Error | null;
-  loginMutation: UseMutationResult<User, Error, LoginData>;
+  loginMutation: UseMutationResult<ExtendedUser, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<User, Error, InsertUser>;
+  registerMutation: UseMutationResult<ExtendedUser, Error, InsertUser>;
 };
 
 type LoginData = Pick<InsertUser, "username" | "password">;

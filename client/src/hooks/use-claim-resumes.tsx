@@ -37,8 +37,9 @@ export function useClaimResumes() {
       return res.json();
     },
     onSuccess: () => {
-      // Invalidate queries to refresh resume lists
+      // Invalidate queries to refresh resume lists and dashboard stats
       queryClient.invalidateQueries({ queryKey: ['/api/resumes'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
       
       toast({
         title: 'Resume claimed',

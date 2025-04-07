@@ -8,6 +8,8 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   name: text("name"),
   email: text("email"),
+  planType: text("plan_type").default("base").notNull(), // base, professional, enterprise
+  trialEndDate: timestamp("trial_end_date"), // For free trial period
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => {
   return {
@@ -50,6 +52,8 @@ export const coverLetters = pgTable("cover_letters", {
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
+  planType: true, // This is defaulted in the schema
+  trialEndDate: true, // This will be set separately
 });
 
 export const insertResumeSchema = createInsertSchema(resumes).omit({

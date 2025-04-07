@@ -77,16 +77,30 @@ export function setupAuth(app: Express) {
         return res.status(400).json({ error: "Username already exists" });
       }
 
+      // Set trial end date to 3 days from now
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 3); // 3-day free trial
+
       const user = await storage.createUser({
         ...req.body,
         password: await hashPassword(req.body.password),
+        trialEndDate: trialEndDate,
+        planType: "base" // Start with base plan during trial
       });
 
       req.login(user, (err) => {
         if (err) return next(err);
         // Return user without password
         const { password, ...userWithoutPassword } = user;
-        res.status(201).json(userWithoutPassword);
+        
+        // Add trial information to response
+        // Cast to any to avoid TypeScript errors with additional properties
+        const userData = {...userWithoutPassword} as any;
+        userData.trialDaysRemaining = 3;
+        userData.isInTrial = true;
+        const responseUser = userData;
+        
+        res.status(201).json(responseUser);
       });
     } catch (err) {
       next(err);
@@ -94,15 +108,34 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", (err: any, user: Express.User, info: any) => {
       if (err) return next(err);
       if (!user) return res.status(401).json({ error: "Invalid credentials" });
       
-      req.login(user, (err) => {
-        if (err) return next(err);
+      req.login(user, (loginErr: any) => {
+        if (loginErr) return next(loginErr);
         // Return user without password
         const { password, ...userWithoutPassword } = user;
-        res.status(200).json(userWithoutPassword);
+        
+        // Add trial information if applicable
+        let responseUser = { ...userWithoutPassword };
+        
+        if (user.trialEndDate) {
+          const now = new Date();
+          const trialEnd = new Date(user.trialEndDate);
+          
+          // Calculate days remaining in trial
+          const daysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          
+          // Add trial info to response
+          // Cast to any to avoid TypeScript errors with additional properties
+          const userData = {...responseUser} as any;
+          userData.trialDaysRemaining = Math.max(0, daysRemaining);
+          userData.isInTrial = daysRemaining > 0;
+          responseUser = userData;
+        }
+        
+        res.status(200).json(responseUser);
       });
     })(req, res, next);
   });
@@ -119,6 +152,25 @@ export function setupAuth(app: Express) {
     
     // Return user without password
     const { password, ...userWithoutPassword } = req.user;
-    res.json(userWithoutPassword);
+    
+    // Calculate trial information if applicable
+    let responseUser = { ...userWithoutPassword };
+    
+    if (req.user.trialEndDate) {
+      const now = new Date();
+      const trialEnd = new Date(req.user.trialEndDate);
+      
+      // Calculate days remaining in trial
+      const daysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Add trial info to response
+      // Cast to any to avoid TypeScript errors with additional properties
+      const userData = {...responseUser} as any;
+      userData.trialDaysRemaining = Math.max(0, daysRemaining);
+      userData.isInTrial = daysRemaining > 0;
+      responseUser = userData;
+    }
+    
+    res.json(responseUser);
   });
 }

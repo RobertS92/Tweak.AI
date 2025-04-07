@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useClaimResumes } from "@/hooks/use-claim-resumes";
 import { useAuth } from "@/hooks/use-auth";
+import { User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -42,6 +43,24 @@ interface UserPlan {
   isPro: boolean;
 }
 
+// Extended User interface to include trial information
+interface ExtendedUser extends User {
+  trialDaysRemaining?: number;
+  isInTrial?: boolean;
+}
+
+// Dashboard statistics from the API
+interface DashboardStats {
+  isPremium: boolean;
+  planType: string;
+  storageInfo: {
+    used: number;
+    limit: number;
+    percentage: number;
+  };
+  trialDaysRemaining?: number;
+}
+
 export default function Dashboard() {
   // Hooks
   const { toast } = useToast();
@@ -54,6 +73,16 @@ export default function Dashboard() {
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // Fetch dashboard stats for storage limits and plan info
+  const { 
+    data: dashboardStats, 
+    isLoading: isLoadingStats 
+  } = useQuery<DashboardStats>({
+    queryKey: ["/api/dashboard/stats"],
+    // This will only execute if the user is authenticated
+    enabled: !!user,
+  });
+
   // Determine user's plan - Check if the user has a premium subscription
   const [userPlan, setUserPlan] = useState<UserPlan>({
     name: "Base Plan",
@@ -61,28 +90,20 @@ export default function Dashboard() {
     isPro: false
   });
 
-  // Update the plan whenever user data changes
+  // Update the plan whenever dashboard stats data changes
   useEffect(() => {
-    // Check for premium status from user data 
-    // This uses a type-safe approach that doesn't require the isPremium property to exist yet
-    // We'll need to update the users schema when implementing subscription functionality
-    const userData = user as any;
-    const userHasPremiumPlan = !!(userData && userData.isPremium === true);
-    
-    if (userHasPremiumPlan) {
+    if (dashboardStats) {
+      const planType = dashboardStats.planType || 'base';
+      const isPremium = planType !== 'base';
+      
+      // Set plan info based on data from API
       setUserPlan({
-        name: "Professional Plan",
-        maxResumes: 300,
-        isPro: true
-      });
-    } else {
-      setUserPlan({
-        name: "Base Plan",
-        maxResumes: 20,
-        isPro: false
+        name: isPremium ? "Professional Plan" : "Base Plan",
+        maxResumes: dashboardStats.storageInfo?.limit || 20,
+        isPro: isPremium
       });
     }
-  }, [user]);
+  }, [dashboardStats]);
 
   // Fetch user's resume data
   const { data: resumes = [] as Resume[], isLoading } = useQuery<Resume[]>({
@@ -128,7 +149,10 @@ export default function Dashboard() {
       return apiRequest("DELETE", `/api/resumes/${id}`);
     },
     onSuccess: () => {
+      // Invalidate both resumes and dashboard stats queries
       queryClient.invalidateQueries({ queryKey: ["/api/resumes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      
       toast({
         title: "Resume deleted",
         description: "The resume has been removed from your dashboard",
@@ -171,7 +195,10 @@ export default function Dashboard() {
       });
     },
     onSuccess: () => {
+      // Invalidate both resumes and dashboard stats queries
       queryClient.invalidateQueries({ queryKey: ["/api/resumes"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      
       toast({
         title: "Resume uploaded",
         description: "Your resume has been uploaded and analyzed",
@@ -258,7 +285,11 @@ export default function Dashboard() {
 
   // Calculate metrics
   const avgScore = calculateAverageScore(resumes);
-  const storagePercentage = Math.round(((resumes?.length || 0) / userPlan.maxResumes) * 100);
+  
+  // Get storage percentage either from the API or calculate from resumes length
+  const storagePercentage = dashboardStats?.storageInfo?.percentage || 
+    Math.round(((resumes?.length || 0) / userPlan.maxResumes) * 100);
+    
   const isStorageNearCapacity = storagePercentage >= 80;
   const isStorageFull = storagePercentage >= 100;
 
@@ -381,15 +412,17 @@ export default function Dashboard() {
             <Card className="p-6">
               <h3 className="text-[#7f8c8d] mb-4">Storage Used</h3>
               <div className="text-3xl font-bold text-[#2c3e50] mb-4">
-                {resumes?.length || 0}/{userPlan.maxResumes}
+                {dashboardStats?.storageInfo?.used || resumes?.length || 0}/
+                {dashboardStats?.storageInfo?.limit || userPlan.maxResumes}
               </div>
               <Progress 
-                value={(resumes?.length || 0) / userPlan.maxResumes * 100} 
+                value={dashboardStats?.storageInfo?.percentage || 
+                  Math.round(((resumes?.length || 0) / userPlan.maxResumes) * 100)} 
                 className="h-2" 
               />
               <div className="flex justify-between mt-2">
                 <span className="text-[#3498db] flex items-center">
-                  {userPlan.isPro ? (
+                  {(dashboardStats?.isPremium || userPlan.isPro) ? (
                     <>
                       <Crown className="h-4 w-4 mr-1 text-yellow-500" />
                       Professional Plan
@@ -399,9 +432,17 @@ export default function Dashboard() {
                   )}
                 </span>
                 <span className="text-[#7f8c8d]">
-                  {Math.round(((resumes?.length || 0) / userPlan.maxResumes) * 100)}% Used
+                  {dashboardStats?.storageInfo?.percentage || 
+                   Math.round(((resumes?.length || 0) / userPlan.maxResumes) * 100)}% Used
                 </span>
               </div>
+              
+              {/* Trial Period Message */}
+              {dashboardStats?.trialDaysRemaining && dashboardStats.trialDaysRemaining > 0 && (
+                <div className="mt-4 text-sm p-2 bg-blue-50 rounded-md border border-blue-100 text-blue-700">
+                  <span className="font-medium">Free Trial:</span> {dashboardStats.trialDaysRemaining} days remaining
+                </div>
+              )}
             </Card>
           </div>
 

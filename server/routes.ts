@@ -4,6 +4,7 @@ import express from 'express';
 import multer from "multer";
 import { storage } from "./storage";
 import { analyzeResume } from "./services/resume-analyzer";
+import { fastScoreResume } from "./services/fast-resume-scorer";
 import { matchJob, tweakResume } from "./services/job-matcher";
 import { insertResumeSchema } from "@shared/schema";
 import PDFParser from 'pdf-parse-fork';
@@ -388,42 +389,21 @@ export async function registerRoutes(app: Express) {
         });
       }
 
-      console.log(`[DEBUG] Starting resume analysis for ID ${resume.id}`);
+      console.log(`[DEBUG] Starting fast resume scoring for ID ${resume.id}`);
       console.log(`[DEBUG] Original content length: ${content.length}`);
       
-      // Analyze the resume using OpenAI
-      const analysis = await analyzeResume(content);
+      // Just get the score for display on dashboard
+      // This approach is much faster with minimal OpenAI API usage
+      const atsScore = await fastScoreResume(content);
       
-      console.log(`[DEBUG] Analysis complete. Overall score: ${analysis.overallScore}`);
-      console.log(`[DEBUG] Enhanced content received, length: ${analysis.enhancedContent.length}`);
-      console.log(`[DEBUG] Number of improvements: ${analysis.improvements.length}`);
-      
-      // Sample of improvements for debugging
-      if (analysis.improvements.length > 0) {
-        console.log(`[DEBUG] Sample improvements:`, analysis.improvements.slice(0, 3));
-      }
-      
-      // Compare original and enhanced content lengths
-      const textContent = analysis.enhancedContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-      const originalTextContent = content.replace(/\s+/g, ' ').trim();
-      
-      console.log(`[DEBUG] Original text length: ${originalTextContent.length}`);
-      console.log(`[DEBUG] Enhanced text length: ${textContent.length}`);
-      console.log(`[DEBUG] Length difference: ${textContent.length - originalTextContent.length}`);
-      
-      if (textContent.length < originalTextContent.length) {
-        console.log(`[WARNING] Enhanced content appears to be shorter than original!`);
-      }
+      console.log(`[DEBUG] Fast scoring complete. Score: ${atsScore}`);
 
-      // Update the resume with analysis results
+      // Update the resume with just the score
+      // The full analysis will be performed later when user views the resume details
       const updatedResume = await storage.updateResume(resume.id, {
-        atsScore: Math.round(analysis.overallScore), // Ensure integer
-        enhancedContent: analysis.enhancedContent,
-        analysis: {
-          categoryScores: analysis.categoryScores,
-          improvements: analysis.improvements,
-          formattingFixes: analysis.formattingFixes
-        }
+        atsScore: atsScore,
+        // Note: We don't set enhancedContent or detailed analysis fields here
+        // This will be done later when needed
       });
       
       console.log(`[DEBUG] Resume ${resume.id} successfully updated with analysis`);
@@ -525,6 +505,108 @@ export async function registerRoutes(app: Express) {
       console.error("Error fetching anonymous resumes:", error);
       // Return empty array on error rather than error status
       res.json([]);
+    }
+  });
+  
+  // Dashboard stats API for user storage information
+  app.get("/api/dashboard/stats", async (req, res) => {
+    try {
+      // Must be authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "You must be logged in to view dashboard statistics" });
+      }
+
+      // Get user's resume count
+      const userResumes = await storage.getUserResumes(req.user.id);
+      
+      // Calculate storage info based on plan type
+      // This could come from a user_plans table in a real implementation
+      const planType = req.user.planType || "base"; // Default to base if not specified
+      
+      // Plan limits based on business requirements
+      const storageLimits = {
+        base: 20, // 20 resume limit for base tier
+        professional: 300, // 300 resume limit for professional tier
+        enterprise: 1000 // 1000 resume limit for enterprise tier
+      };
+      
+      // Get the appropriate limit based on plan
+      const storageLimit = storageLimits[planType as keyof typeof storageLimits] || storageLimits.base;
+      
+      // Calculate percentage used
+      const resumeCount = userResumes.length;
+      const storagePercentage = Math.round((resumeCount / storageLimit) * 100);
+      
+      // Return the stats
+      res.json({
+        resumeCount,
+        storageInfo: {
+          used: resumeCount,
+          limit: storageLimit,
+          percentage: storagePercentage
+        },
+        planType,
+        // Add subscription info if needed
+        isPremium: planType !== "base"
+      });
+    } catch (error: unknown) {
+      console.error("Error getting dashboard stats:", error);
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ message });
+    }
+  });
+
+  // API endpoint for dashboard statistics
+  app.get("/api/dashboard/stats", async (req, res) => {
+    try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(200).json({
+          isPremium: false,
+          planType: "base",
+          storageInfo: {
+            used: 0,
+            limit: 20,
+            percentage: 0
+          }
+        });
+      }
+      
+      // Get user's resume count
+      const userResumes = await storage.getUserResumes(req.user.id);
+      const resumeCount = userResumes.length;
+      
+      // Determine plan type and storage limits
+      const isPremium = req.user.planType === "professional";
+      const storageLimit = isPremium ? 300 : 20;
+      const storagePercentage = Math.round((resumeCount / storageLimit) * 100);
+      
+      // Calculate trial days remaining if on trial
+      let trialDaysRemaining = null;
+      if (req.user.trialEndDate) {
+        const now = new Date();
+        const trialEndDate = new Date(req.user.trialEndDate);
+        
+        if (trialEndDate > now) {
+          const diffTime = Math.abs(trialEndDate.getTime() - now.getTime());
+          trialDaysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+      }
+      
+      res.json({
+        isPremium,
+        planType: req.user.planType || "base",
+        storageInfo: {
+          used: resumeCount,
+          limit: storageLimit,
+          percentage: storagePercentage
+        },
+        trialDaysRemaining
+      });
+    } catch (error: unknown) {
+      console.error("[ERROR] Error getting dashboard stats:", error);
+      const message = error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(500).json({ message });
     }
   });
   
