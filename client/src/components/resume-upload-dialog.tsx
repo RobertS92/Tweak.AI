@@ -3,13 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, FileText, PenTool, CheckCircle, AlertCircle } from "lucide-react";
+import { Upload, FileText, PenTool } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { Progress } from "@/components/ui/progress";
 
 interface ResumeUploadDialogProps {
   open?: boolean;
@@ -29,8 +28,6 @@ export default function ResumeUploadDialog({
   const [open, setOpen] = useState(false);
   const [, navigate] = useLocation();
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadState, setUploadState] = useState<'idle' | 'parsing' | 'uploading' | 'complete' | 'error'>('idle');
 
   // Handle both controlled and uncontrolled dialog state
   const isControlled = externalOpen !== undefined;
@@ -55,8 +52,6 @@ export default function ResumeUploadDialog({
     if (!file) return;
 
     setIsUploading(true);
-    setUploadState('parsing');
-    setUploadProgress(0);
     
     try {
       // Create a FormData object
@@ -65,7 +60,6 @@ export default function ResumeUploadDialog({
 
       // First send the file to resume parser to get structured data
       console.log("Parsing resume into structured data");
-      setUploadProgress(20);
       
       const parserResponse = await fetch('/api/resume-parser', {
         method: 'POST',
@@ -74,15 +68,12 @@ export default function ResumeUploadDialog({
       });
 
       if (!parserResponse.ok) {
-        setUploadState('error');
         throw new Error('Failed to parse resume');
       }
 
       // Get the parsed resume data
       const parsedResumeData = await parserResponse.json();
       console.log("Parsed resume data:", parsedResumeData);
-      setUploadProgress(60);
-      setUploadState('uploading');
 
       // Now upload the file to save it using the regular resume endpoint
       const uploadFormData = new FormData(); // Create a new FormData to avoid field name conflicts
@@ -95,13 +86,11 @@ export default function ResumeUploadDialog({
       });
 
       if (!uploadResponse.ok) {
-        setUploadState('error');
         throw new Error('Failed to upload resume');
       }
 
       // Get the response data
       const resumeResponse = await uploadResponse.json();
-      setUploadProgress(90);
       
       // Combine the data - we need both the storage info from resumeResponse
       // and the parsed structure from parsedResumeData
@@ -111,48 +100,36 @@ export default function ResumeUploadDialog({
         sections: parsedResumeData.sections
       };
       
-      setUploadProgress(100);
-      setUploadState('complete');
-      
-      // Wait a bit to show the success state before closing
-      setTimeout(() => {
-        setIsOpen(false);
-        toast({
-          title: "Resume Uploaded",
-          description: "Resume successfully parsed and uploaded",
-        });
-  
-        // Process the file upload callback - use combined data
-        if (onFileUploaded && typeof onFileUploaded === 'function') {
-          try {
-            // Pass the file AND combined data to the callback
-            onFileUploaded(file, combinedData);
-          } catch (error) {
-            console.error("Error in file upload callback:", error);
-          }
-        } else {
-          // Only navigate if we're not on the builder page already
-          const currentPath = window.location.pathname;
-          if (currentPath !== '/builder') {
-            navigate(`/builder`);
-          }
+      setIsOpen(false);
+      toast({
+        title: "Resume Uploaded",
+        description: "Resume successfully parsed and uploaded",
+      });
+
+      // Process the file upload callback - use combined data
+      if (onFileUploaded && typeof onFileUploaded === 'function') {
+        try {
+          // Pass the file AND combined data to the callback
+          await onFileUploaded(file, combinedData);
+        } catch (error) {
+          console.error("Error in file upload callback:", error);
         }
-      }, 1000);
+      } else {
+        // Only navigate if we're not on the builder page already
+        const currentPath = window.location.pathname;
+        if (currentPath !== '/builder') {
+          navigate(`/builder`);
+        }
+      }
     } catch (error) {
       console.error("Upload/parse error:", error);
-      setUploadState('error');
       toast({
         title: "Upload Failed",
         description: error instanceof Error ? error.message : "Failed to upload resume",
         variant: "destructive",
       });
-      
-      // Reset upload state after a delay
-      setTimeout(() => {
-        setUploadState('idle');
-        setUploadProgress(0);
-        setIsUploading(false);
-      }, 2000);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -225,28 +202,8 @@ export default function ResumeUploadDialog({
                 <span className="text-xs text-gray-500 mt-2">
                   PDF, DOC, DOCX, or TXT files
                 </span>
-                {uploadState !== 'idle' && (
-                  <div className="mt-4 flex flex-col items-center">
-                    {uploadState === 'error' ? (
-                      <div className="flex items-center gap-2 text-red-500">
-                        <AlertCircle className="h-5 w-5" />
-                        <span>Upload failed. Try again.</span>
-                      </div>
-                    ) : uploadState === 'complete' ? (
-                      <div className="flex items-center gap-2 text-green-500">
-                        <CheckCircle className="h-5 w-5" />
-                        <span>Upload complete!</span>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-2"></div>
-                        <Progress value={uploadProgress} className="h-1.5 w-48 mb-1" />
-                        <span className="text-xs text-gray-500">
-                          {uploadState === 'parsing' ? 'Parsing resume...' : 'Uploading resume...'}
-                        </span>
-                      </>
-                    )}
-                  </div>
+                {isUploading && (
+                  <div className="mt-4 w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                 )}
               </label>
             </div>

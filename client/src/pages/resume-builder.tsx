@@ -250,19 +250,9 @@ export default function ResumeBuilder() {
       
       // Add AI response to messages
       if (data.answer) {
-        // Extract possible suggestions - use multiple regex patterns to catch different formats
-        const suggestionPatterns = [
-          // Pattern 1: "To improve your X... try this: 'Y'"
-          /To improve your (professional summary|work experience|education|skills|projects).*(?:\n|.)+?try this:(?:\n|.)+?(["'].*["']|\{.*\}|\[.*\])/i,
-          // Pattern 2: "Here's a better version: 'Y'"
-          /Here['']s (?:a |an |)better (?:version|example):?(?:\n|.)+?(["'].*["']|\{.*\}|\[.*\])/i,
-          // Pattern 3: "I suggest: 'Y'"
-          /I suggest:?(?:\n|.)+?(["'].*["']|\{.*\}|\[.*\])/i,
-          // Pattern 4: "could look like: 'Y'"
-          /could look like:?(?:\n|.)+?(["'].*["']|\{.*\}|\[.*\])/i,
-          // Pattern 5: "You could use: 'Y'"
-          /(?:You |)could use:?(?:\n|.)+?(["'].*["']|\{.*\}|\[.*\])/i,
-        ];
+        // Extract possible suggestions
+        const suggestionRegex = /To improve your (professional summary|work experience|education|skills|projects).*(?:\n|.)+?try this:(?:\n|.)+?(["'].*["']|\{.*\}|\[.*\])/i;
+        const match = data.answer.match(suggestionRegex);
         
         let aiMessage: Message = { 
           type: 'ai', 
@@ -270,19 +260,10 @@ export default function ResumeBuilder() {
           sectionId: activeSection 
         };
         
-        // Try each pattern until we find a match
-        let suggestion = null;
-        for (const pattern of suggestionPatterns) {
-          const match = data.answer.match(pattern);
-          if (match) {
-            // The last capture group should contain our suggestion
-            suggestion = match[match.length - 1].trim();
-            break;
-          }
-        }
-        
-        // If we found a suggestion, clean it and add it to the message
-        if (suggestion) {
+        // If we found a suggestion, add it to the message
+        if (match && match[2]) {
+          // Clean up the suggested text
+          let suggestion = match[2].trim();
           // Remove outer quotes if they exist
           if ((suggestion.startsWith('"') && suggestion.endsWith('"')) || 
               (suggestion.startsWith("'") && suggestion.endsWith("'"))) {
@@ -522,20 +503,6 @@ export default function ResumeBuilder() {
   const handleTweakClick = (suggestion: string, sectionId: string) => {
     if (!suggestion) return;
     
-    // Check if suggestion might be JSON data - try to parse it as JSON first
-    let jsonData = null;
-    try {
-      // If the suggestion contains what looks like a JSON array or object, try to parse it
-      if ((suggestion.trim().startsWith('[') && suggestion.trim().endsWith(']')) ||
-          (suggestion.trim().startsWith('{') && suggestion.trim().endsWith('}'))) {
-        jsonData = JSON.parse(suggestion);
-        console.log("Parsed JSON suggestion:", jsonData);
-      }
-    } catch (e) {
-      // Not valid JSON, treat as text - this is the normal case
-      console.log("Not JSON, treating as text suggestion");
-    }
-    
     switch (sectionId) {
       case "professional-summary":
         // Add suggestion to professional summary
@@ -546,215 +513,35 @@ export default function ResumeBuilder() {
         break;
         
       case "work-experience":
-        if (jsonData && Array.isArray(jsonData)) {
-          // Handle JSON array - completely replace work experience items
-          const formattedItems = jsonData.map((item: any) => ({
-            title: item.title || item.position || "",
-            subtitle: item.subtitle || item.company || "",
-            date: item.date || `${item.startDate || ''} - ${item.endDate || ''}`,
-            description: item.description || "",
-            bullets: Array.isArray(item.bullets) ? item.bullets : 
-                    (item.achievements ? item.achievements : [])
-          }));
-          setWorkExperience(formattedItems);
-        } else if (jsonData && !Array.isArray(jsonData)) {
-          // Handle single JSON object - add as a new work experience item
-          const newItem = {
-            title: jsonData.title || jsonData.position || "",
-            subtitle: jsonData.subtitle || jsonData.company || "",
-            date: jsonData.date || `${jsonData.startDate || ''} - ${jsonData.endDate || ''}`,
-            description: jsonData.description || "",
-            bullets: Array.isArray(jsonData.bullets) ? jsonData.bullets : 
-                    (jsonData.achievements ? jsonData.achievements : [])
-          };
-          setWorkExperience(prev => [...prev, newItem]);
-        } else {
-          // For work experience, append to the first item's description or create new item
-          if (workExperience.length > 0) {
-            const updatedExperience = [...workExperience];
-            
-            // Check if suggestion looks like a bullet point list
-            if (suggestion.includes("•") || suggestion.includes("*") || /^\d+\./.test(suggestion)) {
-              // Create bullet points from text
-              const bulletPoints = suggestion
-                .split(/[\n\r]+/)
-                .filter(line => (line.trim().startsWith("•") || line.trim().startsWith("*") || /^\d+\./.test(line.trim())))
-                .map(line => line.replace(/^[•*]\s*|\d+\.\s*/, '').trim())
-                .filter(bullet => bullet.length > 0);
-              
-              if (bulletPoints.length > 0) {
-                // Add as bullet points
-                updatedExperience[0].bullets = [...updatedExperience[0].bullets, ...bulletPoints];
-              } else {
-                // Add as regular text
-                updatedExperience[0].description = updatedExperience[0].description
-                  ? `${updatedExperience[0].description}\n\n${suggestion}`
-                  : suggestion;
-              }
-            } else {
-              // Add as regular text
-              updatedExperience[0].description = updatedExperience[0].description
-                ? `${updatedExperience[0].description}\n\n${suggestion}`
-                : suggestion;
-            }
-            
-            setWorkExperience(updatedExperience);
-          } else {
-            // Create a new work experience item
-            setWorkExperience([{
-              title: "",
-              subtitle: "",
-              date: "",
-              description: suggestion,
-              bullets: [""]
-            }]);
-          }
+        // For work experience, append to the first item's description
+        if (workExperience.length > 0) {
+          const updatedExperience = [...workExperience];
+          updatedExperience[0].description = updatedExperience[0].description
+            ? `${updatedExperience[0].description}\n\n${suggestion}`
+            : suggestion;
+          setWorkExperience(updatedExperience);
         }
         break;
         
       case "education":
-        if (jsonData && Array.isArray(jsonData)) {
-          // Handle JSON array - replace education items
-          const formattedItems = jsonData.map((item: any) => ({
-            title: item.title || item.degree || "",
-            subtitle: item.subtitle || item.institution || "",
-            date: item.date || `${item.startDate || ''} - ${item.endDate || ''}`,
-            description: item.description || "",
-            bullets: Array.isArray(item.bullets) ? item.bullets : []
-          }));
-          setEducation(formattedItems);
-        } else if (jsonData && !Array.isArray(jsonData)) {
-          // Handle single JSON object - add as a new education item
-          const newItem = {
-            title: jsonData.title || jsonData.degree || "",
-            subtitle: jsonData.subtitle || jsonData.institution || "",
-            date: jsonData.date || `${jsonData.startDate || ''} - ${jsonData.endDate || ''}`,
-            description: jsonData.description || "",
-            bullets: Array.isArray(jsonData.bullets) ? jsonData.bullets : []
-          };
-          setEducation(prev => [...prev, newItem]);
-        } else {
-          // For education, append to the first item's description or create new
-          if (education.length > 0) {
-            const updatedEducation = [...education];
-            updatedEducation[0].description = updatedEducation[0].description
-              ? `${updatedEducation[0].description}\n\n${suggestion}`
-              : suggestion;
-            setEducation(updatedEducation);
-          } else {
-            // Create a new education item
-            setEducation([{
-              title: "",
-              subtitle: "",
-              date: "",
-              description: suggestion,
-              bullets: []
-            }]);
-          }
-        }
-        break;
-        
-      case "skills":
-        // For skills, try to extract skills from the text or use JSON
-        if (jsonData && Array.isArray(jsonData)) {
-          // Handle JSON array of skill categories
-          const formattedSkills = jsonData.map((category: any) => ({
-            name: category.name || "Technical Skills",
-            skills: Array.isArray(category.skills) ? category.skills : [""]
-          }));
-          setSkills(formattedSkills);
-        } else {
-          // Extract skills from text
-          const skillLines = suggestion.split(/[\n\r]+/).filter(line => line.trim().length > 0);
-          
-          if (skillLines.length > 0) {
-            if (skills.length > 0) {
-              // Add to existing skills
-              const updatedSkills = [...skills];
-              const extractedSkills = skillLines.map(line => 
-                line.replace(/^[•*-]\s*|\d+\.\s*/, '').trim()
-              ).filter(skill => skill.length > 0);
-              
-              // Add to first category
-              updatedSkills[0].skills = [...updatedSkills[0].skills.filter(s => s.trim() !== ""), ...extractedSkills];
-              setSkills(updatedSkills);
-            } else {
-              // Create new skills category
-              const extractedSkills = skillLines.map(line => 
-                line.replace(/^[•*-]\s*|\d+\.\s*/, '').trim()
-              ).filter(skill => skill.length > 0);
-              
-              setSkills([{
-                name: "Technical Skills",
-                skills: extractedSkills.length > 0 ? extractedSkills : [""]
-              }]);
-            }
-          }
+        // For education, append to the first item's description
+        if (education.length > 0) {
+          const updatedEducation = [...education];
+          updatedEducation[0].description = updatedEducation[0].description
+            ? `${updatedEducation[0].description}\n\n${suggestion}`
+            : suggestion;
+          setEducation(updatedEducation);
         }
         break;
         
       case "projects":
-        if (jsonData && Array.isArray(jsonData)) {
-          // Handle JSON array - replace project items
-          const formattedItems = jsonData.map((item: any) => ({
-            title: item.title || item.name || "",
-            subtitle: item.subtitle || item.technologies || "",
-            date: item.date || "",
-            description: item.description || "",
-            bullets: Array.isArray(item.bullets) ? item.bullets : [""]
-          }));
-          setProjects(formattedItems);
-        } else if (jsonData && !Array.isArray(jsonData)) {
-          // Handle single JSON object - add as a new project item
-          const newItem = {
-            title: jsonData.title || jsonData.name || "",
-            subtitle: jsonData.subtitle || jsonData.technologies || "",
-            date: jsonData.date || "",
-            description: jsonData.description || "",
-            bullets: Array.isArray(jsonData.bullets) ? jsonData.bullets : [""]
-          };
-          setProjects(prev => [...prev, newItem]);
-        } else {
-          // For projects, append to first item or create new
-          if (projects.length > 0) {
-            const updatedProjects = [...projects];
-            
-            // Check if suggestion looks like a bullet point list
-            if (suggestion.includes("•") || suggestion.includes("*") || /^\d+\./.test(suggestion)) {
-              // Create bullet points from text
-              const bulletPoints = suggestion
-                .split(/[\n\r]+/)
-                .filter(line => (line.trim().startsWith("•") || line.trim().startsWith("*") || /^\d+\./.test(line.trim())))
-                .map(line => line.replace(/^[•*]\s*|\d+\.\s*/, '').trim())
-                .filter(bullet => bullet.length > 0);
-              
-              if (bulletPoints.length > 0) {
-                // Add as bullet points
-                updatedProjects[0].bullets = [...updatedProjects[0].bullets.filter(b => b.trim() !== ""), ...bulletPoints];
-              } else {
-                // Add as regular text
-                updatedProjects[0].description = updatedProjects[0].description
-                  ? `${updatedProjects[0].description}\n\n${suggestion}`
-                  : suggestion;
-              }
-            } else {
-              // Add as regular text
-              updatedProjects[0].description = updatedProjects[0].description
-                ? `${updatedProjects[0].description}\n\n${suggestion}`
-                : suggestion;
-            }
-            
-            setProjects(updatedProjects);
-          } else {
-            // Create a new project item
-            setProjects([{
-              title: "",
-              subtitle: "",
-              date: "",
-              description: suggestion,
-              bullets: [""]
-            }]);
-          }
+        // For projects, append to the first item's description
+        if (projects.length > 0) {
+          const updatedProjects = [...projects];
+          updatedProjects[0].description = updatedProjects[0].description
+            ? `${updatedProjects[0].description}\n\n${suggestion}`
+            : suggestion;
+          setProjects(updatedProjects);
         }
         break;
     }
