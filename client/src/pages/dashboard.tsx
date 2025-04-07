@@ -197,7 +197,7 @@ export default function Dashboard() {
               <h1 className="text-2xl font-bold text-[#2c3e50]">Resume Dashboard</h1>
               <p className="text-[#7f8c8d]">Manage and optimize your resumes</p>
             </div>
-            <Link href="/resume-builder">
+            <Link href="/editor">
               <Button className="bg-[#4f8df9]">
                 <Plus className="mr-2 h-4 w-4" /> Upload Resume
               </Button>
@@ -354,12 +354,16 @@ export default function Dashboard() {
                           {new Date(resume.createdAt).toLocaleDateString()}
                         </td>
                         <td className="p-4 text-right space-x-2">
-                          <Button variant="outline" size="icon">
-                            <Edit className="h-4 w-4 text-[#f39c12]" />
-                          </Button>
-                          <Button variant="outline" size="icon">
-                            <Download className="h-4 w-4 text-[#3498db]" />
-                          </Button>
+                          <Link href={`/editor/${resume.id}`}>
+                            <Button variant="outline" size="icon">
+                              <Edit className="h-4 w-4 text-[#f39c12]" />
+                            </Button>
+                          </Link>
+                          <Link href={`/editor/${resume.id}?download=true`}>
+                            <Button variant="outline" size="icon">
+                              <Download className="h-4 w-4 text-[#3498db]" />
+                            </Button>
+                          </Link>
                           <Button 
                             variant="outline" 
                             size="icon"
