@@ -1,0 +1,43 @@
+rowserslist: browsers data (caniuse-lite) is 6 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[DEBUG] GET /api/user - Authentication status: false
+[DEBUG] Session info: Session ID: 4p56SrjqE2Dd4dUIISPLT-HE6fVwyS2E
+[DEBUG] User not authenticated on /api/user endpoint
+3:58:42 AM [express] GET /api/user 401 in 4ms :: {"error":"Not authenticated"}
+[DEBUG] GET /api/user - Authentication status: false
+[DEBUG] Session info: Session ID: lprmMfPmq-F3GF7SPZ_2C_y8XSgsMWbj
+[DEBUG] User not authenticated on /api/user endpoint
+3:59:23 AM [express] GET /api/user 401 in 2ms :: {"error":"Not authenticated"}
+[DEBUG] Login endpoint called for username: robcs13
+[DEBUG] Session before auth: XYLWaPioJwEvjQOysM4ZKCjPfN209L5p
+[DEBUG] Login attempt for username: robcs13
+[DEBUG] Password validation for robcs13: Success
+[DEBUG] User robcs13 authenticated successfully with ID: 1
+[DEBUG] Authentication successful for robcs13, proceeding with login
+[DEBUG] Serializing user with ID: 1
+[DEBUG] Login successful for user ID: 1
+[DEBUG] Session after login: ABpHSS3YqY1_5r_hCh7bE1IO3nV2M_1H
+[DEBUG] Authentication status: true
+4:01:14 AM [express] POST /api/login 200 in 1331ms :: {"id":1,"username":"robcs13","name":"Rob Seals…
+4:01:16 AM [express] GET /api/dashboard/stats 304 in 2ms :: {"isPremium":false,"planType":"base","st…
+[DEBUG] GET /api/resumes - Auth status: false
+[DEBUG] Session info: Session {
+  cookie: {
+    path: '/',
+    _expires: 2025-05-07T04:01:17.108Z,
+    originalMaxAge: 2592000000,
+    httpOnly: true,
+    secure: false
+  }
+}
+4:01:17 AM [express] GET /api/resumes 401 in 5ms :: {"message":"You must be logged in to view resume…
+4:01:17 AM [express] GET /api/resumes/anonymous 500 in 62ms :: {"message":"invalid input syntax for …
+[DEBUG] Resume upload request received
+[DEBUG] Authentication status: Not authenticated
+[DEBUG] Creating new resume with title:  Robert Seals MLD.pdf
+[DEBUG] User ID for new resume: null (anonymous)
+Resume upload error: ReferenceError: require is not defined
+    at DatabaseStorage.createResume (/home/runner/workspace/server/storage.ts:100:34)
+    at <anonymous> (/home/runner/workspace/server/routes.ts:392:32)
+4:01:24 AM [express] POST /api/resumes 500 in 1016ms :: {"message":"require is not defined"}

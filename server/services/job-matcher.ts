@@ -1,12 +1,10 @@
 import OpenAI from "openai";
 import { z } from "zod";
+import { ensureValidScore } from '../utils/validators';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-// Import validators
-const { ensureValidScore } = require('../utils/validators');
 
 // Helper for transforming numbers to ensure they're valid
 const safeNumberProcessor = (val: unknown) => {
@@ -77,7 +75,7 @@ export async function matchJob(resumeContent: string, jobDescription: string) {
     const sanitizedResume = resumeContent.replace(/\r\n/g, '\n').trim();
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       // Remove response_format since it's causing issues with the model
       messages: [
         {

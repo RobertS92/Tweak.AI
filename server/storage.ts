@@ -9,6 +9,8 @@ import { eq, isNull } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
+// Import validators properly
+import { ensureValidScore, sanitizeScoreFields } from "./utils/validators";
 
 const PostgresSessionStore = connectPg(session);
 
@@ -96,9 +98,6 @@ export class DatabaseStorage implements IStorage {
     console.log(`[DEBUG] Creating new resume with title: ${resume.title}`);
     console.log(`[DEBUG] User ID for new resume: ${resume.userId || 'null (anonymous)'}`);
     
-    // Import the validators
-    const { ensureValidScore } = require('./utils/validators');
-    
     // If no userId is provided, explicitly set it to null to ensure consistency
     const resumeData = { ...resume };
     if (!resumeData.userId) {
@@ -119,9 +118,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateResume(id: number, resume: Partial<Resume>): Promise<Resume> {
-    // Import the sanitizer to validate score fields before storage
-    const { sanitizeScoreFields } = require('./utils/validators');
-    
     // Create a sanitized version with valid score values
     const sanitizedResume = sanitizeScoreFields(resume);
     
@@ -254,9 +250,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createJob(job: InsertJob): Promise<Job> {
-    // Import the validators
-    const { ensureValidScore } = require('./utils/validators');
-    
     // Create a copy of the job data for validation
     const jobData = { ...job };
     
@@ -272,9 +265,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateJob(id: number, job: Partial<Job>): Promise<Job> {
-    // Import the sanitizer to validate score fields before storage
-    const { sanitizeScoreFields } = require('./utils/validators');
-    
     // Create a sanitized version with valid score values
     const sanitizedJob = sanitizeScoreFields(job);
     
