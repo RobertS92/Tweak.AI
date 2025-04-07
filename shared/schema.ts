@@ -23,7 +23,7 @@ export const resumes = pgTable("resumes", {
   title: text("title").notNull(),
   content: text("content").notNull(),
   fileType: text("file_type").notNull(),
-  atsScore: integer("ats_score", { mode: 'number' }),
+  atsScore: integer("ats_score"),
   enhancedContent: text("enhanced_content"),
   analysis: jsonb("analysis").notNull().default({}),
   createdAt: timestamp("created_at").defaultNow(),
@@ -35,7 +35,7 @@ export const jobs = pgTable("jobs", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   company: text("company"),
-  matchScore: integer("match_score", { mode: 'number' }),
+  matchScore: integer("match_score"),
   analysis: jsonb("analysis"),
   createdAt: timestamp("created_at").defaultNow(),
 });

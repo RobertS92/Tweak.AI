@@ -96,10 +96,20 @@ export class DatabaseStorage implements IStorage {
     console.log(`[DEBUG] Creating new resume with title: ${resume.title}`);
     console.log(`[DEBUG] User ID for new resume: ${resume.userId || 'null (anonymous)'}`);
     
+    // Import the validators
+    const { ensureValidScore } = require('./utils/validators');
+    
     // If no userId is provided, explicitly set it to null to ensure consistency
     const resumeData = { ...resume };
     if (!resumeData.userId) {
       console.log(`[DEBUG] Setting null userId for anonymous resume`);
+    }
+    
+    // Ensure any scores provided are validated before storage
+    if ('atsScore' in resumeData) {
+      const originalScore = resumeData.atsScore;
+      resumeData.atsScore = ensureValidScore(originalScore);
+      console.log(`[DEBUG] Validated atsScore: ${originalScore} -> ${resumeData.atsScore}`);
     }
     
     const [newResume] = await db.insert(resumes).values(resumeData).returning();
@@ -109,9 +119,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateResume(id: number, resume: Partial<Resume>): Promise<Resume> {
+    // Import the sanitizer to validate score fields before storage
+    const { sanitizeScoreFields } = require('./utils/validators');
+    
+    // Create a sanitized version with valid score values
+    const sanitizedResume = sanitizeScoreFields(resume);
+    
+    console.log(`[DEBUG] Original atsScore: ${resume.atsScore}, Sanitized: ${sanitizedResume.atsScore}`);
+    
     const [updated] = await db
       .update(resumes)
-      .set(resume)
+      .set(sanitizedResume)
       .where(eq(resumes.id, id))
       .returning();
 
@@ -236,14 +254,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createJob(job: InsertJob): Promise<Job> {
-    const [newJob] = await db.insert(jobs).values(job).returning();
+    // Import the validators
+    const { ensureValidScore } = require('./utils/validators');
+    
+    // Create a copy of the job data for validation
+    const jobData = { ...job };
+    
+    // Ensure any scores provided are validated before storage
+    if ('matchScore' in jobData) {
+      const originalScore = jobData.matchScore;
+      jobData.matchScore = ensureValidScore(originalScore);
+      console.log(`[DEBUG] Validated matchScore: ${originalScore} -> ${jobData.matchScore}`);
+    }
+    
+    const [newJob] = await db.insert(jobs).values(jobData).returning();
     return newJob;
   }
 
   async updateJob(id: number, job: Partial<Job>): Promise<Job> {
+    // Import the sanitizer to validate score fields before storage
+    const { sanitizeScoreFields } = require('./utils/validators');
+    
+    // Create a sanitized version with valid score values
+    const sanitizedJob = sanitizeScoreFields(job);
+    
+    // Log sanitization if matchScore was provided
+    if (job.matchScore !== undefined) {
+      console.log(`[DEBUG] Original matchScore: ${job.matchScore}, Sanitized: ${sanitizedJob.matchScore}`);
+    }
+    
     const [updated] = await db
       .update(jobs)
-      .set(job)
+      .set(sanitizedJob)
       .where(eq(jobs.id, id))
       .returning();
 

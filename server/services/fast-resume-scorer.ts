@@ -40,20 +40,29 @@ export async function fastScoreResume(content: string): Promise<number> {
       max_tokens: 10, // Very small response needed
     });
 
+    // Import our validator utility
+    const { ensureValidScore } = require('../utils/validators');
+    
     // Extract just the score number
     const scoreText = response.choices[0].message.content?.trim() || "75";
-    const score = parseInt(scoreText.replace(/\D/g, ''));
+    let score = parseInt(scoreText.replace(/\D/g, ''));
     
-    // Validate score is in correct range
-    if (isNaN(score) || score < 0 || score > 100) {
-      console.log("[DEBUG] Invalid score received:", scoreText, "defaulting to 75");
-      return 75; // Default score
-    }
+    // Use our common validation utility for consistency
+    score = ensureValidScore(score, 75);
     
-    console.log("[DEBUG] Fast resume scoring complete. Score:", score);
+    // Additional range validation specific to ATS scores (0-100)
+    if (score < 0) score = 0;
+    if (score > 100) score = 100;
+    
+    console.log("[DEBUG] Fast resume scoring complete. Raw score:", scoreText, "Final score:", score);
     return score;
   } catch (error) {
     console.error("[ERROR] Fast resume scoring failed:", error);
-    return 75; // Default score on error
+    
+    // Import our validator utility if not already imported
+    const { ensureValidScore } = require('../utils/validators');
+    
+    // Use the default value from our validator (75)
+    return ensureValidScore(null, 75);
   }
 }
